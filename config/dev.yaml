@@ -1,0 +1,15 @@
+logger:
+  name: logger
+  namespace: default
+  image: quay.io/periklis/logger:latest
+  tenantId: observatorium
+  replicas: 10
+  throughput: 100
+
+metrics:
+  url: http://127.0.0.1:9090
+  jobs:
+    distributor: loki-distributor
+
+loki:
+  url: http://observatorium-xyz-loki-distributor-http.observatorium.svc.cluster.local:3100/loki/api/v1

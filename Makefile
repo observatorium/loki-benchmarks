@@ -7,5 +7,8 @@ export GOROOT=$(shell go env GOROOT)
 export GOFLAGS=-mod=vendor
 export GO111MODULE=on
 
-bench: $(GINKGO)
-	$(GINKGO) ./benchmarks
+all: bench-dev
+
+bench-dev: $(GINKGO) $(PROMETHEUS)
+	@TARGET_ENV=dev ./run.sh
+.PHONY: bench
