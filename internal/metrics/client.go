@@ -11,6 +11,8 @@ import (
 )
 
 type Client interface {
+    RequestDurationOkWritesAvg(job, duration string) (float64, error)
+    RequestDurationOkWritesP50(job, duration string) (float64, error)
     RequestDurationOkWritesP99(job, duration string) (float64, error)
 }
 
@@ -31,13 +33,7 @@ func NewClient(url string, timeout time.Duration) (Client, error) {
     }, nil
 }
 
-func (c *client) RequestDurationOkWritesP99(job, duration string) (float64, error) {
-    query := fmt.Sprintf(
-        `histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="%s", method="POST", status_code=~"2.*"}[%s])))`,
-        job,
-        duration,
-    )
-
+func (c *client) executeScalarQuery(query string) (float64, error) {
     ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
     defer cancel()
 
@@ -54,11 +50,11 @@ func (c *client) RequestDurationOkWritesP99(job, duration string) (float64, erro
     if res.Type() == model.ValVector {
         vec := res.(model.Vector)
         if vec.Len() == 0 {
-            return 0.0, fmt.Errorf("empty result set for job: %s", job)
+            return 0.0, fmt.Errorf("empty result set for query: %s", query)
         }
 
         return float64(vec[0].Value), nil
     }
 
-    return 0.0, fmt.Errorf("failed to parse result for job: %s", job)
+    return 0.0, fmt.Errorf("failed to parse result for query: %s", query)
 }
