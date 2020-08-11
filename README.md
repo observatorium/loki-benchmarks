@@ -1,5 +1,7 @@
 # loki-benchmarks
 
+[![observatorium](https://circleci.com/gh/observatorium/loki-benchmarks.svg?style=svg)](https://app.circleci.com/pipelines/github/observatorium/loki-benchmarks)
+
 This suite consists of benchmarks tests for the following Loki scenarios:
 
 1. **High Volume Writes**: Maintain p99 write request duration to 300ms where incoming volume is produced by 10 pods each sending 100 messages/s.
