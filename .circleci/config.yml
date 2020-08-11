@@ -1,0 +1,11 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.15-rc-buster
+    working_directory: /go/src/github.com/obervatorium/loki-benchmarks
+    steps:
+      - checkout
+      - run:
+          command: |
+            make bench-dev
