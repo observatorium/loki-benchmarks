@@ -7,5 +7,11 @@ jobs:
     steps:
       - checkout
       - run:
+          name: benchmarks
           command: |
-            make bench-dev
+            echo "Checkout observatorium/deployments"
+            cd ../ && git checkout github.com/observatorium/deployments
+            make bench-env
+            cp ./benchmarks/junit.xml /tmp/test-results/
+      - store_test_results:
+          path: /tmp/test-results
