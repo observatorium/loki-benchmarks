@@ -7,7 +7,7 @@ OBS_LOKI_QF="observatorium-xyz-loki-query-frontend"
 OBS_LOKI_DST="observatorium-xyz-loki-distributor"
 OBS_LOKI_ING="observatorium-xyz-loki-ingester"
 
-trap 'kill $(jobs -p); exit 0' EXIT
+trap 'undeploy_observatorium;kill $(jobs -p); exit 0' EXIT
 
 deploy_observatorium() {
     pushd ../deployments || exit 1
@@ -18,6 +18,7 @@ deploy_observatorium() {
 
 undeploy_observatorium() {
     pushd ../deployments || exit 1
+    echo -e "\nUndeploying observatorium dev manifests"
     ./kind delete cluster
     popd
 }
@@ -74,9 +75,6 @@ bench() {
 
     echo -e "\nRun benchmarks"
     $GINKGO ./benchmarks
-
-    echo -e "\nUndeploying observatorium dev manifests"
-    undeploy_observatorium
 }
 
 bench
