@@ -10,7 +10,7 @@ jobs:
           name: benchmarks
           command: |
             echo "Checkout observatorium/deployments"
-            cd ../ && git checkout https://github.com/observatorium/deployments.git
+            cd ../ && git clone https://github.com/observatorium/deployments.git
             make bench-env
             cp ./benchmarks/junit.xml /tmp/test-results/
       - store_test_results:
