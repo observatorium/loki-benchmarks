@@ -60,6 +60,18 @@ scrape_loki_metrics() {
     ) &
 }
 
+generate_report() {
+    source .bingo/variables.env
+
+    for f in $REPORT_DIR/*.gnuplot; do
+        gnuplot -e "set term png; set output '$f.png'" "$f"
+    done
+
+    cp ./reports/README.template $REPORT_DIR/README.md
+    sed -i "s/{{TARGET_ENV}}/$TARGET_ENV/i" $REPORT_DIR/README.md
+    $EMBEDMD -w $REPORT_DIR/README.md
+}
+
 
 bench() {
     echo "Deploying observatorium dev manifests"
@@ -75,6 +87,9 @@ bench() {
 
     echo -e "\nRun benchmarks"
     $GINKGO ./benchmarks
+
+    echo -e "\nGenerate benchmark report"
+    generate_report
 }
 
 bench

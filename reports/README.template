@@ -1,0 +1,31 @@
+# Bechmarks Results
+
+This document contains baseline benchmark results for Observatorium Loki under synthetic load.
+
+Generated using profile:
+[embedmd]:# (../../config/{{TARGET_ENV}}.yaml)
+
+## Results
+
+### Scenario 1: High Volume Writes
+
+#### P99
+
+Query:
+> histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-distributor", method="POST", status_code=~"2.*"}[1m])))
+
+![./All-distributor-2xx-Writes-p99.gnuplot.png](./All-distributor-2xx-Writes-p99.gnuplot.png)
+
+#### P50
+
+Query:
+> histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-distributor", method="POST", status_code=~"2.*"}[1m])))
+
+![./All-distributor-2xx-Writes-p50.gnuplot.png](./All-distributor-2xx-Writes-p50.gnuplot.png)
+
+#### Average
+
+Query:
+> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-distributor", method="POST", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-distributor", method="POST", status_code=~"2.*"}[1m])))
+
+![./All-distributor-2xx-Writes-avg.gnuplot.png](./All-distributor-2xx-Writes-avg.gnuplot.png)

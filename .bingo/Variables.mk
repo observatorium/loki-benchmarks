@@ -6,16 +6,22 @@ GO     ?= $(shell which go)
 
 # Bellow generated variables ensure that every time a tool under each variable is invoked, the correct version
 # will be used; reinstalling only if needed.
-# For example for ginkgo variable:
+# For example for embedmd variable:
 #
 # In your main Makefile (for non array binaries):
 #
 #include .bingo/Variables.mk # Assuming -dir was set to .bingo .
 #
-#command: $(GINKGO)
-#	@echo "Running ginkgo"
-#	@$(GINKGO) <flags/args..>
+#command: $(EMBEDMD)
+#	@echo "Running embedmd"
+#	@$(EMBEDMD) <flags/args..>
 #
+EMBEDMD := $(GOBIN)/embedmd-v1.0.0
+$(EMBEDMD): .bingo/embedmd.mod
+	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
+	@echo "(re)installing $(GOBIN)/embedmd-v1.0.0"
+	@cd .bingo && $(GO) build -mod=mod -modfile=embedmd.mod -o=$(GOBIN)/embedmd-v1.0.0 "github.com/campoy/embedmd"
+
 GINKGO := $(GOBIN)/ginkgo-v1.14.0
 $(GINKGO): .bingo/ginkgo.mod
 	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
