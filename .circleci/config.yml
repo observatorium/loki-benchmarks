@@ -11,7 +11,7 @@ jobs:
           command: |
             echo "Checkout observatorium/deployments"
             cd ../ && git clone https://github.com/observatorium/deployments.git
-            make bench-env
+            cd loki-benchmarks && make bench-env
             cp ./benchmarks/junit.xml /tmp/test-results/
       - store_test_results:
           path: /tmp/test-results
