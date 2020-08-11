@@ -4,17 +4,9 @@ jobs:
     machine:
       image: ubuntu-1604:202007-01
     steps:
-      - run:
-          command: |
-            curl -O https://dl.google.com/go/go1.14.7.linux-amd64.tar.gz
-            tar xvf go1.14.7.linux-amd64.tar.gz
-            sudo chown -R root:root ./go
-            sudo mv go /usr/local
       - checkout
       - run:
           name: benchmarks
-          environment:
-            GOROOT: "$HOME/go"
           command: |
             echo "Checkout observatorium/deployments"
             cd ../ && git clone https://github.com/observatorium/deployments.git
