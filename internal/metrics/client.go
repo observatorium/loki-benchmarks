@@ -10,7 +10,19 @@ import (
     "github.com/prometheus/common/model"
 )
 
+type MetricType string
+
+const (
+    DistributorBytesReceivedTotal MetricType = "loki_distributor_bytes_received_total"
+)
+
 type Client interface {
+    DistributorBytesReceivedTotal() (float64, error)
+
+    RequestDurationOkReadsAvg(job, duration string) (float64, error)
+    RequestDurationOkReadsP50(job, duration string) (float64, error)
+    RequestDurationOkReadsP99(job, duration string) (float64, error)
+
     RequestDurationOkWritesAvg(job, duration string) (float64, error)
     RequestDurationOkWritesP50(job, duration string) (float64, error)
     RequestDurationOkWritesP99(job, duration string) (float64, error)

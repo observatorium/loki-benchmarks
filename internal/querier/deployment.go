@@ -1,4 +1,4 @@
-package logger
+package querier
 
 import (
     "context"
@@ -13,37 +13,45 @@ import (
     "github.com/observatorium/loki-benchmarks/internal/config"
 )
 
-func Deploy(c client.Client, cfg *config.Logger, scenarioCfg *config.Writers, pushURL string) error {
+func Deploy(c client.Client, cfg *config.Querier, scenarioCfg *config.Readers, url, query string) error {
+
+    queryCmd := fmt.Sprintf(
+        `apt-get update && apt-get install -y curl && while true; do curl -H 'X-Scope-OrgID: %s' %s --data-urlencode '%s'; sleep 1; done`,
+        cfg.TenantID,
+        url,
+        query,
+    )
+
     obj := &appsv1.Deployment{
         ObjectMeta: metav1.ObjectMeta{
             Name:      cfg.Name,
             Namespace: cfg.Namespace,
             Labels: map[string]string{
-                "app": "loki-benchmarks-logger",
+                "app": "loki-benchmarks-querier",
             },
         },
         Spec: appsv1.DeploymentSpec{
             Replicas: &scenarioCfg.Replicas,
             Selector: &metav1.LabelSelector{
                 MatchLabels: map[string]string{
-                    "app": "loki-benchmarks-logger",
+                    "app": "loki-benchmarks-querier",
                 },
             },
             Template: corev1.PodTemplateSpec{
                 ObjectMeta: metav1.ObjectMeta{
                     Labels: map[string]string{
-                        "app": "loki-benchmarks-logger",
+                        "app": "loki-benchmarks-querier",
                     },
                 },
                 Spec: corev1.PodSpec{
                     Containers: []corev1.Container{
                         {
-                            Name:  cfg.Name,
-                            Image: cfg.Image,
+                            Name:    cfg.Name,
+                            Image:   cfg.Image,
+                            Command: []string{"/bin/sh"},
                             Args: []string{
-                                fmt.Sprintf("--url=%s", pushURL),
-                                fmt.Sprintf("--logps=%d", scenarioCfg.Throughput),
-                                fmt.Sprintf("--tenant=%s", cfg.TenantID),
+                                "-c",
+                                queryCmd,
                             },
                         },
                     },
@@ -55,7 +63,7 @@ func Deploy(c client.Client, cfg *config.Logger, scenarioCfg *config.Writers, pu
     return c.Create(context.TODO(), obj, &client.CreateOptions{})
 }
 
-func Undeploy(c client.Client, cfg *config.Logger) error {
+func Undeploy(c client.Client, cfg *config.Querier) error {
     obj := &appsv1.Deployment{
         ObjectMeta: metav1.ObjectMeta{
             Name:      cfg.Name,

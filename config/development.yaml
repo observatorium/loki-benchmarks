@@ -3,19 +3,44 @@ logger:
   namespace: default
   image: quay.io/periklis/logger:latest
   tenantId: observatorium
-  replicas: 10
-  throughput: 100
+
+querier:
+  name: querier
+  namespace: default
+  image: docker.io/debian
+  tenantId: observatorium
 
 metrics:
   url: http://127.0.0.1:9090
   jobs:
     distributor: loki-distributor
+    ingester: loki-ingester
+    queryFrontend: loki-query-frontend
 
 loki:
-  url: http://observatorium-xyz-loki-distributor-http.observatorium.svc.cluster.local:3100/loki/api/v1
+  distributor: http://observatorium-xyz-loki-distributor-http.observatorium.svc.cluster.local:3100
+  queryFrontend: http://observatorium-xyz-loki-query-frontend-http.observatorium.svc.cluster.local:3100
 
 scenarios:
+  highVolumeReads:
+    samples:
+      interval: "5s"
+    writers:
+      replicas: 10
+      throughput: 100
+    readers:
+      replicas: 2
+      query: 'query=sum(rate({component!=""}[1h])) by (level)'
+      startThreshold: 1024000
+    p99: 0.3
+    p50: 0.2
+    avg: 2.0
   highVolumeWrites:
+    samples:
+      interval: "5s"
+    writers:
+      replicas: 10
+      throughput: 100
     p99: 0.3
     p50: 0.2
     avg: 2.0

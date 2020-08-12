@@ -1,32 +1,45 @@
 package benchmarks_test
 
 import (
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/observatorium/loki-benchmarks/internal/config"
 	"github.com/observatorium/loki-benchmarks/internal/k8s"
 	"github.com/observatorium/loki-benchmarks/internal/logger"
 )
 
-var (
-	defaultRetry  = 5 * time.Second
-	defaulTimeout = 30 * time.Second
-)
-
 var _ = Describe("Scenario: High Volume Writes", func() {
 
-	BeforeEach(func() {
-		err := logger.Deploy(k8sClient, benchCfg.Logger, benchCfg.Loki.PushURL())
-		Expect(err).Should(Succeed(), "Failed to deploy logger")
+	var (
+		beforeOnce  sync.Once
+		afterOnce   sync.Once
+		scenarioCfg config.HighVolumeWrites
+	)
 
-		err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Logger.Namespace, benchCfg.Logger.Name, benchCfg.Logger.Replicas, defaultRetry, defaulTimeout)
-		Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
+	BeforeEach(func() {
+		scenarioCfg = benchCfg.Scenarios.HighVolumeWrites
+
+		beforeOnce.Do(func() {
+			writerCfg := scenarioCfg.Writers
+
+			err := logger.Deploy(k8sClient, benchCfg.Logger, writerCfg, benchCfg.Loki.PushURL())
+			Expect(err).Should(Succeed(), "Failed to deploy logger")
+
+			err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Logger.Namespace, benchCfg.Logger.Name, writerCfg.Replicas, defaultRetry, defaulTimeout)
+			Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
+		})
+
+		time.Sleep(scenarioCfg.Samples.Interval)
 	})
 
 	AfterEach(func() {
-		Expect(logger.Undeploy(k8sClient, benchCfg.Logger)).Should(Succeed(), "Failed to delete logger deployment")
+		afterOnce.Do(func() {
+			Expect(logger.Undeploy(k8sClient, benchCfg.Logger)).Should(Succeed(), "Failed to delete logger deployment")
+		})
 	})
 
 	Measure("should result in measurements of p99, p50 and avg for all successful write requests to the distributor", func(b Benchmarker) {
@@ -36,7 +49,7 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		p99, err := metricsClient.RequestDurationOkWritesP99(job, "1m")
 
 		Expect(err).Should(Succeed(), "Failed to read p50 for all distributor writes with status code 2xx")
-		Expect(p99).Should(BeNumerically("<", benchCfg.Scenarios.HighVolumeWrites.P99), "p99 should not exceed expectation")
+		Expect(p99).Should(BeNumerically("<", scenarioCfg.P99), "p99 should not exceed expectation")
 
 		b.RecordValue("All distributor 2xx Writes p99", p99)
 
@@ -44,7 +57,7 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		p50, err := metricsClient.RequestDurationOkWritesP50(job, "1m")
 
 		Expect(err).Should(Succeed(), "Failed to read p50 for all distributor writes with status code 2xx")
-		Expect(p50).Should(BeNumerically("<", benchCfg.Scenarios.HighVolumeWrites.P50), "p50 should not exceed expectation")
+		Expect(p50).Should(BeNumerically("<", scenarioCfg.P50), "p50 should not exceed expectation")
 
 		b.RecordValue("All distributor 2xx Writes p50", p50)
 
@@ -52,7 +65,7 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		avg, err := metricsClient.RequestDurationOkWritesAvg(job, "1m")
 
 		Expect(err).Should(Succeed(), "Failed to read average for all distributor writes with status code 2xx")
-		Expect(avg).Should(BeNumerically("<", benchCfg.Scenarios.HighVolumeWrites.AVG), "avg should not exceed expectation")
+		Expect(avg).Should(BeNumerically("<", scenarioCfg.AVG), "avg should not exceed expectation")
 
 		b.RecordValue("All distributor 2xx Writes avg", avg)
 
