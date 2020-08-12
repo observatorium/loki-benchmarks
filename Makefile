@@ -15,5 +15,5 @@ $(REPORT_DIR):
 	@mkdir -p $(REPORT_DIR)
 
 bench-dev: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR)
-	@TARGET_ENV=dev ./run.sh
+	@TARGET_ENV=development ./run.sh
 .PHONY: bench
