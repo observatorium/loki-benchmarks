@@ -19,6 +19,7 @@ import (
 
 	"github.com/observatorium/loki-benchmarks/internal/config"
 	"github.com/observatorium/loki-benchmarks/internal/metrics"
+	internalreporters "github.com/observatorium/loki-benchmarks/internal/reporters"
 )
 
 var (
@@ -30,8 +31,16 @@ var (
 func TestBenchmarks(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	jr := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Benchmarks Suite", []Reporter{jr})
+	reportDir := os.Getenv("REPORT_DIR")
+	if reportDir == "" {
+		t.FailNow()
+	}
+
+	jr := reporters.NewJUnitReporter(fmt.Sprintf("%s/junit.xml", reportDir))
+	csv := internalreporters.NewCsvReporter(reportDir)
+	gp := internalreporters.NewGnuplotReporter(reportDir)
+
+	RunSpecsWithDefaultAndCustomReporters(t, "Benchmarks Suite", []Reporter{jr, csv, gp})
 }
 
 var _ = BeforeSuite(func() {

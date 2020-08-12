@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/imdario/mergo v0.3.10 // indirect
+	github.com/kennygrant/sanitize v1.2.4
 	github.com/onsi/ginkgo v1.14.0
 	github.com/onsi/gomega v1.10.1
 	github.com/prometheus/client_golang v1.7.1
