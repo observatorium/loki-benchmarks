@@ -13,3 +13,9 @@ metrics:
 
 loki:
   url: http://observatorium-xyz-loki-distributor-http.observatorium.svc.cluster.local:3100/loki/api/v1
+
+scenarios:
+  highVolumeWrites:
+    p99: 0.3
+    p50: 0.2
+    avg: 2.0

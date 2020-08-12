@@ -36,8 +36,19 @@ func (lc *Loki) QueryURL() string {
     return fmt.Sprintf("%s/query", lc.URL)
 }
 
+type HighVolumeWrites struct {
+    P99 float64 `yaml:"p99"`
+    P50 float64 `yaml:"p50"`
+    AVG float64 `yaml:"avg"`
+}
+
+type Scenarios struct {
+    HighVolumeWrites HighVolumeWrites `yaml:"highVolumeWrites"`
+}
+
 type Benchmark struct {
-    Logger  *Logger  `yaml:"logger"`
-    Metrics *Metrics `yaml:"metrics"`
-    Loki    *Loki    `yaml:"loki"`
+    Logger    *Logger    `yaml:"logger"`
+    Metrics   *Metrics   `yaml:"metrics"`
+    Loki      *Loki      `yaml:"loki"`
+    Scenarios *Scenarios `yaml:"scenarios"`
 }
