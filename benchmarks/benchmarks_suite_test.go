@@ -26,6 +26,10 @@ var (
 	benchCfg      *config.Benchmark
 	k8sClient     client.Client
 	metricsClient metrics.Client
+
+	defaultRetry       = 5 * time.Second
+	defaulTimeout      = 30 * time.Second
+	defaltLatchTimeout = 2 * time.Minute
 )
 
 func TestBenchmarks(t *testing.T) {

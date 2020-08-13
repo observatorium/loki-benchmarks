@@ -29,3 +29,26 @@ Query:
 > 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-distributor", method="POST", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-distributor", method="POST", status_code=~"2.*"}[1m])))
 
 ![./All-distributor-2xx-Writes-avg.gnuplot.png](./All-distributor-2xx-Writes-avg.gnuplot.png)
+
+### Scenario 2: High Volume Reads
+
+#### P99
+
+Query:
+> histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-query-frontend", method="POST", status_code=~"2.*"}[1m])))
+
+![./All-query-frontend-2xx-reads-p99.gnuplot.png](./All-query-frontend-2xx-reads-p99.gnuplot.png)
+
+#### P50
+
+Query:
+> histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-query-frontend", method="POST", status_code=~"2.*"}[1m])))
+
+![./All-query-frontend-2xx-reads-p50.gnuplot.png](./All-query-frontend-2xx-reads-p50.gnuplot.png)
+
+#### Average
+
+Query:
+> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-query-frontend", method="POST", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-query-frontend", method="POST", status_code=~"2.*"}[1m])))
+
+![./All-query-frontend-2xx-reads-avg.gnuplot.png](./All-query-frontend-2xx-reads-avg.gnuplot.png)
