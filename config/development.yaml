@@ -32,15 +32,9 @@ scenarios:
       replicas: 2
       query: 'query=sum(rate({component!=""}[1h])) by (level)'
       startThreshold: 1024000
-    p99: 0.3
-    p50: 0.2
-    avg: 2.0
   highVolumeWrites:
     samples:
       interval: "5s"
     writers:
       replicas: 10
       throughput: 100
-    p99: 0.3
-    p50: 0.2
-    avg: 2.0

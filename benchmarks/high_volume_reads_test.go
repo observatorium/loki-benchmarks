@@ -67,26 +67,17 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
         // Record p99 loki_request_duration_seconds_bucket
         p99, err := metricsClient.RequestDurationOkReadsP99(job, "1m")
-
         Expect(err).Should(Succeed(), "Failed to read p50 for all query frontend reads with status code 2xx")
-        Expect(p99).Should(BeNumerically("<", scenarioCfg.P99), "p99 should not exceed expectation")
-
         b.RecordValue("All query frontend 2xx reads p99", p99)
 
         // Record p50 loki_request_duration_seconds_bucket
         p50, err := metricsClient.RequestDurationOkReadsP50(job, "1m")
-
         Expect(err).Should(Succeed(), "Failed to read p50 for all query frontend reads with status code 2xx")
-        Expect(p50).Should(BeNumerically("<", scenarioCfg.P50), "p50 should not exceed expectation")
-
         b.RecordValue("All query frontend 2xx reads p50", p50)
 
         // Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
         avg, err := metricsClient.RequestDurationOkReadsAvg(job, "1m")
-
         Expect(err).Should(Succeed(), "Failed to read average for all query frontend reads with status code 2xx")
-        Expect(avg).Should(BeNumerically("<", scenarioCfg.AVG), "avg should not exceed expectation")
-
         b.RecordValue("All query frontend 2xx reads avg", avg)
     }, 10)
 })
