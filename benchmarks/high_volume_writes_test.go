@@ -43,22 +43,45 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 	})
 
 	Measure("should result in measurements of p99, p50 and avg for all successful write requests to the distributor", func(b Benchmarker) {
+		//
+		// Collect measurements for the distributor
+		//
 		job := benchCfg.Metrics.DistributorJob()
 
 		// Record p99 loki_request_duration_seconds_bucket
 		p99, err := metricsClient.RequestDurationOkWritesP99(job, "1m")
-		Expect(err).Should(Succeed(), "Failed to read p50 for all distributor writes with status code 2xx")
-		b.RecordValue("All distributor 2xx Writes p99", p99)
+		Expect(err).Should(Succeed(), "Failed to read p99 for all distributor writes with status code 2xx")
+		b.RecordValue("All distributor 2xx writes p99", p99)
 
 		// Record p50 loki_request_duration_seconds_bucket
 		p50, err := metricsClient.RequestDurationOkWritesP50(job, "1m")
 		Expect(err).Should(Succeed(), "Failed to read p50 for all distributor writes with status code 2xx")
-		b.RecordValue("All distributor 2xx Writes p50", p50)
+		b.RecordValue("All distributor 2xx writes p50", p50)
 
 		// Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
 		avg, err := metricsClient.RequestDurationOkWritesAvg(job, "1m")
 		Expect(err).Should(Succeed(), "Failed to read average for all distributor writes with status code 2xx")
-		b.RecordValue("All distributor 2xx Writes avg", avg)
+		b.RecordValue("All distributor 2xx writes avg", avg)
+
+		//
+		// Collect measurements for the ingester
+		//
+		job = benchCfg.Metrics.IngesterJob()
+
+		// Record p99 loki_request_duration_seconds_bucket
+		p99, err = metricsClient.RequestDurationOkGrpcPushP99(job, "1m")
+		Expect(err).Should(Succeed(), "Failed to read p99 for all ingester GRPC push with status code 2xx")
+		b.RecordValue("All ingester successful GRPC push p99", p99)
+
+		// Record p50 loki_request_duration_seconds_bucket
+		p50, err = metricsClient.RequestDurationOkGrpcPushP50(job, "1m")
+		Expect(err).Should(Succeed(), "Failed to read p50 for all ingester GRPC push with status code 2xx")
+		b.RecordValue("All ingester successful GRPC push p50", p50)
+
+		// Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
+		avg, err = metricsClient.RequestDurationOkGrpcPushAvg(job, "1m")
+		Expect(err).Should(Succeed(), "Failed to read average for all ingester GRPC push with status code 2xx")
+		b.RecordValue("All ingester successful GRPC push avg", avg)
 	}, 10)
 
 })

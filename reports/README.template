@@ -9,46 +9,121 @@ Generated using profile:
 
 ### Scenario 1: High Volume Writes
 
-#### P99
+#### Component: Distributor
+
+##### P99
 
 Query:
 > histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-distributor", method="POST", status_code=~"2.*"}[1m])))
 
-![./All-distributor-2xx-Writes-p99.gnuplot.png](./All-distributor-2xx-Writes-p99.gnuplot.png)
+![./All-distributor-2xx-writes-p99.gnuplot.png](./All-distributor-2xx-writes-p99.gnuplot.png)
 
-#### P50
+##### P50
 
 Query:
 > histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-distributor", method="POST", status_code=~"2.*"}[1m])))
 
-![./All-distributor-2xx-Writes-p50.gnuplot.png](./All-distributor-2xx-Writes-p50.gnuplot.png)
+![./All-distributor-2xx-writes-p50.gnuplot.png](./All-distributor-2xx-writes-p50.gnuplot.png)
 
-#### Average
+##### Average
 
 Query:
 > 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-distributor", method="POST", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-distributor", method="POST", status_code=~"2.*"}[1m])))
 
-![./All-distributor-2xx-Writes-avg.gnuplot.png](./All-distributor-2xx-Writes-avg.gnuplot.png)
+![./All-distributor-2xx-writes-avg.gnuplot.png](./All-distributor-2xx-writes-avg.gnuplot.png)
+
+#### Component: Ingester
+
+##### P99
+
+Query:
+> histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-ingester", method="gRPC", route="/logproto.Pusher/Push", status_code="success"}[1m])))
+
+![./All-ingester-successful-GRPC-push-p99.gnuplot.png](./All-ingester-successful-GRPC-push-p99.gnuplot.png)
+
+##### P50
+
+Query:
+> histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-ingester", method="gRPC", route="/logproto.Pusher/Push", status_code="success"}[1m])))
+
+![./All-ingester-successful-GRPC-push-p50.gnuplot.png](./All-ingester-successful-GRPC-push-p50.gnuplot.png)
+
+##### Average
+
+Query:
+> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-ingester", method="gRPC", route="/logproto.Pusher/Push", status_code="success"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-ingester", method="gRPC", route="/logproto.Pusher/Push", status_code="success"}[1m])))
+
+![./All-ingester-successful-GRPC-push-avg.gnuplot.png](./All-ingester-successful-GRPC-push-avg.gnuplot.png)
+
+---
 
 ### Scenario 2: High Volume Reads
 
-#### P99
+#### Component: Query Frontend
+
+##### P99
 
 Query:
 > histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-query-frontend", method="POST", status_code=~"2.*"}[1m])))
 
 ![./All-query-frontend-2xx-reads-p99.gnuplot.png](./All-query-frontend-2xx-reads-p99.gnuplot.png)
 
-#### P50
+##### P50
 
 Query:
 > histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-query-frontend", method="POST", status_code=~"2.*"}[1m])))
 
 ![./All-query-frontend-2xx-reads-p50.gnuplot.png](./All-query-frontend-2xx-reads-p50.gnuplot.png)
 
-#### Average
+##### Average
 
 Query:
 > 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-query-frontend", method="POST", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-query-frontend", method="POST", status_code=~"2.*"}[1m])))
 
 ![./All-query-frontend-2xx-reads-avg.gnuplot.png](./All-query-frontend-2xx-reads-avg.gnuplot.png)
+
+#### Component: Querier
+
+##### P99
+
+Query:
+> histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
+
+![./All-querier-2xx-query-range-p99.gnuplot.png](./All-querier-2xx-query-range-p99.gnuplot.png)
+
+##### P50
+
+Query:
+> histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
+
+![./All-querier-2xx-query-range-p50.gnuplot.png](./All-querier-2xx-query-range-p50.gnuplot.png)
+
+##### Average
+
+Query:
+> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
+
+![./All-querier-2xx-query-range-avg.gnuplot.png](./All-querier-2xx-query-range-avg.gnuplot.png)
+
+#### Component: Ingester
+
+##### P99
+
+Query:
+> histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])))
+
+![./All-ingester-successful-query-sample-p99.gnuplot.png](./All-ingester-successful-query-sample-p99.gnuplot.png)
+
+##### P50
+
+Query:
+> histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])))
+
+![./All-ingester-successful-query-sample-p50.gnuplot.png](./All-ingester-successful-query-sample-p50.gnuplot.png)
+
+##### Average
+
+Query:
+> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])))
+
+![./All-ingester-successful-query-sample-avg.gnuplot.png](./All-ingester-successful-query-sample-avg.gnuplot.png)

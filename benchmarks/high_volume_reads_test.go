@@ -63,6 +63,9 @@ var _ = Describe("Scenario: High Volume Reads", func() {
     })
 
     Measure("should result in measurements of p99, p50 and avg for all successful read requests to the query frontend", func(b Benchmarker) {
+        //
+        // Collect measurements for the query frontend
+        //
         job := benchCfg.Metrics.QueryFrontendJob()
 
         // Record p99 loki_request_duration_seconds_bucket
@@ -79,5 +82,45 @@ var _ = Describe("Scenario: High Volume Reads", func() {
         avg, err := metricsClient.RequestDurationOkReadsAvg(job, "1m")
         Expect(err).Should(Succeed(), "Failed to read average for all query frontend reads with status code 2xx")
         b.RecordValue("All query frontend 2xx reads avg", avg)
+
+        //
+        // Collect measurements for the querier
+        //
+        job = benchCfg.Metrics.QuerierJob()
+
+        // Record p99 loki_request_duration_seconds_bucket
+        p99, err = metricsClient.RequestDurationOkQueryRangeP99(job, "1m")
+        Expect(err).Should(Succeed(), "Failed to read p50 for all querier query-range with status code 2xx")
+        b.RecordValue("All querier 2xx query range p99", p99)
+
+        // Record p50 loki_request_duration_seconds_bucket
+        p50, err = metricsClient.RequestDurationOkQueryRangeP50(job, "1m")
+        Expect(err).Should(Succeed(), "Failed to read p50 for all querier query-range with status code 2xx")
+        b.RecordValue("All querier 2xx query range p50", p50)
+
+        // Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
+        avg, err = metricsClient.RequestDurationOkQueryRangeAvg(job, "1m")
+        Expect(err).Should(Succeed(), "Failed to read average for all querier query-range with status code 2xx")
+        b.RecordValue("All querier 2xx query range avg", avg)
+
+        //
+        // Collect measurements for the ingester
+        //
+        job = benchCfg.Metrics.IngesterJob()
+
+        // Record p99 loki_request_duration_seconds_bucket
+        p99, err = metricsClient.RequestDurationOkGrpcQuerySampleP99(job, "1m")
+        Expect(err).Should(Succeed(), "Failed to read p50 for all ingester query sample with status code 2xx")
+        b.RecordValue("All ingester successful query sample p99", p99)
+
+        // Record p50 loki_request_duration_seconds_bucket
+        p50, err = metricsClient.RequestDurationOkGrpcQuerySampleP50(job, "1m")
+        Expect(err).Should(Succeed(), "Failed to read p50 for all ingester reads with status code 2xx")
+        b.RecordValue("All ingester successful query sample p50", p50)
+
+        // Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
+        avg, err = metricsClient.RequestDurationOkGrpcQuerySampleAvg(job, "1m")
+        Expect(err).Should(Succeed(), "Failed to read average for all ingester reads with status code 2xx")
+        b.RecordValue("All ingester successful query sample avg", avg)
     }, 10)
 })

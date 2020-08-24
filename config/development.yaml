@@ -12,9 +12,11 @@ querier:
 
 metrics:
   url: http://127.0.0.1:9090
+  # Align these with ./prometheus/config.yaml
   jobs:
     distributor: loki-distributor
     ingester: loki-ingester
+    querier: loki-querier
     queryFrontend: loki-query-frontend
 
 loki:
