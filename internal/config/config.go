@@ -69,25 +69,15 @@ type Samples struct {
 }
 
 type HighVolumeWrites struct {
-    P99 float64 `yaml:"p99"`
-    P50 float64 `yaml:"p50"`
-    AVG float64 `yaml:"avg"`
-
-    Writers *Writers `yaml:"writers,omitempty"`
+    Samples Samples  `yaml:"samples"`
     Readers *Readers `yaml:"readers,omitempty"`
-
-    Samples Samples `yaml:"samples"`
+    Writers *Writers `yaml:"writers,omitempty"`
 }
 
 type HighVolumeReads struct {
-    P99 float64 `yaml:"p99"`
-    P50 float64 `yaml:"p50"`
-    AVG float64 `yaml:"avg"`
-
-    Writers *Writers `yaml:"writers,omitempty"`
+    Samples Samples  `yaml:"samples"`
     Readers *Readers `yaml:"readers,omitempty"`
-
-    Samples Samples `yaml:"samples"`
+    Writers *Writers `yaml:"writers,omitempty"`
 }
 
 type Scenarios struct {
