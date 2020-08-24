@@ -16,7 +16,7 @@ import (
 func Deploy(c client.Client, cfg *config.Querier, scenarioCfg *config.Readers, url, query string) error {
 
     queryCmd := fmt.Sprintf(
-        `apt-get update && apt-get install -y curl && while true; do curl -H 'X-Scope-OrgID: %s' %s --data-urlencode '%s'; sleep 1; done`,
+        `apt-get update && apt-get install -y curl && while true; do curl -G -s -H 'X-Scope-OrgID: %s' %s --data-urlencode '%s'; sleep 1; done`,
         cfg.TenantID,
         url,
         query,
