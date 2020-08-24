@@ -14,23 +14,23 @@ Generated using profile:
 ##### P99
 
 Query:
-> histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-distributor", method="POST", status_code=~"2.*"}[1m])))
+> histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-distributor", method="POST", route="loki_api_v1_push"", status_code=~"2.*"}[1m])))
 
-![./All-distributor-2xx-writes-p99.gnuplot.png](./All-distributor-2xx-writes-p99.gnuplot.png)
+![./All-distributor-2xx-push-p99.gnuplot.png](./All-distributor-2xx-push-p99.gnuplot.png)
 
 ##### P50
 
 Query:
-> histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-distributor", method="POST", status_code=~"2.*"}[1m])))
+> histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-distributor", method="POST", route="loki_api_v1_push"", status_code=~"2.*"}[1m])))
 
-![./All-distributor-2xx-writes-p50.gnuplot.png](./All-distributor-2xx-writes-p50.gnuplot.png)
+![./All-distributor-2xx-push-p50.gnuplot.png](./All-distributor-2xx-push-p50.gnuplot.png)
 
 ##### Average
 
 Query:
-> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-distributor", method="POST", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-distributor", method="POST", status_code=~"2.*"}[1m])))
+> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-distributor", method="POST", route="loki_api_v1_push"", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-distributor", method="POST", route="loki_api_v1_push"", status_code=~"2.*"}[1m])))
 
-![./All-distributor-2xx-writes-avg.gnuplot.png](./All-distributor-2xx-writes-avg.gnuplot.png)
+![./All-distributor-2xx-push-avg.gnuplot.png](./All-distributor-2xx-push-avg.gnuplot.png)
 
 #### Component: Ingester
 
@@ -64,21 +64,21 @@ Query:
 ##### P99
 
 Query:
-> histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-query-frontend", method="POST", status_code=~"2.*"}[1m])))
+> histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
 
 ![./All-query-frontend-2xx-reads-p99.gnuplot.png](./All-query-frontend-2xx-reads-p99.gnuplot.png)
 
 ##### P50
 
 Query:
-> histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-query-frontend", method="POST", status_code=~"2.*"}[1m])))
+> histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
 
 ![./All-query-frontend-2xx-reads-p50.gnuplot.png](./All-query-frontend-2xx-reads-p50.gnuplot.png)
 
 ##### Average
 
 Query:
-> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-query-frontend", method="POST", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-query-frontend", method="POST", status_code=~"2.*"}[1m])))
+> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
 
 ![./All-query-frontend-2xx-reads-avg.gnuplot.png](./All-query-frontend-2xx-reads-avg.gnuplot.png)
 

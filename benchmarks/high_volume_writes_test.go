@@ -49,19 +49,19 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		job := benchCfg.Metrics.DistributorJob()
 
 		// Record p99 loki_request_duration_seconds_bucket
-		p99, err := metricsClient.RequestDurationOkWritesP99(job, "1m")
-		Expect(err).Should(Succeed(), "Failed to read p99 for all distributor writes with status code 2xx")
-		b.RecordValue("All distributor 2xx writes p99", p99)
+		p99, err := metricsClient.RequestDurationOkPushP99(job, "1m")
+		Expect(err).Should(Succeed(), "Failed to read p99 for all distributor push requests with status code 2xx")
+		b.RecordValue("All distributor 2xx push p99", p99)
 
 		// Record p50 loki_request_duration_seconds_bucket
-		p50, err := metricsClient.RequestDurationOkWritesP50(job, "1m")
-		Expect(err).Should(Succeed(), "Failed to read p50 for all distributor writes with status code 2xx")
-		b.RecordValue("All distributor 2xx writes p50", p50)
+		p50, err := metricsClient.RequestDurationOkPushP50(job, "1m")
+		Expect(err).Should(Succeed(), "Failed to read p50 for all distributor push requests with status code 2xx")
+		b.RecordValue("All distributor 2xx push p50", p50)
 
 		// Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
-		avg, err := metricsClient.RequestDurationOkWritesAvg(job, "1m")
-		Expect(err).Should(Succeed(), "Failed to read average for all distributor writes with status code 2xx")
-		b.RecordValue("All distributor 2xx writes avg", avg)
+		avg, err := metricsClient.RequestDurationOkPushAvg(job, "1m")
+		Expect(err).Should(Succeed(), "Failed to read average for all distributor push requests with status code 2xx")
+		b.RecordValue("All distributor 2xx push avg", avg)
 
 		//
 		// Collect measurements for the ingester

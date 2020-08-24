@@ -69,17 +69,17 @@ var _ = Describe("Scenario: High Volume Reads", func() {
         job := benchCfg.Metrics.QueryFrontendJob()
 
         // Record p99 loki_request_duration_seconds_bucket
-        p99, err := metricsClient.RequestDurationOkReadsP99(job, "1m")
+        p99, err := metricsClient.RequestDurationOkQueryRangeP99(job, "1m")
         Expect(err).Should(Succeed(), "Failed to read p50 for all query frontend reads with status code 2xx")
         b.RecordValue("All query frontend 2xx reads p99", p99)
 
         // Record p50 loki_request_duration_seconds_bucket
-        p50, err := metricsClient.RequestDurationOkReadsP50(job, "1m")
+        p50, err := metricsClient.RequestDurationOkQueryRangeP50(job, "1m")
         Expect(err).Should(Succeed(), "Failed to read p50 for all query frontend reads with status code 2xx")
         b.RecordValue("All query frontend 2xx reads p50", p50)
 
         // Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
-        avg, err := metricsClient.RequestDurationOkReadsAvg(job, "1m")
+        avg, err := metricsClient.RequestDurationOkQueryRangeAvg(job, "1m")
         Expect(err).Should(Succeed(), "Failed to read average for all query frontend reads with status code 2xx")
         b.RecordValue("All query frontend 2xx reads avg", avg)
 
