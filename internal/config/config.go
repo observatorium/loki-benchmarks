@@ -32,6 +32,22 @@ func (m *Metrics) DistributorJob() string {
     return job
 }
 
+func (m *Metrics) IngesterJob() string {
+    job, ok := m.Jobs["ingester"]
+    if !ok {
+        return ""
+    }
+    return job
+}
+
+func (m *Metrics) QuerierJob() string {
+    job, ok := m.Jobs["querier"]
+    if !ok {
+        return ""
+    }
+    return job
+}
+
 func (m *Metrics) QueryFrontendJob() string {
     job, ok := m.Jobs["queryFrontend"]
     if !ok {

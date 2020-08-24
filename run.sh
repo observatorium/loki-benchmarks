@@ -4,6 +4,7 @@ set -eou pipefail
 
 OBS_NS="observatorium"
 OBS_LOKI_QF="observatorium-xyz-loki-query-frontend"
+OBS_LOKI_QR="observatorium-xyz-loki-querier"
 OBS_LOKI_DST="observatorium-xyz-loki-distributor"
 OBS_LOKI_ING="observatorium-xyz-loki-ingester"
 
@@ -48,6 +49,14 @@ forward_ports() {
     echo -e "\nSetup port-forward '3102:3100' to loki ingester frontend"
     (
         ./kubectl -n "$OBS_NS" port-forward "svc/$OBS_LOKI_ING-http" 3102:3100;
+    ) &
+
+    echo -e "\nWaiting for available querier deployment"
+    ./kubectl -n "$OBS_NS" wait --for=condition=Available "deploy/$OBS_LOKI_ING" --timeout=120s
+
+    echo -e "\nSetup port-forward '3103:3100' to loki ingester frontend"
+    (
+        ./kubectl -n "$OBS_NS" port-forward "svc/$OBS_LOKI_QR-http" 3103:3100;
     ) &
 
     popd
