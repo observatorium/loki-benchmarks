@@ -20,22 +20,22 @@ type Client interface {
     DistributorBytesReceivedTotal() (float64, error)
 
     // HTTP API
-    RequestDurationOkQueryRangeAvg(job, duration string) (float64, error)
-    RequestDurationOkQueryRangeP50(job, duration string) (float64, error)
-    RequestDurationOkQueryRangeP99(job, duration string) (float64, error)
+    RequestDurationOkQueryRangeAvg(job string, duration model.Duration) (float64, error)
+    RequestDurationOkQueryRangeP50(job string, duration model.Duration) (float64, error)
+    RequestDurationOkQueryRangeP99(job string, duration model.Duration) (float64, error)
 
-    RequestDurationOkPushAvg(job, duration string) (float64, error)
-    RequestDurationOkPushP50(job, duration string) (float64, error)
-    RequestDurationOkPushP99(job, duration string) (float64, error)
+    RequestDurationOkPushAvg(job string, duration model.Duration) (float64, error)
+    RequestDurationOkPushP50(job string, duration model.Duration) (float64, error)
+    RequestDurationOkPushP99(job string, duration model.Duration) (float64, error)
 
     // GRPC API
-    RequestDurationOkGrpcQuerySampleAvg(job, duration string) (float64, error)
-    RequestDurationOkGrpcQuerySampleP50(job, duration string) (float64, error)
-    RequestDurationOkGrpcQuerySampleP99(job, duration string) (float64, error)
+    RequestDurationOkGrpcQuerySampleAvg(job string, duration model.Duration) (float64, error)
+    RequestDurationOkGrpcQuerySampleP50(job string, duration model.Duration) (float64, error)
+    RequestDurationOkGrpcQuerySampleP99(job string, duration model.Duration) (float64, error)
 
-    RequestDurationOkGrpcPushAvg(job, duration string) (float64, error)
-    RequestDurationOkGrpcPushP50(job, duration string) (float64, error)
-    RequestDurationOkGrpcPushP99(job, duration string) (float64, error)
+    RequestDurationOkGrpcPushAvg(job string, duration model.Duration) (float64, error)
+    RequestDurationOkGrpcPushP50(job string, duration model.Duration) (float64, error)
+    RequestDurationOkGrpcPushP99(job string, duration model.Duration) (float64, error)
 }
 
 type client struct {
@@ -55,7 +55,7 @@ func NewClient(url string, timeout time.Duration) (Client, error) {
     }, nil
 }
 
-func (c *client) requestDurationAvg(job, method, route, code, duration string) (float64, error) {
+func (c *client) requestDurationAvg(job, method, route, code string, duration model.Duration) (float64, error) {
     query := fmt.Sprintf(
         `100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="%s", method="%s", route="%s", status_code=~"%s"}[%s])) / sum by (job) (rate(loki_request_duration_seconds_count{job="%s", method="%s", route="%s", status_code=~"%s"}[%s])))`,
         job, method, route, code, duration,
@@ -65,7 +65,7 @@ func (c *client) requestDurationAvg(job, method, route, code, duration string) (
     return c.executeScalarQuery(query)
 }
 
-func (c *client) requestDurationQuantile(job, method, route, code, duration string, percentile int) (float64, error) {
+func (c *client) requestDurationQuantile(job, method, route, code string, duration model.Duration, percentile int) (float64, error) {
     query := fmt.Sprintf(
         `histogram_quantile(0.%d, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="%s", method="%s", route="%s", status_code=~"%s"}[%s])))`,
         percentile, job, method, route, code, duration,

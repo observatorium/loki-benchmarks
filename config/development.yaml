@@ -27,6 +27,8 @@ scenarios:
   highVolumeReads:
     samples:
       interval: "5s"
+      range: "1m"
+      total: 10
     writers:
       replicas: 10
       throughput: 100
@@ -37,6 +39,8 @@ scenarios:
   highVolumeWrites:
     samples:
       interval: "5s"
+      range: "1m"
+      total: 10
     writers:
       replicas: 10
       throughput: 100
