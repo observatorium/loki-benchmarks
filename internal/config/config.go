@@ -3,6 +3,8 @@ package config
 import (
     "fmt"
     "time"
+
+    "github.com/prometheus/common/model"
 )
 
 type Logger struct {
@@ -81,7 +83,9 @@ type Readers struct {
 }
 
 type Samples struct {
-    Interval time.Duration `yaml:"interval"`
+    Interval time.Duration  `yaml:"interval"`
+    Range    model.Duration `yaml:"range"`
+    Total    int            `yaml:"total"`
 }
 
 type HighVolumeWrites struct {
