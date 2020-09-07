@@ -1,12 +1,12 @@
 logger:
   name: logger
-  namespace: default
+  namespace: telemeter
   image: quay.io/periklis/logger:latest
   tenantId: observatorium
 
 querier:
   name: querier
-  namespace: default
+  namespace: telemeter
   image: docker.io/curlimages/curl:7.72.0
   tenantId: observatorium
 
@@ -20,8 +20,8 @@ metrics:
     queryFrontend: loki-query-frontend
 
 loki:
-  distributor: http://observatorium-xyz-loki-distributor-http.observatorium.svc.cluster.local:3100
-  queryFrontend: http://observatorium-xyz-loki-query-frontend-http.observatorium.svc.cluster.local:3100
+  distributor: http://observatorium-loki-distributor-http.telemeter.svc.cluster.local:3100
+  queryFrontend: http://observatorium-loki-query-frontend-http.telemeter.svc.cluster.local:3100
 
 scenarios:
   highVolumeReads:

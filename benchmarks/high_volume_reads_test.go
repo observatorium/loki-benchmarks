@@ -38,7 +38,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
             Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
             // Wait until we ingested enough logs based on startThreshold
-            err = latch.WaitUntilGreaterOrEqual(metricsClient, metrics.DistributorBytesReceivedTotal, readerCfg.StartThreshold, defaltLatchTimeout)
+            err = latch.WaitUntilGreaterOrEqual(metricsClient, metrics.DistributorBytesReceivedTotal, readerCfg.StartThreshold, defaultLatchTimeout)
             Expect(err).Should(Succeed(), "Failed to wait until latch activated")
 
             // Undeploy logger to assert only read traffic
