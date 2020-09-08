@@ -2,13 +2,22 @@
 
 set -eou pipefail
 
-OBS_NS="observatorium"
-OBS_LOKI_QF="observatorium-xyz-loki-query-frontend"
-OBS_LOKI_QR="observatorium-xyz-loki-querier"
-OBS_LOKI_DST="observatorium-xyz-loki-distributor"
-OBS_LOKI_ING="observatorium-xyz-loki-ingester"
+TARGET_ENV="${TARGET_ENV:-development}"
 
-trap 'undeploy_observatorium;kill $(jobs -p); exit 0' EXIT
+OBS_NS="${OBS_NS:-observatorium}"
+OBS_LOKI_QF="${OBS_LOKI_QF:-observatorium-xyz-loki-query-frontend}"
+OBS_LOKI_QR="${OBS_LOKI_QR:-observatorium-xyz-loki-querier}"
+OBS_LOKI_DST="${OBS_LOKI_DST:-observatorium-xyz-loki-distributor}"
+OBS_LOKI_ING="${OBS_LOKI_ING:-observatorium-xyz-loki-ingester}"
+
+trap 'tear_down;kill $(jobs -p); exit 0' EXIT
+
+tear_down() {
+    if [[ "$TARGET_ENV" = "development" ]]; then
+        echo -e "\nUndeploying observatorium dev manifests"
+        undeploy_observatorium
+    fi
+}
 
 deploy_observatorium() {
     pushd ../deployments || exit 1
@@ -25,41 +34,37 @@ undeploy_observatorium() {
 }
 
 forward_ports() {
-    pushd ../deployments/ || exit 1
-
     echo -e "\nWaiting for available loki query frontend deployment"
-    ./kubectl -n "$OBS_NS" wait --for=condition=Available "deploy/$OBS_LOKI_QF" --timeout=120s
+    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QF" --timeout=300s
 
     echo -e "\nSetup port-forward '3100:3100' to loki query frontend"
     (
-        ./kubectl -n "$OBS_NS" port-forward "svc/$OBS_LOKI_QF-http" 3100:3100;
+        $KUBECTL -n "$OBS_NS" port-forward "svc/$OBS_LOKI_QF-http" 3100:3100;
     ) &
 
     echo -e "\nWaiting for available loki distributor deployment"
-    ./kubectl -n "$OBS_NS" wait --for=condition=Available "deploy/$OBS_LOKI_DST" --timeout=120s
+    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_DST" --timeout=300s
 
-    echo -e "\nSetup port-forward '3101:3100' to loki distributor frontend"
+    echo -e "\nSetup port-forward '3101:3100' to loki distributor"
     (
-        ./kubectl -n "$OBS_NS" port-forward "svc/$OBS_LOKI_DST-http" 3101:3100;
+        $KUBECTL -n "$OBS_NS" port-forward "svc/$OBS_LOKI_DST-http" 3101:3100;
     ) &
 
     echo -e "\nWaiting for available loki ingester deployment"
-    ./kubectl -n "$OBS_NS" wait --for=condition=Available "deploy/$OBS_LOKI_ING" --timeout=120s
+    $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_ING" --timeout=300s || $KUBECTL -n observatorium describe pod "$OBS_LOKI_ING-0"
 
-    echo -e "\nSetup port-forward '3102:3100' to loki ingester frontend"
+    echo -e "\nSetup port-forward '3102:3100' to loki ingester"
     (
-        ./kubectl -n "$OBS_NS" port-forward "svc/$OBS_LOKI_ING-http" 3102:3100;
+        $KUBECTL -n "$OBS_NS" port-forward "svc/$OBS_LOKI_ING-http" 3102:3100;
     ) &
 
     echo -e "\nWaiting for available querier deployment"
-    ./kubectl -n "$OBS_NS" wait --for=condition=Available "deploy/$OBS_LOKI_ING" --timeout=120s
+    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QR" --timeout=300s
 
-    echo -e "\nSetup port-forward '3103:3100' to loki ingester frontend"
+    echo -e "\nSetup port-forward '3103:3100' to loki querier"
     (
-        ./kubectl -n "$OBS_NS" port-forward "svc/$OBS_LOKI_QR-http" 3103:3100;
+        $KUBECTL -n "$OBS_NS" port-forward "svc/$OBS_LOKI_QR-http" 3103:3100;
     ) &
-
-    popd
 }
 
 scrape_loki_metrics() {
@@ -83,8 +88,10 @@ generate_report() {
 
 
 bench() {
-    echo "Deploying observatorium dev manifests"
-    deploy_observatorium
+    if [[ "$TARGET_ENV" = "development" ]]; then
+        echo "Deploying observatorium dev manifests"
+        deploy_observatorium
+    fi
 
     echo -e "\nFoward ports to loki deployments"
     forward_ports
