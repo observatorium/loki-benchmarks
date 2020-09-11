@@ -51,7 +51,7 @@ forward_ports() {
     ) &
 
     echo -e "\nWaiting for available loki ingester deployment"
-    $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_ING" --timeout=300s || $KUBECTL -n observatorium describe pod "$OBS_LOKI_ING-0"
+    $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_ING" --timeout=300s
 
     echo -e "\nSetup port-forward '3102:3100' to loki ingester"
     (
@@ -59,7 +59,7 @@ forward_ports() {
     ) &
 
     echo -e "\nWaiting for available querier deployment"
-    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QR" --timeout=300s
+    $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_QR" --timeout=300s
 
     echo -e "\nSetup port-forward '3103:3100' to loki querier"
     (
