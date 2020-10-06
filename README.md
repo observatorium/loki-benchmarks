@@ -9,9 +9,28 @@ This suite consists of benchmarks tests for the following Loki scenarios. Each s
 
 ## How to add new benchmarks to this suite
 
-### Prerequisites
+### Prerequisites: deploying loki
+
+- Option 1:
 
 * Checkout a copy of the [observatorium/deployments](https://github.com/observatorium/deployments) repository and place it as a sibling directory to the `loki-benchmarks` repository.
+
+- Option 2:
+
+* Deploy loki on a local docker host, e.g.,
+
+```
+    wget https://raw.githubusercontent.com/grafana/loki/v1.6.1/production/docker-compose.yaml
+    docker-compose -f docker-compose.yaml up -d
+```
+
+*TODO:* Add the link to deploy loki-ha once the ha comose PR gets accepted.
+
+### Configuration
+
+* Create a configuration for prometheus to scrape the measurments from the loki servers. The
+default configuration is `./config/prometheus/config.yaml`.
+* Create a configuration for the benchmark (env `TARGET_ENV`). For example, if the `TARGET_ENV=developement`, the configuration file `./config/development.yaml` will be used for the benchmark run. **Note** that setting the `networkID` is required for docker-based deployment.
 
 ### Developing
 
@@ -23,6 +42,12 @@ This suite consists of benchmarks tests for the following Loki scenarios. Each s
 
 ```
 $ make bench-dev
+```
+
+or if you benchmark against a local docker deployment:
+
+```
+$ make bench-docker
 ```
 
 Example output:

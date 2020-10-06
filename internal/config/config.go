@@ -4,14 +4,74 @@ import (
 	"fmt"
 	"time"
 
+	dockerclient "github.com/docker/docker/client"
 	"github.com/prometheus/common/model"
+	"k8s.io/client-go/kubernetes/scheme"
+	k8sclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	k8sconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
 )
+
+type Client interface {
+	Name() string
+}
+
+type K8sClient struct {
+	Client k8sclient.Client
+}
+
+type LocalClient struct {
+	Client *dockerclient.Client
+}
+
+func NewClient(name string) (Client, error) {
+	switch name {
+	case "k8s":
+		cfg, err := k8sconfig.GetConfig()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to get kubeconfig")
+		}
+		mapper, err := apiutil.NewDynamicRESTMapper(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to create new dynamic REST mapper")
+		}
+		opts := k8sclient.Options{Scheme: scheme.Scheme, Mapper: mapper}
+		cli, err := k8sclient.New(cfg, opts)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to create new k8s client")
+		}
+		return &K8sClient{
+			Client: cli,
+		}, nil
+	case "docker":
+		cli, err := dockerclient.NewClientWithOpts(dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation())
+		if err != nil {
+			return nil, fmt.Errorf("Failed to create docker client: %v", err)
+		}
+		return &LocalClient{
+			Client: cli,
+		}, nil
+	default:
+		return nil, fmt.Errorf("Unsupported client type %s", name)
+	}
+}
+
+func (*K8sClient) Name() string {
+	return "k8s"
+}
+
+func (lc *LocalClient) Name() string {
+	return "docker"
+}
 
 type Logger struct {
 	Name      string `yaml:"name"`
 	Namespace string `yaml:"namespace"`
 	Image     string `yaml:"image"`
 	TenantID  string `yaml:"tenantId"`
+	NetworkID string `yaml:"networkId"`
+	// TODO: ID is used only for removing docker container
+	ID string
 }
 
 type Querier struct {
@@ -19,6 +79,8 @@ type Querier struct {
 	Namespace string `yaml:"namespace"`
 	Image     string `yaml:"image"`
 	TenantID  string `yaml:"tenantId"`
+	NetworkID string `yaml:"networkId"`
+	ID        string
 }
 
 type Metrics struct {

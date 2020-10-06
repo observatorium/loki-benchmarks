@@ -1,0 +1,36 @@
+logger:
+  name: logger
+  namespace: default
+  image: quay.io/periklis/logger:latest
+  tenantId: observatorium
+  networkId: d1f2197e6b1c
+
+querier:
+  name: querier
+  namespace: default
+  image: docker.io/curlimages/curl:7.72.0
+  tenantId: observatorium
+  networkId: d1f2197e6b1c
+
+metrics:
+  url: http://127.0.0.1:9090
+  # Align these with ./prometheus/config.yaml
+  jobs:
+    distributor: loki-distributor
+    ingester: loki-ingester
+    querier: loki-querier
+    queryFrontend: loki-query-frontend
+
+loki:
+  distributor: http://loki:3100
+  queryFrontend: http://loki:3100
+
+scenarios:
+  highVolumeWrites:
+      samples:
+        interval: "2s"
+        range: "1m"
+        total: 2
+      writers:
+        replicas: 10
+        throughput: 100

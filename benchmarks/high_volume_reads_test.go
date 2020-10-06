@@ -31,26 +31,30 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 			readerCfg := scenarioCfg.Readers
 
 			// Deploy the logger to ingest logs
-			err := logger.Deploy(k8sClient, benchCfg.Logger, writerCfg, benchCfg.Loki.PushURL())
+			err := logger.Deploy(client, benchCfg.Logger, writerCfg, benchCfg.Loki.PushURL())
 			Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-			err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Logger.Namespace, benchCfg.Logger.Name, writerCfg.Replicas, defaultRetry, defaulTimeout)
-			Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
+			if cli, ok := client.(*config.K8sClient); ok {
+				err = k8s.WaitForReadyDeployment(cli.Client, benchCfg.Logger.Namespace, benchCfg.Logger.Name, writerCfg.Replicas, defaultRetry, defaulTimeout)
+				Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
+			}
 
 			// Wait until we ingested enough logs based on startThreshold
 			err = latch.WaitUntilGreaterOrEqual(metricsClient, metrics.DistributorBytesReceivedTotal, readerCfg.StartThreshold, defaultLatchTimeout)
 			Expect(err).Should(Succeed(), "Failed to wait until latch activated")
 
 			// Undeploy logger to assert only read traffic
-			err = logger.Undeploy(k8sClient, benchCfg.Logger)
+			err = logger.Undeploy(client, benchCfg.Logger)
 			Expect(err).Should(Succeed(), "Failed to delete logger deployment")
 
 			// Deploy the query clients
-			err = querier.Deploy(k8sClient, benchCfg.Querier, readerCfg, benchCfg.Loki.QueryURL(), readerCfg.Query)
+			err = querier.Deploy(client, benchCfg.Querier, readerCfg, benchCfg.Loki.QueryURL(), readerCfg.Query)
 			Expect(err).Should(Succeed(), "Failed to deploy querier")
 
-			err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Querier.Namespace, benchCfg.Querier.Name, readerCfg.Replicas, defaultRetry, defaulTimeout)
-			Expect(err).Should(Succeed(), "Failed to wait for ready querier deployment")
+			if cli, ok := client.(*config.K8sClient); ok {
+				err = k8s.WaitForReadyDeployment(cli.Client, benchCfg.Querier.Namespace, benchCfg.Querier.Name, readerCfg.Replicas, defaultRetry, defaulTimeout)
+				Expect(err).Should(Succeed(), "Failed to wait for ready querier deployment")
+			}
 		})
 
 		time.Sleep(scenarioCfg.Samples.Interval)
@@ -58,7 +62,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
 	AfterEach(func() {
 		afterOnce.Do(func() {
-			Expect(querier.Undeploy(k8sClient, benchCfg.Querier)).Should(Succeed(), "Failed to delete querier deployment")
+			Expect(querier.Undeploy(client, benchCfg.Querier)).Should(Succeed(), "Failed to delete querier deployment")
 		})
 	})
 

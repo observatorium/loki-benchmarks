@@ -9,6 +9,7 @@ OBS_LOKI_QF="${OBS_LOKI_QF:-observatorium-xyz-loki-query-frontend}"
 OBS_LOKI_QR="${OBS_LOKI_QR:-observatorium-xyz-loki-querier}"
 OBS_LOKI_DST="${OBS_LOKI_DST:-observatorium-xyz-loki-distributor}"
 OBS_LOKI_ING="${OBS_LOKI_ING:-observatorium-xyz-loki-ingester}"
+PROMETHEUS_CONFIG="${PROMETHEUS_CONFIG:-./config/prometheus/config.yaml}"
 
 trap 'tear_down;kill $(jobs -p); exit 0' EXIT
 
@@ -68,9 +69,10 @@ forward_ports() {
 }
 
 scrape_loki_metrics() {
+
     source .bingo/variables.env
     (
-        $PROMETHEUS --log.level=warn --config.file=./config/prometheus/config.yaml --storage.tsdb.path="$(mktemp -d)";
+        $PROMETHEUS --log.level=warn --config.file=${PROMETHEUS_CONFIG} --storage.tsdb.path="$(mktemp -d)";
     ) &
 }
 
@@ -91,11 +93,11 @@ bench() {
     if [[ "$TARGET_ENV" = "development" ]]; then
         echo "Deploying observatorium dev manifests"
         deploy_observatorium
+
+        echo -e "\nFoward ports to loki deployments"
+        forward_ports
     fi
-
-    echo -e "\nFoward ports to loki deployments"
-    forward_ports
-
+    
     echo -e "\n Scrape metrics from Loki deployments"
     scrape_loki_metrics
 

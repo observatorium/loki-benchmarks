@@ -3,10 +3,19 @@ module github.com/observatorium/loki-benchmarks
 go 1.14
 
 require (
+	github.com/Microsoft/go-winio v0.4.14 // indirect
+	github.com/containerd/containerd v1.4.1 // indirect
+	github.com/docker/distribution v2.7.1+incompatible // indirect
+	github.com/docker/docker v17.12.0-ce-rc1.0.20201005212101-1b34a49fef45+incompatible
+	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/imdario/mergo v0.3.10 // indirect
 	github.com/kennygrant/sanitize v1.2.4
+	github.com/moby/term v0.0.0-20200915141129-7f0af18e79f2 // indirect
+	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/onsi/ginkgo v1.14.0
 	github.com/onsi/gomega v1.10.1
+	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/common v0.10.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect

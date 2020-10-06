@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/observatorium/loki-benchmarks/internal/config"
+	"github.com/observatorium/loki-benchmarks/internal/docker"
 	"github.com/observatorium/loki-benchmarks/internal/k8s"
 	"github.com/observatorium/loki-benchmarks/internal/logger"
 )
@@ -26,19 +27,26 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		beforeOnce.Do(func() {
 			writerCfg := scenarioCfg.Writers
 
-			err := logger.Deploy(k8sClient, benchCfg.Logger, writerCfg, benchCfg.Loki.PushURL())
+			err := logger.Deploy(client, benchCfg.Logger, writerCfg, benchCfg.Loki.PushURL())
 			Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-			err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Logger.Namespace, benchCfg.Logger.Name, writerCfg.Replicas, defaultRetry, defaulTimeout)
-			Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
+			// TODO: Refactor to client method
+			if cli, ok := client.(*config.K8sClient); ok {
+				err = k8s.WaitForReadyDeployment(cli.Client, benchCfg.Logger.Namespace, benchCfg.Logger.Name, writerCfg.Replicas, defaultRetry, defaulTimeout)
+				Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
+			} else if cli, ok := client.(*config.LocalClient); ok {
+				err = docker.WaitForReadyDeployment(*cli.Client, benchCfg.Logger.ID, defaulTimeout)
+				Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
+			}
 		})
 
 		time.Sleep(scenarioCfg.Samples.Interval)
 	})
 
+	//FXIME: aftereach undeploys after one round which is unexpected behavior
 	AfterEach(func() {
 		afterOnce.Do(func() {
-			Expect(logger.Undeploy(k8sClient, benchCfg.Logger)).Should(Succeed(), "Failed to delete logger deployment")
+			Expect(logger.Undeploy(client, benchCfg.Logger)).Should(Succeed(), "Failed to delete logger deployment")
 		})
 	})
 

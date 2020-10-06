@@ -12,11 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
 
-	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
-	k8sconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
-
 	"github.com/observatorium/loki-benchmarks/internal/config"
 	"github.com/observatorium/loki-benchmarks/internal/metrics"
 	internalreporters "github.com/observatorium/loki-benchmarks/internal/reporters"
@@ -24,7 +19,7 @@ import (
 
 var (
 	benchCfg      *config.Benchmark
-	k8sClient     client.Client
+	client        config.Client
 	metricsClient metrics.Client
 
 	reportDir string
@@ -65,21 +60,20 @@ func init() {
 		panic("Failed to create metrics client")
 	}
 
-	// Create kubernetes client for deployments
-	cfg, err := k8sconfig.GetConfig()
-	if err != nil {
-		panic("Failed to read kubeconfig")
-	}
-
-	mapper, err := apiutil.NewDynamicRESTMapper(cfg)
-	if err != nil {
-		panic("Failed to create new dynamic REST mapper")
-	}
-
-	opts := client.Options{Scheme: scheme.Scheme, Mapper: mapper}
-	k8sClient, err = client.New(cfg, opts)
-	if err != nil {
-		panic("Failed to create new k8s client")
+	// Read target environment to setup the deployer client
+	switch cType := os.Getenv("CLIENT_TYPE"); cType {
+	case "k8s":
+		client, err = config.NewClient("k8s")
+		if err != nil {
+			panic(err)
+		}
+	case "docker":
+		client, err = config.NewClient("docker")
+		if err != nil {
+			panic(err)
+		}
+	default:
+		panic("Unknown client type")
 	}
 }
 
