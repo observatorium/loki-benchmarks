@@ -26,8 +26,8 @@ loki:
 scenarios:
   highVolumeReads:
     samples:
-      interval: "5s"
-      range: "1m"
+      interval: "30s"
+      range: "300s"
       total: 10
     writers:
       replicas: 10
@@ -38,8 +38,8 @@ scenarios:
       startThreshold: 1024000
   highVolumeWrites:
     samples:
-      interval: "5s"
-      range: "1m"
+      interval: "30s"
+      range: "300s"
       total: 10
     writers:
       replicas: 10

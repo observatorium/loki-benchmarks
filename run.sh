@@ -96,7 +96,7 @@ bench() {
     echo -e "\nFoward ports to loki deployments"
     forward_ports
 
-    echo -e "\n Scrape metrics from Loki deployments"
+    echo -e "\nScrape metrics from Loki deployments"
     scrape_loki_metrics
 
     source .bingo/variables.env
