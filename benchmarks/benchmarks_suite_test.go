@@ -48,12 +48,14 @@ func init() {
 
 	// Read config for benchmark tests
 	filename := fmt.Sprintf("../config/%s.yaml", env)
+
 	yamlFile, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(fmt.Sprintf("Failed reading benchmark configuration file: %s", filename))
 	}
 
 	benchCfg = &config.Benchmark{}
+
 	err = yaml.Unmarshal(yamlFile, benchCfg)
 	if err != nil {
 		panic("Failed to marshal benchmark configuration file")
@@ -77,6 +79,7 @@ func init() {
 	}
 
 	opts := client.Options{Scheme: scheme.Scheme, Mapper: mapper}
+
 	k8sClient, err = client.New(cfg, opts)
 	if err != nil {
 		panic("Failed to create new k8s client")

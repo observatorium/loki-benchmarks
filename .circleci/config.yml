@@ -1,5 +1,14 @@
 version: 2
 jobs:
+  lint:
+    machine:
+      image: ubuntu-1604:202007-01
+      working_directory: ~/loki-benchmarks
+    steps:
+      - checkout
+      - run:
+          name: lint
+          command: make lint
   build:
     machine:
       image: ubuntu-1604:202007-01

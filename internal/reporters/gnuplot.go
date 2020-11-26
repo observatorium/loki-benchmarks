@@ -44,24 +44,25 @@ func (cr *gnuplotReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 			"set timefmt '%s'\n" +
 			"set datafile separator ','\n"
 
-		file.WriteString(header)
-		file.WriteString("$DATA << EOD\n")
+		_, _ = file.WriteString(header)
+		_, _ = file.WriteString("$DATA << EOD\n")
 
 		ts := time.Now().Unix()
 
 		var records []string
 		for _, res := range value.Results {
 			records = append(records, fmt.Sprintf("%d,%f\n", ts, res))
-			ts = ts + 1
+			ts++
 		}
 
 		for _, record := range records {
-			file.WriteString(record)
+			_, _ = file.WriteString(record)
 		}
-		file.WriteString("EOD\n")
+
+		_, _ = file.WriteString("EOD\n")
 
 		plot := fmt.Sprintf("plot $DATA using 1:2 with lines lw 1 title '%s'\n", value.Name)
-		file.WriteString(plot)
+		_, _ = file.WriteString(plot)
 	}
 }
 

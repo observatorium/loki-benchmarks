@@ -31,6 +31,7 @@ func (m *Metrics) DistributorJob() string {
 	if !ok {
 		return ""
 	}
+
 	return job
 }
 
@@ -39,6 +40,7 @@ func (m *Metrics) IngesterJob() string {
 	if !ok {
 		return ""
 	}
+
 	return job
 }
 
@@ -47,6 +49,7 @@ func (m *Metrics) QuerierJob() string {
 	if !ok {
 		return ""
 	}
+
 	return job
 }
 
@@ -55,6 +58,7 @@ func (m *Metrics) QueryFrontendJob() string {
 	if !ok {
 		return ""
 	}
+
 	return job
 }
 
