@@ -16,17 +16,17 @@ import (
 	"github.com/observatorium/loki-benchmarks/internal/querier"
 )
 
-var _ = Describe("Scenario: High Volume Reads", func() {
+var _ = Describe("Scenario: High Volume Aggregate", func() {
 	var (
 		beforeOnce  sync.Once
 		afterOnce   sync.Once
-		scenarioCfg config.HighVolumeReads
+		scenarioCfg config.HighVolumeAggregate
 	)
 
 	BeforeEach(func() {
-		scenarioCfg = benchCfg.Scenarios.HighVolumeReads
+		scenarioCfg = benchCfg.Scenarios.HighVolumeAggregate
 		if !scenarioCfg.Enabled {
-			Skip("High Volumes Reads Benchmark not enabled!")
+			Skip("High Volume Aggregate Benchmark not enabled!")
 
 			return
 		}
@@ -52,7 +52,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
 			// Deploy the query clients
 			for id, query := range readerCfg.Queries {
-				err = querier.Deploy(k8sClient, benchCfg.Querier, readerCfg, benchCfg.Loki.QueryRangeURL(), id, query)
+				err = querier.Deploy(k8sClient, benchCfg.Querier, readerCfg, benchCfg.Loki.QueryURL(), id, query)
 				Expect(err).Should(Succeed(), "Failed to deploy querier")
 			}
 
@@ -76,7 +76,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 		})
 	})
 
-	Measure("should result in measurements of p99, p50 and avg for all successful read requests to the query frontend", func(b Benchmarker) {
+	Measure("should result in measurements of p99, p50 and avg for all successful aggregate requests to the query frontend", func(b Benchmarker) {
 		defaultRange := scenarioCfg.Samples.Range
 
 		//
@@ -85,19 +85,19 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 		job := benchCfg.Metrics.QueryFrontendJob()
 
 		// Record p99 loki_request_duration_seconds_bucket
-		p99, err := metricsClient.RequestDurationOkQueryRangeP99(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p50 for all query frontend reads with status code 2xx")
-		b.RecordValue("All query frontend 2xx reads p99", p99)
+		p99, err := metricsClient.RequestDurationOkQueryP99(job, defaultRange)
+		Expect(err).Should(Succeed(), "Failed to read p99 for all query frontend aggregate reads with status code 2xx")
+		b.RecordValue("All query frontend 2xx aggregate reads p99", p99)
 
 		// Record p50 loki_request_duration_seconds_bucket
-		p50, err := metricsClient.RequestDurationOkQueryRangeP50(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p50 for all query frontend reads with status code 2xx")
-		b.RecordValue("All query frontend 2xx reads p50", p50)
+		p50, err := metricsClient.RequestDurationOkQueryP50(job, defaultRange)
+		Expect(err).Should(Succeed(), "Failed to read p50 for all query frontend aggregate reads with status code 2xx")
+		b.RecordValue("All query frontend 2xx aggregate reads p50", p50)
 
 		// Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
-		avg, err := metricsClient.RequestDurationOkQueryRangeAvg(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read average for all query frontend reads with status code 2xx")
-		b.RecordValue("All query frontend 2xx reads avg", avg)
+		avg, err := metricsClient.RequestDurationOkQueryAvg(job, defaultRange)
+		Expect(err).Should(Succeed(), "Failed to read average for all query frontend aggregate reads with status code 2xx")
+		b.RecordValue("All query frontend 2xx aggregate reads avg", avg)
 
 		//
 		// Collect measurements for the querier
@@ -105,19 +105,19 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 		job = benchCfg.Metrics.QuerierJob()
 
 		// Record p99 loki_request_duration_seconds_bucket
-		p99, err = metricsClient.RequestDurationOkQueryRangeP99(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p50 for all querier query-range with status code 2xx")
-		b.RecordValue("All querier 2xx query range p99", p99)
+		p99, err = metricsClient.RequestDurationOkQueryP99(job, defaultRange)
+		Expect(err).Should(Succeed(), "Failed to read p99 for all querier query with status code 2xx")
+		b.RecordValue("All querier 2xx query aggregate p99", p99)
 
 		// Record p50 loki_request_duration_seconds_bucket
-		p50, err = metricsClient.RequestDurationOkQueryRangeP50(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p50 for all querier query-range with status code 2xx")
-		b.RecordValue("All querier 2xx query range p50", p50)
+		p50, err = metricsClient.RequestDurationOkQueryP50(job, defaultRange)
+		Expect(err).Should(Succeed(), "Failed to read p50 for all querier query with status code 2xx")
+		b.RecordValue("All querier 2xx query aggregate p50", p50)
 
 		// Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
-		avg, err = metricsClient.RequestDurationOkQueryRangeAvg(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read average for all querier query-range with status code 2xx")
-		b.RecordValue("All querier 2xx query range avg", avg)
+		avg, err = metricsClient.RequestDurationOkQueryAvg(job, defaultRange)
+		Expect(err).Should(Succeed(), "Failed to read average for all querier query with status code 2xx")
+		b.RecordValue("All querier 2xx query aggregate avg", avg)
 
 		//
 		// Collect measurements for the ingester
@@ -127,16 +127,16 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 		// Record p99 loki_request_duration_seconds_bucket
 		p99, err = metricsClient.RequestDurationOkGrpcQuerySampleP99(job, defaultRange)
 		Expect(err).Should(Succeed(), "Failed to read p50 for all ingester query sample with status code 2xx")
-		b.RecordValue("All ingester successful query sample p99", p99)
+		b.RecordValue("All ingester successful query sample aggregate p99", p99)
 
 		// Record p50 loki_request_duration_seconds_bucket
 		p50, err = metricsClient.RequestDurationOkGrpcQuerySampleP50(job, defaultRange)
 		Expect(err).Should(Succeed(), "Failed to read p50 for all ingester reads with status code 2xx")
-		b.RecordValue("All ingester successful query sample p50", p50)
+		b.RecordValue("All ingester successful query sample aggregate p50", p50)
 
 		// Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
 		avg, err = metricsClient.RequestDurationOkGrpcQuerySampleAvg(job, defaultRange)
 		Expect(err).Should(Succeed(), "Failed to read average for all ingester reads with status code 2xx")
-		b.RecordValue("All ingester successful query sample avg", avg)
-	}, benchCfg.Scenarios.HighVolumeReads.Samples.Total)
+		b.RecordValue("All ingester successful query sample aggregate avg", avg)
+	}, benchCfg.Scenarios.HighVolumeAggregate.Samples.Total)
 })
