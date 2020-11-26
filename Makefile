@@ -11,7 +11,10 @@ export REPORT_DIR?=$(CURDIR)/reports/$(shell date +%Y-%m-%d-%H-%M-%S)
 
 export KUBECTL=$(shell command -v kubectl)
 
-all: bench-dev
+all: lint bench-dev
+
+lint: $(GOLANGCI_LINT)
+	@$(GOLANGCI_LINT) run
 
 $(REPORT_DIR):
 	@mkdir -p $(REPORT_DIR)

@@ -45,10 +45,11 @@ func (cr *csvReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 		ts := time.Now().Unix()
 
 		var records [][]string
+
 		for _, res := range value.Results {
 			values := []string{fmt.Sprintf("%d", ts), fmt.Sprintf("%f", res)}
 			records = append(records, values)
-			ts = ts + 1
+			ts++
 		}
 
 		for _, record := range records {

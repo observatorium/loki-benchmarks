@@ -14,7 +14,6 @@ import (
 )
 
 func Deploy(c client.Client, cfg *config.Querier, scenarioCfg *config.Readers, url, query string) error {
-
 	queryCmd := fmt.Sprintf(
 		`while true; do curl -G -s -H 'X-Scope-OrgID: %s' %s --data-urlencode '%s'; sleep 1; done`,
 		cfg.TenantID,

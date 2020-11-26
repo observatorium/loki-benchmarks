@@ -28,6 +28,12 @@ $(GINKGO): .bingo/ginkgo.mod
 	@echo "(re)installing $(GOBIN)/ginkgo-v1.14.0"
 	@cd .bingo && $(GO) build -mod=mod -modfile=ginkgo.mod -o=$(GOBIN)/ginkgo-v1.14.0 "github.com/onsi/ginkgo/ginkgo"
 
+GOLANGCI_LINT := $(GOBIN)/golangci-lint-v1.33.0
+$(GOLANGCI_LINT): .bingo/golangci-lint.mod
+	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
+	@echo "(re)installing $(GOBIN)/golangci-lint-v1.33.0"
+	@cd .bingo && $(GO) build -mod=mod -modfile=golangci-lint.mod -o=$(GOBIN)/golangci-lint-v1.33.0 "github.com/golangci/golangci-lint/cmd/golangci-lint"
+
 PROMETHEUS := $(GOBIN)/prometheus-v2.4.3+incompatible
 $(PROMETHEUS): .bingo/prometheus.mod
 	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
