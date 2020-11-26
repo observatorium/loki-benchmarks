@@ -16,7 +16,6 @@ import (
 )
 
 var _ = Describe("Scenario: High Volume Reads", func() {
-
 	var (
 		beforeOnce  sync.Once
 		afterOnce   sync.Once
@@ -25,6 +24,11 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
 	BeforeEach(func() {
 		scenarioCfg = benchCfg.Scenarios.HighVolumeReads
+		if !scenarioCfg.Enabled {
+			Skip("High Volumes Reads Benchmark not enabled!")
+
+			return
+		}
 
 		beforeOnce.Do(func() {
 			writerCfg := scenarioCfg.Writers
@@ -124,6 +128,5 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 		avg, err = metricsClient.RequestDurationOkGrpcQuerySampleAvg(job, defaultRange)
 		Expect(err).Should(Succeed(), "Failed to read average for all ingester reads with status code 2xx")
 		b.RecordValue("All ingester successful query sample avg", avg)
-
 	}, benchCfg.Scenarios.HighVolumeReads.Samples.Total)
 })

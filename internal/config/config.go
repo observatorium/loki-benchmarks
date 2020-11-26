@@ -93,12 +93,14 @@ type Samples struct {
 }
 
 type HighVolumeWrites struct {
+	Enabled bool     `yaml:"enabled"`
 	Samples Samples  `yaml:"samples"`
 	Readers *Readers `yaml:"readers,omitempty"`
 	Writers *Writers `yaml:"writers,omitempty"`
 }
 
 type HighVolumeReads struct {
+	Enabled bool     `yaml:"enabled"`
 	Samples Samples  `yaml:"samples"`
 	Readers *Readers `yaml:"readers,omitempty"`
 	Writers *Writers `yaml:"writers,omitempty"`

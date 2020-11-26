@@ -25,6 +25,7 @@ loki:
 
 scenarios:
   highVolumeReads:
+    enabled: true
     samples:
       interval: "30s"
       range: "300s"
@@ -37,6 +38,7 @@ scenarios:
       query: 'query=sum(rate({component!=""}[1h])) by (level)'
       startThreshold: 1024000
   highVolumeWrites:
+    enabled: true
     samples:
       interval: "30s"
       range: "300s"
