@@ -13,7 +13,6 @@ import (
 )
 
 var _ = Describe("Scenario: High Volume Writes", func() {
-
 	var (
 		beforeOnce  sync.Once
 		afterOnce   sync.Once
@@ -22,6 +21,11 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 
 	BeforeEach(func() {
 		scenarioCfg = benchCfg.Scenarios.HighVolumeWrites
+		if !scenarioCfg.Enabled {
+			Skip("High Volumes Writes Benchmark not enabled!")
+
+			return
+		}
 
 		beforeOnce.Do(func() {
 			writerCfg := scenarioCfg.Writers
@@ -84,7 +88,5 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		avg, err = metricsClient.RequestDurationOkGrpcPushAvg(job, defaultRange)
 		Expect(err).Should(Succeed(), "Failed to read average for all ingester GRPC push with status code 2xx")
 		b.RecordValue("All ingester successful GRPC push avg", avg)
-
 	}, benchCfg.Scenarios.HighVolumeWrites.Samples.Total)
-
 })
