@@ -24,7 +24,7 @@ func WaitUntilGreaterOrEqual(m metrics.Client, lm metrics.MetricType, threshold 
 		case metrics.DistributorBytesReceivedTotal:
 			sample, err = m.DistributorBytesReceivedTotal()
 			if err != nil {
-				return err
+				continue
 			}
 		default:
 			return fmt.Errorf("unsupported latch metric: %s", string(lm))

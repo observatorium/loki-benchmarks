@@ -72,6 +72,10 @@ func (lc *Loki) PushURL() string {
 }
 
 func (lc *Loki) QueryURL() string {
+	return fmt.Sprintf("%s/loki/api/v1/query", lc.QueryFrontend)
+}
+
+func (lc *Loki) QueryRangeURL() string {
 	return fmt.Sprintf("%s/loki/api/v1/query_range", lc.QueryFrontend)
 }
 
@@ -81,9 +85,9 @@ type Writers struct {
 }
 
 type Readers struct {
-	Replicas       int32   `yaml:"replicas"`
-	Query          string  `yaml:"query"`
-	StartThreshold float64 `yaml:"startThreshold"`
+	Replicas       int32             `yaml:"replicas"`
+	Queries        map[string]string `yaml:"queries"`
+	StartThreshold float64           `yaml:"startThreshold"`
 }
 
 type Samples struct {
@@ -106,9 +110,17 @@ type HighVolumeReads struct {
 	Writers *Writers `yaml:"writers,omitempty"`
 }
 
+type HighVolumeAggregate struct {
+	Enabled bool     `yaml:"enabled"`
+	Samples Samples  `yaml:"samples"`
+	Readers *Readers `yaml:"readers,omitempty"`
+	Writers *Writers `yaml:"writers,omitempty"`
+}
+
 type Scenarios struct {
-	HighVolumeWrites HighVolumeWrites `yaml:"highVolumeWrites"`
-	HighVolumeReads  HighVolumeReads  `yaml:"highVolumeReads"`
+	HighVolumeWrites    HighVolumeWrites    `yaml:"highVolumeWrites"`
+	HighVolumeReads     HighVolumeReads     `yaml:"highVolumeReads"`
+	HighVolumeAggregate HighVolumeAggregate `yaml:"highVolumeAggregate"`
 }
 
 type Benchmark struct {

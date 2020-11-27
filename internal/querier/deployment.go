@@ -3,6 +3,7 @@ package querier
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -13,7 +14,11 @@ import (
 	"github.com/observatorium/loki-benchmarks/internal/config"
 )
 
-func Deploy(c client.Client, cfg *config.Querier, scenarioCfg *config.Readers, url, query string) error {
+func DeploymentName(cfg *config.Querier, id string) string {
+	return cfg.Name + "-" + strings.ToLower(id)
+}
+
+func Deploy(c client.Client, cfg *config.Querier, scenarioCfg *config.Readers, url, id, query string) error {
 	queryCmd := fmt.Sprintf(
 		`while true; do curl -G -s -H 'X-Scope-OrgID: %s' %s --data-urlencode '%s'; sleep 1; done`,
 		cfg.TenantID,
@@ -21,9 +26,11 @@ func Deploy(c client.Client, cfg *config.Querier, scenarioCfg *config.Readers, u
 		query,
 	)
 
+	name := DeploymentName(cfg, id)
+
 	obj := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cfg.Name,
+			Name:      name,
 			Namespace: cfg.Namespace,
 			Labels: map[string]string{
 				"app": "loki-benchmarks-querier",
@@ -45,7 +52,7 @@ func Deploy(c client.Client, cfg *config.Querier, scenarioCfg *config.Readers, u
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:    cfg.Name,
+							Name:    name,
 							Image:   cfg.Image,
 							Command: []string{"/bin/sh"},
 							Args: []string{
@@ -62,10 +69,10 @@ func Deploy(c client.Client, cfg *config.Querier, scenarioCfg *config.Readers, u
 	return c.Create(context.TODO(), obj, &client.CreateOptions{})
 }
 
-func Undeploy(c client.Client, cfg *config.Querier) error {
+func Undeploy(c client.Client, cfg *config.Querier, id string) error {
 	obj := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cfg.Name,
+			Name:      DeploymentName(cfg, id),
 			Namespace: cfg.Namespace,
 		},
 	}

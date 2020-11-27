@@ -20,6 +20,10 @@ type Client interface {
 	DistributorBytesReceivedTotal() (float64, error)
 
 	// HTTP API
+	RequestDurationOkQueryAvg(job string, duration model.Duration) (float64, error)
+	RequestDurationOkQueryP50(job string, duration model.Duration) (float64, error)
+	RequestDurationOkQueryP99(job string, duration model.Duration) (float64, error)
+
 	RequestDurationOkQueryRangeAvg(job string, duration model.Duration) (float64, error)
 	RequestDurationOkQueryRangeP50(job string, duration model.Duration) (float64, error)
 	RequestDurationOkQueryRangeP99(job string, duration model.Duration) (float64, error)
