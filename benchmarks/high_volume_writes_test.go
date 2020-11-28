@@ -54,6 +54,11 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		//
 		job := benchCfg.Metrics.DistributorJob()
 
+		// Record Reads QPS
+		qps, err := metricsClient.RequestWritesQPS(job, defaultRange)
+		Expect(err).Should(Succeed(), "Failed to read QPS for all distributor push with status code 2xx")
+		b.RecordValue("All distributor 2xx push QPS", qps)
+
 		// Record p99 loki_request_duration_seconds_bucket
 		p99, err := metricsClient.RequestDurationOkPushP99(job, defaultRange)
 		Expect(err).Should(Succeed(), "Failed to read p99 for all distributor push requests with status code 2xx")
@@ -73,6 +78,15 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		// Collect measurements for the ingester
 		//
 		job = benchCfg.Metrics.IngesterJob()
+
+		// Record Writes QPS
+		qps, err = metricsClient.RequestWritesGrpcQPS(job, defaultRange)
+		Expect(err).Should(Succeed(), "Failed to read QPS for all ingester GRPC push with status code 2xx")
+		b.RecordValue("All ingester successful GRPC push QPS", qps)
+
+		// Record BoltDB Shipper Writes QPS
+		qps, _ = metricsClient.RequestBoltDBShipperWritesQPS(job, defaultRange)
+		b.RecordValue("All boltdb shipper successful writes QPS", qps)
 
 		// Record p99 loki_request_duration_seconds_bucket
 		p99, err = metricsClient.RequestDurationOkGrpcPushP99(job, defaultRange)

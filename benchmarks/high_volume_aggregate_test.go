@@ -84,6 +84,11 @@ var _ = Describe("Scenario: High Volume Aggregate", func() {
 		//
 		job := benchCfg.Metrics.QueryFrontendJob()
 
+		// Record Reads QPS
+		qps, err := metricsClient.RequestReadsQPS(job, defaultRange)
+		Expect(err).Should(Succeed(), "Failed to read QPS for all query frontend aggregates with status code 2xx")
+		b.RecordValue("All query frontend 2xx aggregates QPS", qps)
+
 		// Record p99 loki_request_duration_seconds_bucket
 		p99, err := metricsClient.RequestDurationOkQueryP99(job, defaultRange)
 		Expect(err).Should(Succeed(), "Failed to read p99 for all query frontend aggregate reads with status code 2xx")
@@ -104,6 +109,10 @@ var _ = Describe("Scenario: High Volume Aggregate", func() {
 		//
 		job = benchCfg.Metrics.QuerierJob()
 
+		qps, err = metricsClient.RequestReadsQPS(job, defaultRange)
+		Expect(err).Should(Succeed(), "Failed to read QPS for all querier aggregates with status code 2xx")
+		b.RecordValue("All querier 2xx aggregates QPS", qps)
+
 		// Record p99 loki_request_duration_seconds_bucket
 		p99, err = metricsClient.RequestDurationOkQueryP99(job, defaultRange)
 		Expect(err).Should(Succeed(), "Failed to read p99 for all querier query with status code 2xx")
@@ -123,6 +132,15 @@ var _ = Describe("Scenario: High Volume Aggregate", func() {
 		// Collect measurements for the ingester
 		//
 		job = benchCfg.Metrics.IngesterJob()
+
+		// Record Reads QPS
+		qps, err = metricsClient.RequestReadsGrpcQPS(job, defaultRange)
+		Expect(err).Should(Succeed(), "Failed to read QPS for all ingester aggregates with status code 2xx")
+		b.RecordValue("All ingester successful aggregates QPS", qps)
+
+		// Record BoltDB Shipper Reads QPS
+		qps, _ = metricsClient.RequestBoltDBShipperReadsQPS(job, defaultRange)
+		b.RecordValue("All boltdb shipper successful aggregates QPS", qps)
 
 		// Record p99 loki_request_duration_seconds_bucket
 		p99, err = metricsClient.RequestDurationOkGrpcQuerySampleP99(job, defaultRange)

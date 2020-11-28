@@ -32,6 +32,9 @@ type Client interface {
 	RequestDurationOkPushP50(job string, duration model.Duration) (float64, error)
 	RequestDurationOkPushP99(job string, duration model.Duration) (float64, error)
 
+	RequestReadsQPS(job string, duration model.Duration) (float64, error)
+	RequestWritesQPS(job string, duration model.Duration) (float64, error)
+
 	// GRPC API
 	RequestDurationOkGrpcQuerySampleAvg(job string, duration model.Duration) (float64, error)
 	RequestDurationOkGrpcQuerySampleP50(job string, duration model.Duration) (float64, error)
@@ -40,6 +43,13 @@ type Client interface {
 	RequestDurationOkGrpcPushAvg(job string, duration model.Duration) (float64, error)
 	RequestDurationOkGrpcPushP50(job string, duration model.Duration) (float64, error)
 	RequestDurationOkGrpcPushP99(job string, duration model.Duration) (float64, error)
+
+	RequestReadsGrpcQPS(job string, duration model.Duration) (float64, error)
+	RequestWritesGrpcQPS(job string, duration model.Duration) (float64, error)
+
+	// Store API
+	RequestBoltDBShipperReadsQPS(job string, duration model.Duration) (float64, error)
+	RequestBoltDBShipperWritesQPS(job string, duration model.Duration) (float64, error)
 }
 
 type client struct {
@@ -73,6 +83,24 @@ func (c *client) requestDurationQuantile(job, method, route, code string, durati
 	query := fmt.Sprintf(
 		`histogram_quantile(0.%d, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="%s", method="%s", route="%s", status_code=~"%s"}[%s])))`,
 		percentile, job, method, route, code, duration,
+	)
+
+	return c.executeScalarQuery(query)
+}
+
+func (c *client) requestQPS(job, route, code string, duration model.Duration) (float64, error) {
+	query := fmt.Sprintf(
+		`sum(rate(loki_request_duration_seconds_count{job="%s", route=~"%s", status_code=~"%s"}[%s]))`,
+		job, route, code, duration,
+	)
+
+	return c.executeScalarQuery(query)
+}
+
+func (c *client) requestBoltDBShipperQPS(job, operation, code string, duration model.Duration) (float64, error) {
+	query := fmt.Sprintf(
+		`sum(rate(loki_request_duration_seconds_count{job="%s", operation="%s", status_code=~"%s"}[%s]))`,
+		job, operation, code, duration,
 	)
 
 	return c.executeScalarQuery(query)

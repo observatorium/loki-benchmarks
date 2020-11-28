@@ -2,53 +2,118 @@
 
 This document contains baseline benchmark results for Observatorium Loki under synthetic load.
 
+## Table of Contents
+
+- [Benchmark Profile](#benchmark-profile)
+- [Scenario 1: High Volume Writes](#scenario-1-high-volume-writes)
+  - [Component Distributor](#component-distributor-push)
+    - [QPS](#qps-distributor-push)
+    - [Latency](#latency-distributor-push)
+  - [Component Ingester](#component-ingester-push)
+    - [QPS Ingester](#qps-ingester-push)
+    - [QPS BoltDB Shipper](#qps-boltdb-shipper-push)
+    - [Latency](#latency-distributor-push)
+- [Scenario 2: High Volume Reads](#scenario-2-high-volume-reads)
+  - [Component Query Frontend](#component-query-frontend-reads)
+    - [QPS](#qps-query-frontend-reads)
+    - [Latency](#latency-query-frontend-reads)
+  - [Component Querier](#component-querier-reads)
+    - [QPS](#qps-querier-reads)
+    - [Latency](#latency-querier-reads)
+  - [Component Ingester](#component-ingester-reads)
+    - [QPS Ingester](#qps-ingester-reads)
+    - [QPS BoltDB Shipper](#qps-boltdb-shipper-reads)
+    - [Latency](#latency-ingester-reads)
+- [Scenario 3: High Volume Aggregates](#scenario-3-high-volume-aggregates)
+  - [Component Query Frontend](#component-query-frontend-aggregates)
+    - [QPS](#qps-query-frontend-aggregates)
+    - [Latency](#latency-query-frontend-aggregates)
+  - [Component Querier](#component-querier-aggregates)
+    - [QPS](#qps-querier-aggregates)
+    - [Latency](#latency-querier-aggregates)
+  - [Component Ingester](#component-ingester-aggregates)
+    - [QPS Ingester](#qps-ingester-aggregates)
+    - [QPS BoltDB Shipper](#qps-boltdb-shipper-aggregates)
+    - [Latency](#latency-ingester-aggregates)
+
+---
+
+## Benchmark Profile
+
 Generated using profile:
 [embedmd]:# (../../config/{{TARGET_ENV}}.yaml)
+
+---
 
 ## Results
 
 ### Scenario 1: High Volume Writes
 
-#### Component: Distributor
+#### Component: Distributor Push
 
-##### P99
+##### QPS: Distributor Push
+
+Query:
+> sum(rate(loki_request_duration_seconds_count{job="loki-distributor", route=".*", status_code=~"2.*"}[1m]))
+
+![./All-distributor-2xx-push-QPS.gnuplot.png](./All-distributor-2xx-push-QPS.gnuplot.png)
+
+##### Latency: Distributor Push
+
+###### P99
 
 Query:
 > histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-distributor", method="POST", route="loki_api_v1_push"", status_code=~"2.*"}[1m])))
 
 ![./All-distributor-2xx-push-p99.gnuplot.png](./All-distributor-2xx-push-p99.gnuplot.png)
 
-##### P50
+###### P50
 
 Query:
 > histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-distributor", method="POST", route="loki_api_v1_push"", status_code=~"2.*"}[1m])))
 
 ![./All-distributor-2xx-push-p50.gnuplot.png](./All-distributor-2xx-push-p50.gnuplot.png)
 
-##### Average
+###### Average
 
 Query:
-> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-distributor", method="POST", route="loki_api_v1_push"", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-distributor", method="POST", route="loki_api_v1_push"", status_code=~"2.*"}[1m])))
+> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-distributor", method="POST", route="loki_api_v1_push", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-distributor", method="POST", route="loki_api_v1_push", status_code=~"2.*"}[1m])))
 
 ![./All-distributor-2xx-push-avg.gnuplot.png](./All-distributor-2xx-push-avg.gnuplot.png)
 
-#### Component: Ingester
+#### Component: Ingester Push
 
-##### P99
+##### QPS: Ingester Push
+
+Query:
+> sum(rate(loki_request_duration_seconds_count{job="loki-ingester", route="/logproto.Pusher/Push", status_code=~"success"}[1m]))
+
+![./All-ingester-successful-GRPC-push-QPS.gnuplot.png](./All-ingester-successful-GRPC-push-QPS.gnuplot.png)
+
+##### QPS: BoltDB Shipper Push
+
+Query:
+> sum(rate(loki_request_duration_seconds_count{job="loki-ingester", operation="WRITE", status_code=~"success"}[1m]))
+
+![./All-boltdb-shipper-successful-writes-QPS.gnuplot.png](./All-boltdb-shipper-successful-writes-QPS.gnuplot.png)
+
+##### Latency: Ingester Push
+
+###### P99
 
 Query:
 > histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-ingester", method="gRPC", route="/logproto.Pusher/Push", status_code="success"}[1m])))
 
 ![./All-ingester-successful-GRPC-push-p99.gnuplot.png](./All-ingester-successful-GRPC-push-p99.gnuplot.png)
 
-##### P50
+###### P50
 
 Query:
 > histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-ingester", method="gRPC", route="/logproto.Pusher/Push", status_code="success"}[1m])))
 
 ![./All-ingester-successful-GRPC-push-p50.gnuplot.png](./All-ingester-successful-GRPC-push-p50.gnuplot.png)
 
-##### Average
+###### Average
 
 Query:
 > 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-ingester", method="gRPC", route="/logproto.Pusher/Push", status_code="success"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-ingester", method="gRPC", route="/logproto.Pusher/Push", status_code="success"}[1m])))
@@ -59,69 +124,103 @@ Query:
 
 ### Scenario 2: High Volume Reads
 
-#### Component: Query Frontend
+#### Component: Query Frontend Reads
 
-##### P99
+##### QPS: Query Frontend Reads
+
+Query:
+> sum(rate(loki_request_duration_seconds_count{job="loki-query-frontend", route="loki_api_v1_series|api_prom_series|api_prom_query|api_prom_label|api_prom_label_name_values|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_name_values", status_code=~"2.*"}[1m]))
+
+![./All-query-frontend-2xx-reads-QPS.gnuplot.png](./All-query-frontend-2xx-reads-QPS.gnuplot.png)
+
+##### Latency: Query Frontend Reads
+
+###### P99
 
 Query:
 > histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
 
 ![./All-query-frontend-2xx-reads-p99.gnuplot.png](./All-query-frontend-2xx-reads-p99.gnuplot.png)
 
-##### P50
+###### P50
 
 Query:
 > histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
 
 ![./All-query-frontend-2xx-reads-p50.gnuplot.png](./All-query-frontend-2xx-reads-p50.gnuplot.png)
 
-##### Average
+###### Average
 
 Query:
 > 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
 
 ![./All-query-frontend-2xx-reads-avg.gnuplot.png](./All-query-frontend-2xx-reads-avg.gnuplot.png)
 
-#### Component: Querier
+#### Component: Querier Reads
 
-##### P99
+##### QPS: Querier Reads
+
+Query:
+> sum(rate(loki_request_duration_seconds_count{job="loki-querier", route="loki_api_v1_series|api_prom_series|api_prom_query|api_prom_label|api_prom_label_name_values|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_name_values", status_code=~"2.*"}[1m]))
+
+![./All-querier-2xx-reads-QPS.gnuplot.png](./All-querier-2xx-reads-QPS.gnuplot.png)
+
+##### Latency: Querier Reads
+
+###### P99
 
 Query:
 > histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
 
 ![./All-querier-2xx-query-range-p99.gnuplot.png](./All-querier-2xx-query-range-p99.gnuplot.png)
 
-##### P50
+###### P50
 
 Query:
 > histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
 
 ![./All-querier-2xx-query-range-p50.gnuplot.png](./All-querier-2xx-query-range-p50.gnuplot.png)
 
-##### Average
+###### Average
 
 Query:
 > 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
 
 ![./All-querier-2xx-query-range-avg.gnuplot.png](./All-querier-2xx-query-range-avg.gnuplot.png)
 
-#### Component: Ingester
+#### Component: Ingester Reads
 
-##### P99
+##### QPS: Ingester Reads
+
+Query:
+> sum(rate(loki_request_duration_seconds_count{job="loki-ingester", route="/logproto.Querier/Query|/logproto.Querier/QuerySample|/logproto.Querier/Label|/logproto.Querier/Series", status_code=~"success"}[1m]))
+
+![./All-ingester-successful-reads-QPS.gnuplot.png](./All-ingester-successful-reads-QPS.gnuplot.png)
+
+##### QPS: BoltDB Shipper Reads
+
+Query:
+> sum(rate(loki_request_duration_seconds_count{job="loki-ingester", operation="QUERY", status_code=~"success"}[1m]))
+
+![./All-boltdb-shipper-successful-reads-QPS.gnuplot.png](./All-boltdb-shipper-successful-reads-QPS.gnuplot.png)
+
+##### Latency: Ingester Reads
+
+###### P99
 
 Query:
 > histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])))
 
 ![./All-ingester-successful-query-sample-p99.gnuplot.png](./All-ingester-successful-query-sample-p99.gnuplot.png)
 
-##### P50
+###### P50
 
 Query:
 > histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])))
 
 ![./All-ingester-successful-query-sample-p50.gnuplot.png](./All-ingester-successful-query-sample-p50.gnuplot.png)
 
-##### Average
+###### Average
 
 Query:
 > 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])))
@@ -130,71 +229,105 @@ Query:
 
 ---
 
-### Scenario 3: High Volume Aggregate
+### Scenario 3: High Volume Aggregates
 
-#### Component: Query Frontend
+#### Component: Query Frontend Aggregates
 
-##### P99
+##### QPS: Query Frontend Aggregates
+
+Query:
+> sum(rate(loki_request_duration_seconds_count{job="loki-query-frontend", route="loki_api_v1_series|api_prom_series|api_prom_query|api_prom_label|api_prom_label_name_values|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_name_values", status_code=~"2.*"}[1m]))
+
+![./All-query-frontend-2xx-aggregates-QPS.gnuplot.png](./All-query-frontend-2xx-aggregates-QPS.gnuplot.png)
+
+##### Latency: Query Frontend Aggregates
+
+###### P99
 
 Query:
 > histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-query-frontend", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])))
 
 ![./All-query-frontend-2xx-aggregate-reads-p99.gnuplot.png](./All-query-frontend-2xx-aggregate-reads-p99.gnuplot.png)
 
-##### P50
+###### P50
 
 Query:
 > histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-query-frontend", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])))
 
 ![./All-query-frontend-2xx-aggregate-reads-p50.gnuplot.png](./All-query-frontend-2xx-aggregate-reads-p50.gnuplot.png)
 
-##### Average
+###### Average
 
 Query:
 > 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-query-frontend", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-query-frontend", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])))
 
 ![./All-query-frontend-2xx-aggregate-reads-avg.gnuplot.png](./All-query-frontend-2xx-aggregate-reads-avg.gnuplot.png)
 
-#### Component: Querier
+#### Component: Querier Aggregates
 
-##### P99
+##### QPS: Querier Aggregates
+
+Query:
+> sum(rate(loki_request_duration_seconds_count{job="loki-querier", route="loki_api_v1_series|api_prom_series|api_prom_query|api_prom_label|api_prom_label_name_values|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_name_values", status_code=~"2.*"}[1m]))
+
+![./All-querier-2xx-aggregates-QPS.gnuplot.png](./All-querier-2xx-aggregates-QPS.gnuplot.png)
+
+##### Latency: Querier Aggregates
+
+###### P99
 
 Query:
 > histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-querier", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])))
 
 ![./All-querier-2xx-query-aggregate-p99.gnuplot.png](./All-querier-2xx-query-aggregate-p99.gnuplot.png)
 
-##### P50
+###### P50
 
 Query:
 > histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-querier", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])))
 
 ![./All-querier-2xx-query-aggregate-p50.gnuplot.png](./All-querier-2xx-query-aggregate-p50.gnuplot.png)
 
-##### Average
+###### Average
 
 Query:
 > 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-querier", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-querier", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])))
 
 ![./All-querier-2xx-query-aggregate-avg.gnuplot.png](./All-querier-2xx-query-aggregate-avg.gnuplot.png)
 
-#### Component: Ingester
+#### Component: Ingester Aggregates
 
-##### P99
+##### QPS: Ingester Aggregates
+
+Query:
+> sum(rate(loki_request_duration_seconds_count{job="loki-ingester", route="/logproto.Querier/Query|/logproto.Querier/QuerySample|/logproto.Querier/Label|/logproto.Querier/Series", status_code=~"success"}[1m]))
+
+![./All-ingester-successful-aggregates-QPS.gnuplot.png](./All-ingester-successful-aggregates-QPS.gnuplot.png)
+
+##### QPS: BoltDB Shipper Aggregates
+
+Query:
+> sum(rate(loki_request_duration_seconds_count{job="loki-ingester", operation="QUERY", status_code=~"success"}[1m]))
+
+![./All-boltdb-shipper-successful-aggregates-QPS.gnuplot.png](./All-boltdb-shipper-successful-aggregates-QPS.gnuplot.png)
+
+##### Latency: Ingester Aggregates
+
+###### P99
 
 Query:
 > histogram_quantile(0.99, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])))
 
 ![./All-ingester-successful-query-sample-aggregate-p99.gnuplot.png](./All-ingester-successful-query-sample-aggregate-p99.gnuplot.png)
 
-##### P50
+###### P50
 
 Query:
 > histogram_quantile(0.50, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])))
 
 ![./All-ingester-successful-query-sample-aggregate-p50.gnuplot.png](./All-ingester-successful-query-sample-aggregate-p50.gnuplot.png)
 
-##### Average
+###### Average
 
 Query:
 > 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])))
