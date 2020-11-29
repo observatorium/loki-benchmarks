@@ -117,10 +117,18 @@ type HighVolumeAggregate struct {
 	Writers *Writers `yaml:"writers,omitempty"`
 }
 
+type LogsBasedDashboard struct {
+	Enabled bool     `yaml:"enabled"`
+	Samples Samples  `yaml:"samples"`
+	Readers *Readers `yaml:"readers,omitempty"`
+	Writers *Writers `yaml:"writers,omitempty"`
+}
+
 type Scenarios struct {
 	HighVolumeWrites    HighVolumeWrites    `yaml:"highVolumeWrites"`
 	HighVolumeReads     HighVolumeReads     `yaml:"highVolumeReads"`
 	HighVolumeAggregate HighVolumeAggregate `yaml:"highVolumeAggregate"`
+	LogsBasedDashboard  LogsBasedDashboard  `yaml:"logsBasedDashboard"`
 }
 
 type Benchmark struct {
