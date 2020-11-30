@@ -63,3 +63,24 @@ scenarios:
         countOverTime: 'query=count_over_time({component!=""}[1h])'
         bytesOverTime: 'query=bytes_over_time({component!=""}[1h])'
       startThreshold: 1024000
+  logsBasedDashboard:
+    enabled: true
+    samples:
+      interval: "30s"
+      range: "300s"
+      total: 10
+    writers:
+      replicas: 10
+      throughput: 100
+    readers:
+      replicas: 1
+      queries:
+        sumRateByLevel: 'query=sum(rate({component!=""}[1m])) by (level)'
+        devopsend: 'query=sum(rate({component="devopsend"}[1m])) by (level)'
+        fullstackend: 'query=sum(rate({component="fullstackend"}[1m])) by (level)'
+        frontend: 'query=sum(rate({component="frontend"}[1m])) by (level)'
+        backend: 'query=sum(rate({component="backend"}[1m])) by (level)'
+        allpanics: 'query=sum(rate({msg=~"panic.*"}[1m]))'
+        countpanics: 'query=count_over_time({msg=~"panic.*"}[5m])'
+        topTenErrors: 'query=topk(10, sum(rate({component!="", level="error"}[1h])) by (component))'
+      startThreshold: 1024000
