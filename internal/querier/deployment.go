@@ -20,7 +20,7 @@ func DeploymentName(cfg *config.Querier, id string) string {
 
 func Deploy(c client.Client, cfg *config.Querier, scenarioCfg *config.Readers, url, id, query string) error {
 	queryCmd := fmt.Sprintf(
-		`while true; do curl -G -s -H 'X-Scope-OrgID: %s' %s --data-urlencode '%s'; sleep 1; done`,
+		`while :; do curl -G -o /dev/null -w '%%{response_code}' -H 'X-Scope-OrgID: %s' %s --data-urlencode '%s'; done`,
 		cfg.TenantID,
 		url,
 		query,

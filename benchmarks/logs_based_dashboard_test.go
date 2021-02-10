@@ -18,9 +18,11 @@ import (
 
 var _ = Describe("Scenario: Logs-Based Dashboard", func() {
 	var (
-		beforeOnce  sync.Once
-		afterOnce   sync.Once
 		scenarioCfg config.LogsBasedDashboard
+		beforeOnce  sync.Once
+
+		totalSamples int
+		mu           sync.Mutex // Guard total samples taken before tear down in AfterEach
 	)
 
 	BeforeEach(func() {
@@ -32,6 +34,8 @@ var _ = Describe("Scenario: Logs-Based Dashboard", func() {
 		}
 
 		beforeOnce.Do(func() {
+			totalSamples = scenarioCfg.Samples.Total
+
 			writerCfg := scenarioCfg.Writers
 			readerCfg := scenarioCfg.Readers
 
@@ -68,12 +72,15 @@ var _ = Describe("Scenario: Logs-Based Dashboard", func() {
 	})
 
 	AfterEach(func() {
-		afterOnce.Do(func() {
+		mu.Lock()
+		defer mu.Unlock()
+
+		if totalSamples == 0 {
 			readerCfg := scenarioCfg.Readers
 			for id := range readerCfg.Queries {
 				Expect(querier.Undeploy(k8sClient, benchCfg.Querier, id)).Should(Succeed(), "Failed to delete querier deployment")
 			}
-		})
+		}
 	})
 
 	Measure("should result in measurements of p99, p50 and avg for all successful dashboard read requests", func(b Benchmarker) {
@@ -157,5 +164,10 @@ var _ = Describe("Scenario: Logs-Based Dashboard", func() {
 		avg, err = metricsClient.RequestDurationOkGrpcQuerySampleAvg(job, defaultRange)
 		Expect(err).Should(Succeed(), "Failed to read average for all ingester dashboard reads with status code 2xx")
 		b.RecordValue("All ingester successful dashboard reads avg", avg)
+
+		mu.Lock()
+		defer mu.Unlock()
+		totalSamples -= 1
+
 	}, benchCfg.Scenarios.LogsBasedDashboard.Samples.Total)
 })

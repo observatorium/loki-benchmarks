@@ -18,9 +18,11 @@ import (
 
 var _ = Describe("Scenario: High Volume Aggregate", func() {
 	var (
-		beforeOnce  sync.Once
-		afterOnce   sync.Once
 		scenarioCfg config.HighVolumeAggregate
+		beforeOnce  sync.Once
+
+		totalSamples int
+		mu           sync.Mutex // Guard total samples taken before tear down in AfterEach
 	)
 
 	BeforeEach(func() {
@@ -32,6 +34,8 @@ var _ = Describe("Scenario: High Volume Aggregate", func() {
 		}
 
 		beforeOnce.Do(func() {
+			totalSamples = scenarioCfg.Samples.Total
+
 			writerCfg := scenarioCfg.Writers
 			readerCfg := scenarioCfg.Readers
 
@@ -68,12 +72,15 @@ var _ = Describe("Scenario: High Volume Aggregate", func() {
 	})
 
 	AfterEach(func() {
-		afterOnce.Do(func() {
+		mu.Lock()
+		defer mu.Unlock()
+
+		if totalSamples == 0 {
 			readerCfg := scenarioCfg.Readers
 			for id := range readerCfg.Queries {
 				Expect(querier.Undeploy(k8sClient, benchCfg.Querier, id)).Should(Succeed(), "Failed to delete querier deployment")
 			}
-		})
+		}
 	})
 
 	Measure("should result in measurements of p99, p50 and avg for all successful aggregate requests to the query frontend", func(b Benchmarker) {
@@ -156,5 +163,10 @@ var _ = Describe("Scenario: High Volume Aggregate", func() {
 		avg, err = metricsClient.RequestDurationOkGrpcQuerySampleAvg(job, defaultRange)
 		Expect(err).Should(Succeed(), "Failed to read average for all ingester reads with status code 2xx")
 		b.RecordValue("All ingester successful query sample aggregate avg", avg)
+
+		mu.Lock()
+		defer mu.Unlock()
+		totalSamples -= 1
+
 	}, benchCfg.Scenarios.HighVolumeAggregate.Samples.Total)
 })
