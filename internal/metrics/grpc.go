@@ -27,7 +27,7 @@ func (c *client) RequestDurationOkGrpcPushP99(job string, duration model.Duratio
 }
 
 func (c *client) RequestReadsGrpcQPS(job string, duration model.Duration) (float64, error) {
-	route := "/logproto.Querier/Query|/logproto.Querier/QuerySample|/logproto.Querier/Label|/logproto.Querier/Series"
+	route := "/logproto.Querier/Query|/logproto.Querier/QuerySample|/logproto.Querier/Label|/logproto.Querier/Series|/logproto.Querier/GetChunkIDs"
 	return c.requestQPS(job, route, "success", duration)
 }
 

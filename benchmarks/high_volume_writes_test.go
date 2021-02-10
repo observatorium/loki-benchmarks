@@ -14,9 +14,11 @@ import (
 
 var _ = Describe("Scenario: High Volume Writes", func() {
 	var (
-		beforeOnce  sync.Once
-		afterOnce   sync.Once
 		scenarioCfg config.HighVolumeWrites
+		beforeOnce  sync.Once
+
+		totalSamples int
+		mu           sync.Mutex // Guard total samples taken before tear down in AfterEach
 	)
 
 	BeforeEach(func() {
@@ -28,6 +30,8 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		}
 
 		beforeOnce.Do(func() {
+			totalSamples = scenarioCfg.Samples.Total
+
 			writerCfg := scenarioCfg.Writers
 
 			err := logger.Deploy(k8sClient, benchCfg.Logger, writerCfg, benchCfg.Loki.PushURL())
@@ -41,9 +45,12 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 	})
 
 	AfterEach(func() {
-		afterOnce.Do(func() {
+		mu.Lock()
+		defer mu.Unlock()
+
+		if totalSamples == 0 {
 			Expect(logger.Undeploy(k8sClient, benchCfg.Logger)).Should(Succeed(), "Failed to delete logger deployment")
-		})
+		}
 	})
 
 	Measure("should result in measurements of p99, p50 and avg for all successful write requests to the distributor", func(b Benchmarker) {
@@ -102,5 +109,10 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		avg, err = metricsClient.RequestDurationOkGrpcPushAvg(job, defaultRange)
 		Expect(err).Should(Succeed(), "Failed to read average for all ingester GRPC push with status code 2xx")
 		b.RecordValue("All ingester successful GRPC push avg", avg)
+
+		mu.Lock()
+		defer mu.Unlock()
+		totalSamples -= 1
+
 	}, benchCfg.Scenarios.HighVolumeWrites.Samples.Total)
 })
