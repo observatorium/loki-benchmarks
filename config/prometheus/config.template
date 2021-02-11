@@ -6,16 +6,16 @@ scrape_configs:
   - job_name: 'loki-query-frontend'
     scrape_interval: 10s
     static_configs:
-    - targets: ['localhost:3100']
+    - targets: [{{LOKI_QUERY_FRONTEND_TARGETS}}]
   - job_name: 'loki-distributor'
     scrape_interval: 10s
     static_configs:
-    - targets: ['localhost:3101']
+    - targets: [{{LOKI_DISTRIBUTOR_TARGETS}}]
   - job_name: 'loki-ingester'
     scrape_interval: 10s
     static_configs:
-    - targets: ['localhost:3102']
+    - targets: [{{LOKI_INGESTER_TARGETS}}]
   - job_name: 'loki-querier'
     scrape_interval: 10s
     static_configs:
-    - targets: ['localhost:3103']
+    - targets: [{{LOKI_QUERIER_TARGETS}}]

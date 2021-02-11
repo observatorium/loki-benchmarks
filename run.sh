@@ -34,37 +34,71 @@ undeploy_observatorium() {
 }
 
 forward_ports() {
+    shopt -s extglob
+
+    i=0
+    cp config/prometheus/config.template config/prometheus/config.yaml
+
     echo -e "\nWaiting for available loki query frontend deployment"
     $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QF" --timeout=300s
 
-    echo -e "\nSetup port-forward '3100:3100' to loki query frontend"
-    (
-        $KUBECTL -n "$OBS_NS" port-forward "svc/$OBS_LOKI_QF-http" 3100:3100;
-    ) &
+    echo -e "\nSetup port-forwards to loki query frontend pods"
+    qf_targets=""
+    for name in $($KUBECTL -n "$OBS_NS" get pod -l "app.kubernetes.io/component=query-frontend" -o name); do
+        echo -e "\nSetup port-forward 310$i:3100 to loki query frontend pod: $name"
+        (
+            $KUBECTL -n "$OBS_NS" port-forward "$name" 310$i:3100;
+        ) &
+        qf_targets="$qf_targets'localhost:310$i',"
+        ((i=i+1))
+    done
+    sed -i "s/{{LOKI_QUERY_FRONTEND_TARGETS}}/${qf_targets%%+(,)}/i" config/prometheus/config.yaml
 
     echo -e "\nWaiting for available loki distributor deployment"
     $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_DST" --timeout=300s
 
-    echo -e "\nSetup port-forward '3101:3100' to loki distributor"
-    (
-        $KUBECTL -n "$OBS_NS" port-forward "svc/$OBS_LOKI_DST-http" 3101:3100;
-    ) &
+    echo -e "\nSetup port-forwards to loki distributor pods"
+    ds_targets=""
+    for name in $($KUBECTL -n "$OBS_NS" get pod -l "app.kubernetes.io/component=distributor" -o name); do
+        echo -e "\nSetup port-forward 310$i:3100 to loki distributor pod: $name"
+        (
+
+            $KUBECTL -n "$OBS_NS" port-forward "$name" 310$i:3100;
+        ) &
+        ds_targets="$ds_targets'localhost:310$i',"
+        ((i=i+1))
+    done
+    sed -i "s/{{LOKI_DISTRIBUTOR_TARGETS}}/${ds_targets%%+(,)}/i" config/prometheus/config.yaml
 
     echo -e "\nWaiting for available loki ingester deployment"
     $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_ING" --timeout=300s
 
-    echo -e "\nSetup port-forward '3102:3100' to loki ingester"
-    (
-        $KUBECTL -n "$OBS_NS" port-forward "svc/$OBS_LOKI_ING-http" 3102:3100;
-    ) &
+    echo -e "\nSetup port-forwards to loki ingester pods"
+    in_targets=""
+    for name in $($KUBECTL -n "$OBS_NS" get pod -l "app.kubernetes.io/component=ingester" -o name); do
+        echo -e "\nSetup port-forward 310$i:3100 to loki ingester pod: $name"
+        (
+            $KUBECTL -n "$OBS_NS" port-forward "$name" 310$i:3100;
+        ) &
+        in_targets="$in_targets'localhost:310$i',"
+        ((i=i+1))
+    done
+    sed -i "s/{{LOKI_INGESTER_TARGETS}}/${in_targets%%+(,)}/i" config/prometheus/config.yaml
 
     echo -e "\nWaiting for available querier deployment"
     $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_QR" --timeout=300s
 
-    echo -e "\nSetup port-forward '3103:3100' to loki querier"
-    (
-        $KUBECTL -n "$OBS_NS" port-forward "svc/$OBS_LOKI_QR-http" 3103:3100;
-    ) &
+    echo -e "\nSetup port-forwards to loki querier pods"
+    qr_targets=""
+    for name in $($KUBECTL -n "$OBS_NS" get pod -l "app.kubernetes.io/component=querier" -o name); do
+        echo -e "\nSetup port-forward 310$i:3100 to loki querier pod: $name"
+        (
+            $KUBECTL -n "$OBS_NS" port-forward "$name" 310$i:3100;
+        ) &
+        qr_targets="$qr_targets'localhost:310$i',"
+        ((i=i+1))
+    done
+    sed -i "s/{{LOKI_QUERIER_TARGETS}}/${qr_targets%%+(,)}/i" config/prometheus/config.yaml
 }
 
 scrape_loki_metrics() {
@@ -102,7 +136,7 @@ bench() {
     source .bingo/variables.env
 
     echo -e "\nRun benchmarks"
-    $GINKGO ./benchmarks
+    $GINKGO -v ./benchmarks
 
     echo -e "\nGenerate benchmark report"
     generate_report

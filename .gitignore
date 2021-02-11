@@ -1,3 +1,4 @@
 /bin/
 junit.xml
 /reports/*
+/config/prometheus/config.yaml
