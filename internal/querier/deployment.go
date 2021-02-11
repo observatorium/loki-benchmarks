@@ -3,7 +3,9 @@ package querier
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
+	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -18,14 +20,7 @@ func DeploymentName(cfg *config.Querier, id string) string {
 	return cfg.Name + "-" + strings.ToLower(id)
 }
 
-func Deploy(c client.Client, cfg *config.Querier, scenarioCfg *config.Readers, url, id, query string) error {
-	queryCmd := fmt.Sprintf(
-		`while :; do curl -G -o /dev/null -w '%%{response_code}' -H 'X-Scope-OrgID: %s' %s --data-urlencode '%s'; done`,
-		cfg.TenantID,
-		url,
-		query,
-	)
-
+func Deploy(c client.Client, cfg *config.Querier, scenarioCfg *config.Readers, uri, id, query string, d time.Duration) error {
 	name := DeploymentName(cfg, id)
 
 	obj := &appsv1.Deployment{
@@ -52,12 +47,18 @@ func Deploy(c client.Client, cfg *config.Querier, scenarioCfg *config.Readers, u
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:    name,
-							Image:   cfg.Image,
-							Command: []string{"/bin/sh"},
+							Name:  name,
+							Image: cfg.Image,
 							Args: []string{
-								"-c",
-								queryCmd,
+								"-q",
+								fmt.Sprintf("%d", scenarioCfg.QueriesPerSecond),
+								"-z",
+								d.String(),
+								"-m",
+								"GET",
+								"-H",
+								fmt.Sprintf(`X-Scope-OrgID: %s`, cfg.TenantID),
+								fmt.Sprintf("%s?query=%s", uri, url.QueryEscape(query)),
 							},
 						},
 					},

@@ -7,7 +7,7 @@ logger:
 querier:
   name: querier
   namespace: observatorium-logs-stage
-  image: docker.io/curlimages/curl:7.72.0
+  image: quay.io/periklis/hey:latest
   tenantId: observatorium
 
 metrics:
@@ -27,22 +27,24 @@ scenarios:
   highVolumeReads:
     enabled: true
     samples:
-      interval: "30s"
-      range: "300s"
+      interval: "15s"
+      range: "1m"
       total: 10
     writers:
       replicas: 10
       throughput: 100
     readers:
-      replicas: 2
+      replicas: 1
+      throughput: 10
       queries:
-        sumRateByLevel: 'query=sum(rate({component!=""}[1h])) by (level)'
+        sumRateByLevel: 'sum(rate({component!=""}[5m])) by (level)'
+        sumRateErrosOnly: 'sum(rate({component!="", level="error"}[5m]))'
       startThreshold: 1024000
   highVolumeWrites:
     enabled: true
     samples:
-      interval: "30s"
-      range: "300s"
+      interval: "15s"
+      range: "1m"
       total: 10
     writers:
       replicas: 10
@@ -50,37 +52,39 @@ scenarios:
   highVolumeAggregate:
     enabled: true
     samples:
-      interval: "30s"
-      range: "300s"
-      total: 10
-    writers:
-      replicas: 10
-      throughput: 100
-    readers:
-      replicas: 2
-      queries:
-        topTenComponents: 'query=topk(10, sum(rate({component!=""}[1h])) by (level))'
-        countOverTime: 'query=count_over_time({component!=""}[1h])'
-        bytesOverTime: 'query=bytes_over_time({component!=""}[1h])'
-      startThreshold: 1024000
-  logsBasedDashboard:
-    enabled: true
-    samples:
-      interval: "30s"
-      range: "300s"
+      interval: "15s"
+      range: "1m"
       total: 10
     writers:
       replicas: 10
       throughput: 100
     readers:
       replicas: 1
+      throughput: 10
       queries:
-        sumRateByLevel: 'query=sum(rate({component!=""}[1m])) by (level)'
-        devopsend: 'query=sum(rate({component="devopsend"}[1m])) by (level)'
-        fullstackend: 'query=sum(rate({component="fullstackend"}[1m])) by (level)'
-        frontend: 'query=sum(rate({component="frontend"}[1m])) by (level)'
-        backend: 'query=sum(rate({component="backend"}[1m])) by (level)'
-        allpanics: 'query=sum(rate({msg=~"panic.*"}[1m]))'
-        countpanics: 'query=count_over_time({msg=~"panic.*"}[5m])'
-        topTenErrors: 'query=topk(10, sum(rate({component!="", level="error"}[1h])) by (component))'
+        topTenComponents: 'topk(10, sum(rate({component!=""}[5m])) by (level))'
+        countOverTime: 'count_over_time({component!=""}[5m])'
+        bytesOverTime: 'bytes_over_time({component!=""}[5m])'
+      startThreshold: 1024000
+  logsBasedDashboard:
+    enabled: true
+    samples:
+      interval: "15s"
+      range: "1m"
+      total: 10
+    writers:
+      replicas: 10
+      throughput: 100
+    readers:
+      replicas: 1
+      throughput: 10
+      queries:
+        sumRateByLevel: 'sum(rate({component!=""}[1m])) by (level)'
+        devopsend: 'sum(rate({component="devopsend"}[1m])) by (level)'
+        fullstackend: 'sum(rate({component="fullstackend"}[1m])) by (level)'
+        frontend: 'sum(rate({component="frontend"}[1m])) by (level)'
+        backend: 'sum(rate({component="backend"}[1m])) by (level)'
+        allpanics: 'sum(rate({msg=~"panic.*"}[1m]))'
+        countpanics: 'count_over_time({msg=~"panic.*"}[1m])'
+        topTenErrors: 'topk(10, sum(rate({component!="", level="error"}[1m])) by (component))'
       startThreshold: 1024000

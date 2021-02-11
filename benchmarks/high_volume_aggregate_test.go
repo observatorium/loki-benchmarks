@@ -35,6 +35,7 @@ var _ = Describe("Scenario: High Volume Aggregate", func() {
 
 		beforeOnce.Do(func() {
 			totalSamples = scenarioCfg.Samples.Total
+			readerDuration := time.Duration(int64(scenarioCfg.Samples.Total) * int64(scenarioCfg.Samples.Interval))
 
 			writerCfg := scenarioCfg.Writers
 			readerCfg := scenarioCfg.Readers
@@ -56,7 +57,7 @@ var _ = Describe("Scenario: High Volume Aggregate", func() {
 
 			// Deploy the query clients
 			for id, query := range readerCfg.Queries {
-				err = querier.Deploy(k8sClient, benchCfg.Querier, readerCfg, benchCfg.Loki.QueryURL(), id, query)
+				err = querier.Deploy(k8sClient, benchCfg.Querier, readerCfg, benchCfg.Loki.QueryURL(), id, query, readerDuration)
 				Expect(err).Should(Succeed(), "Failed to deploy querier")
 			}
 

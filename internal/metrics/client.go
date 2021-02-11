@@ -71,7 +71,7 @@ func NewClient(url string, timeout time.Duration) (Client, error) {
 
 func (c *client) requestDurationAvg(job, method, route, code string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="%s", method="%s", route="%s", status_code=~"%s"}[%s])) / sum by (job) (rate(loki_request_duration_seconds_count{job="%s", method="%s", route="%s", status_code=~"%s"}[%s])))`,
+		`(sum(rate(loki_request_duration_seconds_sum{job="%s", method="%s", route="%s", status_code=~"%s"}[%s])) / sum(rate(loki_request_duration_seconds_count{job="%s", method="%s", route="%s", status_code=~"%s"}[%s])))`,
 		job, method, route, code, duration,
 		job, method, route, code, duration,
 	)

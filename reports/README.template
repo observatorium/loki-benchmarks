@@ -88,7 +88,7 @@ Query:
 ###### Average
 
 Query:
-> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-distributor", method="POST", route="loki_api_v1_push", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-distributor", method="POST", route="loki_api_v1_push", status_code=~"2.*"}[1m])))
+> (sum(rate(loki_request_duration_seconds_sum{job="loki-distributor", method="POST", route="loki_api_v1_push", status_code=~"2.*"}[1m])) / sum(rate(loki_request_duration_seconds_count{job="loki-distributor", method="POST", route="loki_api_v1_push", status_code=~"2.*"}[1m])))
 
 ![./All-distributor-2xx-push-avg.gnuplot.png](./All-distributor-2xx-push-avg.gnuplot.png)
 
@@ -127,7 +127,7 @@ Query:
 ###### Average
 
 Query:
-> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-ingester", method="gRPC", route="/logproto.Pusher/Push", status_code="success"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-ingester", method="gRPC", route="/logproto.Pusher/Push", status_code="success"}[1m])))
+> (sum(rate(loki_request_duration_seconds_sum{job="loki-ingester", method="gRPC", route="/logproto.Pusher/Push", status_code="success"}[1m])) / sum(rate(loki_request_duration_seconds_count{job="loki-ingester", method="gRPC", route="/logproto.Pusher/Push", status_code="success"}[1m])))
 
 ![./All-ingester-successful-GRPC-push-avg.gnuplot.png](./All-ingester-successful-GRPC-push-avg.gnuplot.png)
 
@@ -163,7 +163,7 @@ Query:
 ###### Average
 
 Query:
-> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
+> (sum(rate(loki_request_duration_seconds_sum{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])) / sum(rate(loki_request_duration_seconds_count{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
 
 ![./All-query-frontend-2xx-reads-avg.gnuplot.png](./All-query-frontend-2xx-reads-avg.gnuplot.png)
 
@@ -195,7 +195,7 @@ Query:
 ###### Average
 
 Query:
-> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
+> (sum(rate(loki_request_duration_seconds_sum{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])) / sum(rate(loki_request_duration_seconds_count{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
 
 ![./All-querier-2xx-query-range-avg.gnuplot.png](./All-querier-2xx-query-range-avg.gnuplot.png)
 
@@ -234,7 +234,7 @@ Query:
 ###### Average
 
 Query:
-> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])))
+> (sum(rate(loki_request_duration_seconds_sum{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])) / sum(rate(loki_request_duration_seconds_count{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])))
 
 ![./All-ingester-successful-query-sample-avg.gnuplot.png](./All-ingester-successful-query-sample-avg.gnuplot.png)
 
@@ -270,7 +270,7 @@ Query:
 ###### Average
 
 Query:
-> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-query-frontend", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-query-frontend", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])))
+> (sum(rate(loki_request_duration_seconds_sum{job="loki-query-frontend", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])) / sum(rate(loki_request_duration_seconds_count{job="loki-query-frontend", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])))
 
 ![./All-query-frontend-2xx-aggregate-reads-avg.gnuplot.png](./All-query-frontend-2xx-aggregate-reads-avg.gnuplot.png)
 
@@ -302,7 +302,7 @@ Query:
 ###### Average
 
 Query:
-> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-querier", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-querier", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])))
+> (sum(rate(loki_request_duration_seconds_sum{job="loki-querier", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])) / sum(rate(loki_request_duration_seconds_count{job="loki-querier", method="GET", route="loki_api_v1_query", status_code=~"2.*"}[1m])))
 
 ![./All-querier-2xx-query-aggregate-avg.gnuplot.png](./All-querier-2xx-query-aggregate-avg.gnuplot.png)
 
@@ -341,7 +341,7 @@ Query:
 ###### Average
 
 Query:
-> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])))
+> (sum(rate(loki_request_duration_seconds_sum{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])) / sum(rate(loki_request_duration_seconds_count{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])))
 
 ![./All-ingester-successful-query-sample-aggregate-avg.gnuplot.png](./All-ingester-successful-query-sample-aggregate-avg.gnuplot.png)
 
@@ -377,7 +377,7 @@ Query:
 ###### Average
 
 Query:
-> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
+> (sum(rate(loki_request_duration_seconds_sum{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])) / sum(rate(loki_request_duration_seconds_count{job="loki-query-frontend", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
 
 ![./All-query-frontend-2xx-dashboard-reads-avg.gnuplot.png](./All-query-frontend-2xx-dashboard-reads-avg.gnuplot.png)
 
@@ -409,7 +409,7 @@ Query:
 ###### Average
 
 Query:
-> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
+> (sum(rate(loki_request_duration_seconds_sum{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])) / sum(rate(loki_request_duration_seconds_count{job="loki-querier", method="GET", route="loki_api_v1_query_range", status_code=~"2.*"}[1m])))
 
 ![./All-querier-2xx-dashboard-reads-avg.gnuplot.png](./All-querier-2xx-dashboard-reads-avg.gnuplot.png)
 
@@ -448,6 +448,6 @@ Query:
 ###### Average
 
 Query:
-> 100 * (sum by (job) (rate(loki_request_duration_seconds_sum{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])) / sum by (job) (rate(loki_request_duration_seconds_count{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])))
+> (sum(rate(loki_request_duration_seconds_sum{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])) / sum(rate(loki_request_duration_seconds_count{job="loki-ingester", method="gRPC", route="/logproto.Querier/QuerySample", status_code="success"}[1m])))
 
 ![./All-ingester-successful-dashboard-reads-avg.gnuplot.png](./All-ingester-successful-dashboard-reads-avg.gnuplot.png)

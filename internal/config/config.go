@@ -85,9 +85,10 @@ type Writers struct {
 }
 
 type Readers struct {
-	Replicas       int32             `yaml:"replicas"`
-	Queries        map[string]string `yaml:"queries"`
-	StartThreshold float64           `yaml:"startThreshold"`
+	Replicas         int32             `yaml:"replicas"`
+	Queries          map[string]string `yaml:"queries"`
+	StartThreshold   float64           `yaml:"startThreshold"`
+	QueriesPerSecond int32             `yaml:"throughput"`
 }
 
 type Samples struct {
