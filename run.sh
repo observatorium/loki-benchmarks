@@ -20,14 +20,14 @@ tear_down() {
 }
 
 deploy_observatorium() {
-    pushd ../deployments || exit 1
+    pushd ../observatorium/configuration || exit 1
     ./tests/e2e.sh kind
     ./tests/e2e.sh deploy
     popd
 }
 
 undeploy_observatorium() {
-    pushd ../deployments || exit 1
+    pushd ../observatorium/configuration || exit 1
     echo -e "\nUndeploying observatorium dev manifests"
     ./kind delete cluster
     popd
