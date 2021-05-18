@@ -141,7 +141,8 @@ bench() {
     echo -e "\nGenerate benchmark report"
     generate_report
 }
-
-bench
-
-exit $?
+RUNNING="$(basename $(echo "$0" | sed 's/-//g'))"
+if [[ "$RUNNING" == "run.sh" ]]; then
+ bench
+ exit $?
+fi

@@ -39,3 +39,13 @@ bench-obs-logs-stage: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR)
 	OBS_LOKI_ING="observatorium-loki-ingester" \
 	./run.sh
 .PHONY: bench-staging
+
+bench-ocp-helm: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR)
+	@TARGET_ENV=ocp-helm \
+	OBS_NS=loki \
+	OBS_LOKI_QF="loki-loki-distributed-query-frontend" \
+	OBS_LOKI_QR="loki-loki-distributed-querier" \
+	OBS_LOKI_DST="loki-loki-distributed-distributor" \
+	OBS_LOKI_ING="loki-loki-distributed-ingester" \
+	./run.sh
+.PHONY: bench-ocp-helm
