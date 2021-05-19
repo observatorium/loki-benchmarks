@@ -21,7 +21,6 @@ $(REPORT_DIR):
 
 bench-dev: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR)
 	@TARGET_ENV=development \
-	KUBECTL=../deployments/kubectl \
 	OBS_NS=observatorium \
 	OBS_LOKI_QF="observatorium-xyz-loki-query-frontend" \
 	OBS_LOKI_QR="observatorium-xyz-loki-querier" \

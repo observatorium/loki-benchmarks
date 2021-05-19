@@ -23,8 +23,8 @@ jobs:
       - run:
           name: benchmarks
           command: |
-            echo "Checkout observatorium/deployments"
-            cd ../ && git clone https://github.com/observatorium/deployments.git
+            echo "Checkout observatorium/observatorium"
+            cd ../ && git clone https://github.com/observatorium/observatorium.git
             cd loki-benchmarks && make bench-dev
       - store_test_results:
           path: reports
