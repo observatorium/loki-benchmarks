@@ -24,22 +24,6 @@ loki:
   queryFrontend: http://loki-loki-distributed-query-frontend.loki.svc.cluster.local:3100
 
 scenarios:
-  highVolumeReads:
-    enabled: true
-    samples:
-      interval: "15s"
-      range: "1m"
-      total: 10
-    writers:
-      replicas: 10
-      throughput: 100
-    readers:
-      replicas: 1
-      throughput: 10
-      queries:
-        sumRateByLevel: 'sum(rate({component!=""}[5m])) by (level)'
-        sumRateErrosOnly: 'sum(rate({component!="", level="error"}[5m]))'
-      startThreshold: 1024000
   highVolumeWrites:
     enabled: true
     samples:
@@ -49,42 +33,3 @@ scenarios:
     writers:
       replicas: 10
       throughput: 100
-  highVolumeAggregate:
-    enabled: true
-    samples:
-      interval: "15s"
-      range: "1m"
-      total: 10
-    writers:
-      replicas: 10
-      throughput: 100
-    readers:
-      replicas: 1
-      throughput: 10
-      queries:
-        topTenComponents: 'topk(10, sum(rate({component!=""}[5m])) by (level))'
-        countOverTime: 'count_over_time({component!=""}[5m])'
-        bytesOverTime: 'bytes_over_time({component!=""}[5m])'
-      startThreshold: 1024000
-  logsBasedDashboard:
-    enabled: true
-    samples:
-      interval: "15s"
-      range: "1m"
-      total: 10
-    writers:
-      replicas: 10
-      throughput: 100
-    readers:
-      replicas: 1
-      throughput: 10
-      queries:
-        sumRateByLevel: 'sum(rate({component!=""}[1m])) by (level)'
-        devopsend: 'sum(rate({component="devopsend"}[1m])) by (level)'
-        fullstackend: 'sum(rate({component="fullstackend"}[1m])) by (level)'
-        frontend: 'sum(rate({component="frontend"}[1m])) by (level)'
-        backend: 'sum(rate({component="backend"}[1m])) by (level)'
-        allpanics: 'sum(rate({msg=~"panic.*"}[1m]))'
-        countpanics: 'count_over_time({msg=~"panic.*"}[1m])'
-        topTenErrors: 'topk(10, sum(rate({component!="", level="error"}[1m])) by (component))'
-      startThreshold: 1024000

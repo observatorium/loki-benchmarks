@@ -30,7 +30,7 @@ var (
 	reportDir string
 
 	defaultRetry        = 5 * time.Second
-	defaulTimeout       = 30 * time.Second
+	defaultTimeout      = 30 * time.Second
 	defaultLatchTimeout = 5 * time.Minute
 )
 

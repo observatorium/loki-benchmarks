@@ -37,7 +37,7 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 			err := logger.Deploy(k8sClient, benchCfg.Logger, writerCfg, benchCfg.Loki.PushURL())
 			Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-			err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Logger.Namespace, benchCfg.Logger.Name, writerCfg.Replicas, defaultRetry, defaulTimeout)
+			err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Logger.Namespace, benchCfg.Logger.Name, writerCfg.Replicas, defaultRetry, defaultTimeout)
 			Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 		})
 

@@ -44,7 +44,7 @@ var _ = Describe("Scenario: Logs-Based Dashboard", func() {
 			err := logger.Deploy(k8sClient, benchCfg.Logger, writerCfg, benchCfg.Loki.PushURL())
 			Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-			err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Logger.Namespace, benchCfg.Logger.Name, writerCfg.Replicas, defaultRetry, defaulTimeout)
+			err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Logger.Namespace, benchCfg.Logger.Name, writerCfg.Replicas, defaultRetry, defaultTimeout)
 			Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
 			// Wait until we ingested enough logs based on startThreshold
@@ -64,7 +64,7 @@ var _ = Describe("Scenario: Logs-Based Dashboard", func() {
 			for id := range readerCfg.Queries {
 				name := querier.DeploymentName(benchCfg.Querier, id)
 
-				err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Querier.Namespace, name, readerCfg.Replicas, defaultRetry, defaulTimeout)
+				err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Querier.Namespace, name, readerCfg.Replicas, defaultRetry, defaultTimeout)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed to wait for ready querier deployment: %s", name))
 			}
 		})
