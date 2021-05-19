@@ -12,6 +12,7 @@ This suite consists of benchmarks tests for the following Loki scenarios. Each s
 
 ### Prerequisites
 
+* gnuplot
 * Checkout a copy of the [observatorium/deployments](https://github.com/observatorium/deployments) repository and place it as a sibling directory to the `loki-benchmarks` repository.
 
 ### Developing
