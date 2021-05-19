@@ -27,9 +27,9 @@ scenarios:
   highVolumeWrites:
     enabled: true
     samples:
-      interval: "15s"
+      interval: "10s"
       range: "1m"
-      total: 10
+      total: 30
     writers:
-      replicas: 10
-      throughput: 100
+      replicas: 3
+      throughput: 2000

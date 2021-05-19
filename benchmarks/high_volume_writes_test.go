@@ -34,6 +34,10 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 
 			writerCfg := scenarioCfg.Writers
 
+			// delete previous logger deployment from prev. executions (if exist)
+			logger.Undeploy(k8sClient, benchCfg.Logger)
+
+			// deploy loggers
 			err := logger.Deploy(k8sClient, benchCfg.Logger, writerCfg, benchCfg.Loki.PushURL())
 			Expect(err).Should(Succeed(), "Failed to deploy logger")
 
