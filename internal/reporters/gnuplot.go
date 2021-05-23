@@ -42,6 +42,10 @@ func (cr *gnuplotReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 			"set key left top\n" +
 			"set xdata time\n" +
 			"set timefmt '%s'\n" +
+			"set datafile separator ','\n" +
+			"offset = 0\n" +
+			"t0(x)=(offset=($0==0) ? x : offset, x - offset)\n" +
+			"set xtics format '%H:%M:%S' font ',6'\n" +
 			"set datafile separator ','\n"
 
 		_, _ = file.WriteString(header)
@@ -61,7 +65,7 @@ func (cr *gnuplotReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 
 		_, _ = file.WriteString("EOD\n")
 
-		plot := fmt.Sprintf("plot $DATA using 1:2 with lines lw 1 title '%s'\n", value.Name)
+		plot := fmt.Sprintf("plot $DATA using (t0(timecolumn(1))*60):2 with lines lw 1 title '%s'\n", value.Name)
 		_, _ = file.WriteString(plot)
 	}
 }
