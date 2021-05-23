@@ -98,31 +98,30 @@ type Samples struct {
 }
 
 type HighVolumeWrites struct {
-	Enabled bool     `yaml:"enabled"`
-	Samples Samples  `yaml:"samples"`
-	Readers *Readers `yaml:"readers,omitempty"`
-	Writers *Writers `yaml:"writers,omitempty"`
+	Enabled        bool            `yaml:"enabled"`
+	Configurations []Configuration `yaml:"configurations"`
 }
 
 type HighVolumeReads struct {
-	Enabled bool     `yaml:"enabled"`
-	Samples Samples  `yaml:"samples"`
-	Readers *Readers `yaml:"readers,omitempty"`
-	Writers *Writers `yaml:"writers,omitempty"`
+	Enabled bool `yaml:"enabled"`
+	Configuration
 }
 
 type HighVolumeAggregate struct {
-	Enabled bool     `yaml:"enabled"`
-	Samples Samples  `yaml:"samples"`
-	Readers *Readers `yaml:"readers,omitempty"`
-	Writers *Writers `yaml:"writers,omitempty"`
+	Enabled bool `yaml:"enabled"`
+	Configuration
 }
 
 type LogsBasedDashboard struct {
-	Enabled bool     `yaml:"enabled"`
-	Samples Samples  `yaml:"samples"`
-	Readers *Readers `yaml:"readers,omitempty"`
-	Writers *Writers `yaml:"writers,omitempty"`
+	Enabled bool `yaml:"enabled"`
+	Configuration
+}
+
+type Configuration struct {
+	Description string   `yaml:"description"`
+	Samples     Samples  `yaml:"samples"`
+	Readers     *Readers `yaml:"readers,omitempty"`
+	Writers     *Writers `yaml:"writers,omitempty"`
 }
 
 type Scenarios struct {

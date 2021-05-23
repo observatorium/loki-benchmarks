@@ -49,3 +49,13 @@ bench-ocp-helm: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR)
 	OBS_LOKI_ING="loki-loki-distributed-ingester" \
 	./run.sh
 .PHONY: bench-ocp-helm
+
+bench-obs-logs-test: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR)
+	@TARGET_ENV=ocp-observatorium-test \
+	OBS_NS=observatorium-logs-test \
+	OBS_LOKI_QF="observatorium-loki-query-frontend" \
+	OBS_LOKI_QR="observatorium-loki-querier" \
+	OBS_LOKI_DST="observatorium-loki-distributor" \
+	OBS_LOKI_ING="observatorium-loki-ingester" \
+	./run.sh
+.PHONY: bench-ocp-test

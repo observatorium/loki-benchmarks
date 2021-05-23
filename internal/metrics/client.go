@@ -50,6 +50,11 @@ type Client interface {
 	// Store API
 	RequestBoltDBShipperReadsQPS(job string, duration model.Duration) (float64, error)
 	RequestBoltDBShipperWritesQPS(job string, duration model.Duration) (float64, error)
+
+	// Process API
+	ProcessCPU(job string, duration model.Duration) (float64, error)
+	ProcessMEM(job string, duration model.Duration) (float64, error)
+
 }
 
 type client struct {
@@ -67,6 +72,24 @@ func NewClient(url string, timeout time.Duration) (Client, error) {
 		api:     v1.NewAPI(pc),
 		timeout: timeout,
 	}, nil
+}
+
+func (c *client) ProcessCPU(job string, duration model.Duration) (float64, error) {
+	query := fmt.Sprintf(
+		`rate(process_cpu_seconds_total{job="%s"}[%s]))`,
+		job, duration,
+	)
+
+	return c.executeScalarQuery(query)
+}
+
+func (c *client) ProcessMEM(job string, duration model.Duration) (float64, error) {
+	query := fmt.Sprintf(
+		`rate(process_virtual_memory_bytes{job="%s"}[%s]))`,
+		job, duration,
+	)
+
+	return c.executeScalarQuery(query)
 }
 
 func (c *client) requestDurationAvg(job, method, route, code string, duration model.Duration) (float64, error) {

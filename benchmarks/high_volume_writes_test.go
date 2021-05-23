@@ -13,39 +13,41 @@ import (
 )
 
 var _ = Describe("Scenario: High Volume Writes", func() {
-	var (
-		scenarioCfg config.HighVolumeWrites
-		beforeOnce  sync.Once
 
-		totalSamples int
-		mu           sync.Mutex // Guard total samples taken before tear down in AfterEach
+	var (
+		scenarioCfg        config.HighVolumeWrites
+		configurationCount int
+		mu                 sync.Mutex // Guard
+		totalSamples       int
 	)
 
-	BeforeEach(func() {
+	BeforeSuite(func() {
 		scenarioCfg = benchCfg.Scenarios.HighVolumeWrites
 		if !scenarioCfg.Enabled {
 			Skip("High Volumes Writes Benchmark not enabled!")
-
 			return
 		}
+	})
 
-		beforeOnce.Do(func() {
-			totalSamples = scenarioCfg.Samples.Total
+	BeforeEach(func() {
 
-			writerCfg := scenarioCfg.Writers
+		if totalSamples == 0 {
+			totalSamples = scenarioCfg.Configurations[configurationCount].Samples.Total
+			writerCfg := scenarioCfg.Configurations[configurationCount].Writers
 
-			// delete previous logger deployment from prev. executions (if exist)
+			// delete previous logger deployment from earlier. executions (if exist)
 			logger.Undeploy(k8sClient, benchCfg.Logger)
 
 			// deploy loggers
 			err := logger.Deploy(k8sClient, benchCfg.Logger, writerCfg, benchCfg.Loki.PushURL())
 			Expect(err).Should(Succeed(), "Failed to deploy logger")
 
+			// wait for loggers to be ready
 			err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Logger.Namespace, benchCfg.Logger.Name, writerCfg.Replicas, defaultRetry, defaultTimeout)
 			Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
-		})
+		}
 
-		time.Sleep(scenarioCfg.Samples.Interval)
+		time.Sleep(scenarioCfg.Configurations[configurationCount].Samples.Interval)
 	})
 
 	AfterEach(func() {
@@ -54,11 +56,15 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 
 		if totalSamples == 0 {
 			Expect(logger.Undeploy(k8sClient, benchCfg.Logger)).Should(Succeed(), "Failed to delete logger deployment")
+			configurationCount++
+			if configurationCount >= len(scenarioCfg.Configurations) {
+				return
+			}
 		}
 	})
 
 	Measure("should result in measurements of p99, p50 and avg for all successful write requests to the distributor", func(b Benchmarker) {
-		defaultRange := scenarioCfg.Samples.Range
+		defaultRange := scenarioCfg.Configurations[configurationCount].Samples.Range
 
 		//
 		// Collect measurements for the distributor
@@ -90,6 +96,16 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		//
 		job = benchCfg.Metrics.IngesterJob()
 
+		// Record Process CPU
+		cpu, err := metricsClient.ProcessCPU (job, defaultRange)
+		Expect(err).Should(Succeed(), "Failed to read ProcessCPU")
+		b.RecordValue("ProcessCPU", cpu)
+
+		// Record Process MEM
+		mem, err := metricsClient.ProcessMEM (job, defaultRange)
+		Expect(err).Should(Succeed(), "Failed to read ProcessMEM")
+		b.RecordValue("ProcessMEM", mem)
+
 		// Record Writes QPS
 		qps, err = metricsClient.RequestWritesGrpcQPS(job, defaultRange)
 		Expect(err).Should(Succeed(), "Failed to read QPS for all ingester GRPC push with status code 2xx")
@@ -118,5 +134,5 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		defer mu.Unlock()
 		totalSamples -= 1
 
-	}, benchCfg.Scenarios.HighVolumeWrites.Samples.Total)
+	}, benchCfg.Scenarios.HighVolumeWrites.Configurations[configurationCount].Samples.Total*len(benchCfg.Scenarios.HighVolumeWrites.Configurations))
 })
