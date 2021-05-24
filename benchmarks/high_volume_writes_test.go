@@ -1,6 +1,7 @@
 package benchmarks_test
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -63,76 +64,47 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		}
 	})
 
-	Measure("should result in measurements of p99, p50 and avg for all successful write requests to the distributor", func(b Benchmarker) {
-		defaultRange := scenarioCfg.Configurations[configurationCount].Samples.Range
+	for _, configuration := range benchCfg.Scenarios.HighVolumeWrites.Configurations {
+		c := configuration // Make a local copy to avoid the "Using the variable on range scope `verb` in function literal"
+		Measure("should result in measurements - configuration: "+c.Description, func(b Benchmarker) {
+			defaultRange := scenarioCfg.Configurations[configurationCount].Samples.Range
 
-		//
-		// Collect measurements for the distributor
-		//
-		job := benchCfg.Metrics.DistributorJob()
+			// Collect measurements for distributors
+			job := benchCfg.Metrics.DistributorJob()
+			err := metricsClient.Measure(b, metricsClient.ProcessCPU, "ProcessCPU", job, c.Description, defaultRange )
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v",err))
+			err = metricsClient.Measure(b, metricsClient.ProcessMEM, "ProcessMEM", job, c.Description, defaultRange )
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v",err))
+			err = metricsClient.Measure(b, metricsClient.RequestWritesQPS, "2xx push QPS", job, c.Description, defaultRange )
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v",err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushP99, "2xx push p99", job, c.Description, defaultRange )
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v",err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushP50, "2xx push p50", job, c.Description, defaultRange )
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v",err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushAvg, "2xx push avg", job, c.Description, defaultRange )
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v",err))
 
-		// Record Reads QPS
-		qps, err := metricsClient.RequestWritesQPS(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read QPS for all distributor push with status code 2xx")
-		b.RecordValue("All distributor 2xx push QPS", qps)
+			// Collect measurements for Ingesters
+			job = benchCfg.Metrics.IngesterJob()
+			err = metricsClient.Measure(b, metricsClient.ProcessCPU, "ProcessCPU", job, c.Description, defaultRange )
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v",err))
+			err = metricsClient.Measure(b, metricsClient.ProcessMEM, "ProcessMEM", job, c.Description, defaultRange )
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v",err))
+			err = metricsClient.Measure(b, metricsClient.RequestWritesGrpcQPS, "successful GRPC push QPS", job, c.Description, defaultRange )
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v",err))
+			//err = metricsClient.Measure(b, metricsClient.RequestBoltDBShipperWritesQPS, "Boltdb shipper successful writes QPS", job, c.Description, defaultRange )
+			//Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v",err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcPushP99, "successful GRPC push p99", job, c.Description, defaultRange )
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v",err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcPushP50, "successful GRPC push p50", job, c.Description, defaultRange )
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v",err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcPushAvg, "successful GRPC push avg", job, c.Description, defaultRange )
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v",err))
 
-		// Record p99 loki_request_duration_seconds_bucket
-		p99, err := metricsClient.RequestDurationOkPushP99(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p99 for all distributor push requests with status code 2xx")
-		b.RecordValue("All distributor 2xx push p99", p99)
+			mu.Lock()
+			defer mu.Unlock()
+			totalSamples -= 1
 
-		// Record p50 loki_request_duration_seconds_bucket
-		p50, err := metricsClient.RequestDurationOkPushP50(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p50 for all distributor push requests with status code 2xx")
-		b.RecordValue("All distributor 2xx push p50", p50)
-
-		// Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
-		avg, err := metricsClient.RequestDurationOkPushAvg(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read average for all distributor push requests with status code 2xx")
-		b.RecordValue("All distributor 2xx push avg", avg)
-
-		//
-		// Collect measurements for the ingester
-		//
-		job = benchCfg.Metrics.IngesterJob()
-
-		// Record Process CPU
-		cpu, err := metricsClient.ProcessCPU (job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read ProcessCPU")
-		b.RecordValue("ProcessCPU", cpu)
-
-		// Record Process MEM
-		mem, err := metricsClient.ProcessMEM (job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read ProcessMEM")
-		b.RecordValue("ProcessMEM", mem)
-
-		// Record Writes QPS
-		qps, err = metricsClient.RequestWritesGrpcQPS(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read QPS for all ingester GRPC push with status code 2xx")
-		b.RecordValue("All ingester successful GRPC push QPS", qps)
-
-		// Record BoltDB Shipper Writes QPS
-		qps, _ = metricsClient.RequestBoltDBShipperWritesQPS(job, defaultRange)
-		b.RecordValue("All boltdb shipper successful writes QPS", qps)
-
-		// Record p99 loki_request_duration_seconds_bucket
-		p99, err = metricsClient.RequestDurationOkGrpcPushP99(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p99 for all ingester GRPC push with status code 2xx")
-		b.RecordValue("All ingester successful GRPC push p99", p99)
-
-		// Record p50 loki_request_duration_seconds_bucket
-		p50, err = metricsClient.RequestDurationOkGrpcPushP50(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p50 for all ingester GRPC push with status code 2xx")
-		b.RecordValue("All ingester successful GRPC push p50", p50)
-
-		// Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
-		avg, err = metricsClient.RequestDurationOkGrpcPushAvg(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read average for all ingester GRPC push with status code 2xx")
-		b.RecordValue("All ingester successful GRPC push avg", avg)
-
-		mu.Lock()
-		defer mu.Unlock()
-		totalSamples -= 1
-
-	}, benchCfg.Scenarios.HighVolumeWrites.Configurations[configurationCount].Samples.Total*len(benchCfg.Scenarios.HighVolumeWrites.Configurations))
+		}, c.Samples.Total)
+	}
 })

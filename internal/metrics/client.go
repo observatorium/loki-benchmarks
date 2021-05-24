@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	. "github.com/onsi/ginkgo"
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 )
 
 type MetricType string
+type queryFunc func(job string, duration model.Duration) (float64, error)
 
 const (
 	DistributorBytesReceivedTotal MetricType = "loki_distributor_bytes_received_total"
@@ -55,6 +57,7 @@ type Client interface {
 	ProcessCPU(job string, duration model.Duration) (float64, error)
 	ProcessMEM(job string, duration model.Duration) (float64, error)
 
+    Measure(b Benchmarker, f queryFunc, name string,job string, confDescription string, defaultRange model.Duration) error
 }
 
 type client struct {
@@ -74,9 +77,18 @@ func NewClient(url string, timeout time.Duration) (Client, error) {
 	}, nil
 }
 
+func (c *client) Measure(b Benchmarker, f queryFunc, name string,job string, confDescription string, defaultRange model.Duration) error {
+	measure, err := f(job, defaultRange)
+	if err != nil {
+		return fmt.Errorf("queryMetric %s failed job: %s err: %w", name, job, err)
+	}
+	b.RecordValue(fmt.Sprintf("%s - %s - %s",job, name, confDescription), measure)
+	return nil
+}
+
 func (c *client) ProcessCPU(job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`rate(process_cpu_seconds_total{job="%s"}[%s]))`,
+		`sum(rate(process_cpu_seconds_total{job="%s"}[%s]))`,
 		job, duration,
 	)
 
@@ -85,7 +97,7 @@ func (c *client) ProcessCPU(job string, duration model.Duration) (float64, error
 
 func (c *client) ProcessMEM(job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`rate(process_virtual_memory_bytes{job="%s"}[%s]))`,
+		`sum(rate(process_virtual_memory_bytes{job="%s"}[%s]))`,
 		job, duration,
 	)
 
