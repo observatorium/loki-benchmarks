@@ -22,8 +22,10 @@ type Querier struct {
 }
 
 type Metrics struct {
-	URL  string            `yaml:"url"`
-	Jobs map[string]string `yaml:"jobs"`
+	URL                   string            `yaml:"url"`
+	Jobs                  map[string]string `yaml:"jobs"`
+	CadvisorJobs          map[string]string `yaml:"cadvisorJobs"`
+	EnableCadvisorMetrics bool              `yaml:"enableCadvisorMetrics"`
 }
 
 func (m *Metrics) DistributorJob() string {
@@ -33,6 +35,15 @@ func (m *Metrics) DistributorJob() string {
 	}
 
 	return job
+}
+
+func (m *Metrics) CadvisorIngesterJob() string {
+	cadvisorJobs, ok := m.CadvisorJobs["ingester"]
+	if !ok {
+		return "cadvisor_ingesters"
+	}
+
+	return cadvisorJobs
 }
 
 func (m *Metrics) IngesterJob() string {
@@ -98,38 +109,25 @@ type Samples struct {
 }
 
 type HighVolumeWrites struct {
-	Enabled bool     `yaml:"enabled"`
-	Samples Samples  `yaml:"samples"`
-	Readers *Readers `yaml:"readers,omitempty"`
-	Writers *Writers `yaml:"writers,omitempty"`
+	Enabled        bool            `yaml:"enabled"`
+	Configurations []Configuration `yaml:"configurations"`
 }
 
 type HighVolumeReads struct {
-	Enabled bool     `yaml:"enabled"`
-	Samples Samples  `yaml:"samples"`
-	Readers *Readers `yaml:"readers,omitempty"`
-	Writers *Writers `yaml:"writers,omitempty"`
+	Enabled        bool            `yaml:"enabled"`
+	Configurations []Configuration `yaml:"configurations"`
 }
 
-type HighVolumeAggregate struct {
-	Enabled bool     `yaml:"enabled"`
-	Samples Samples  `yaml:"samples"`
-	Readers *Readers `yaml:"readers,omitempty"`
-	Writers *Writers `yaml:"writers,omitempty"`
-}
-
-type LogsBasedDashboard struct {
-	Enabled bool     `yaml:"enabled"`
-	Samples Samples  `yaml:"samples"`
-	Readers *Readers `yaml:"readers,omitempty"`
-	Writers *Writers `yaml:"writers,omitempty"`
+type Configuration struct {
+	Description string   `yaml:"description"`
+	Samples     Samples  `yaml:"samples"`
+	Readers     *Readers `yaml:"readers,omitempty"`
+	Writers     *Writers `yaml:"writers,omitempty"`
 }
 
 type Scenarios struct {
-	HighVolumeWrites    HighVolumeWrites    `yaml:"highVolumeWrites"`
-	HighVolumeReads     HighVolumeReads     `yaml:"highVolumeReads"`
-	HighVolumeAggregate HighVolumeAggregate `yaml:"highVolumeAggregate"`
-	LogsBasedDashboard  LogsBasedDashboard  `yaml:"logsBasedDashboard"`
+	HighVolumeWrites HighVolumeWrites `yaml:"highVolumeWrites"`
+	HighVolumeReads  HighVolumeReads  `yaml:"highVolumeReads"`
 }
 
 type Benchmark struct {

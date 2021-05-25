@@ -3,6 +3,7 @@
 set -eou pipefail
 
 TARGET_ENV="${TARGET_ENV:-development}"
+DEPLOY_KIND_OBSERVATORIUM="${DEPLOY_KIND_OBSERVATORIUM:-true}"
 
 OBS_NS="${OBS_NS:-observatorium}"
 CADVISOR_NS="${CADVISOR_NS:-cadvisor}"
@@ -15,7 +16,7 @@ port_counter=0
 trap 'kill $(jobs -p); tear_down; exit 0' EXIT
 
 tear_down() {
-    if [[ "$TARGET_ENV" = "development" ]]; then
+    if [[ "$TARGET_ENV" = "development" ]] && $DEPLOY_KIND_OBSERVATORIUM; then
         echo -e "\nUndeploying observatorium dev manifests"
         undeploy_observatorium
     fi
@@ -76,7 +77,7 @@ forward_ports() {
 }
 
 set_prometheus_relabel_regex() {
-    INGESTERS_REGEX=$($KUBECTL get pods -l "app.kubernetes.io/component=ingester" -n "$CADVISOR_NS" -o jsonpath='{range .items[*]}{".*crio-"}{.status.containerStatuses[?(@.name=="observatorium-loki-ingester")].containerID}{".*|"}{end}' | sed -s 's|cri-o://||g')
+    INGESTERS_REGEX=$($KUBECTL get pods -l "app.kubernetes.io/component=ingester" -n "$OBS_NS" -o jsonpath='{range .items[*]}{".*crio-"}{.status.containerStatuses[?(@.name=="observatorium-loki-ingester")].containerID}{".*|"}{end}' | sed -s 's|cri-o://||g')
     INGESTERS_REGEX=${INGESTERS_REGEX%%+(\|)}
     sed -i "s/{{CADVISOR_INGESTERS_TARGETS_PODS}}/$INGESTERS_REGEX/i" config/prometheus/config.yaml
 }
@@ -102,7 +103,7 @@ generate_report() {
 
 
 bench() {
-    if [[ "$TARGET_ENV" = "development" ]]; then
+    if [[ "$TARGET_ENV" = "development" ]] && $DEPLOY_KIND_OBSERVATORIUM; then
         echo "Deploying observatorium dev manifests"
         deploy_observatorium
     fi
@@ -119,7 +120,7 @@ bench() {
     source .bingo/variables.env
 
     echo -e "\nRun benchmarks"
-    $GINKGO -v ./benchmarks
+    $GINKGO -v --noisySkippings=false ./benchmarks
 
     echo -e "\nGenerate benchmark report"
     generate_report
