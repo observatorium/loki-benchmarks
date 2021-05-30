@@ -80,12 +80,12 @@ create_s3_secret() {
 apiVersion: v1
 kind: Secret
 data:
-  endpoint: $(echo "$AWS_S3_END_POINT" | base64)
-  aws_region: $(echo "$AWS_S3_REGION" | base64)
-  bucketnames: $(echo "$AWS_S3_LOKI_BUCKET_NAME" | base64)
-  bucket: $(echo "$AWS_S3_LOKI_BUCKET_NAME" | base64)
-  aws_access_key_id: $(echo "$AWS_ACCESS_KEY_ID" | base64)
-  aws_secret_access_key: $(echo "$AWS_SECRET_ACCESS_KEY" | base64)
+  endpoint: $(echo -n "$AWS_S3_END_POINT" | base64)
+  aws_region: $(echo -n "$AWS_S3_REGION" | base64)
+  bucketnames: $(echo -n "$AWS_S3_LOKI_BUCKET_NAME" | base64)
+  bucket: $(echo -n "$AWS_S3_LOKI_BUCKET_NAME" | base64)
+  aws_access_key_id: $(echo -n "$AWS_ACCESS_KEY_ID" | base64)
+  aws_secret_access_key: $(echo -n "$AWS_SECRET_ACCESS_KEY" | base64)
 metadata:
   name: $LOKI_S3_SECRET_NAME
   namespace: $LOKI_PROJECT_NAME
