@@ -13,6 +13,7 @@ This suite consists of benchmarks tests for the following Loki scenarios. Each s
 ### Prerequisites
 
 * Checkout a copy of the [observatorium/observatorium](https://github.com/observatorium/observatorium) repository and place it as a sibling directory to the `loki-benchmarks` repository.
+* [cadvisor](https://github.com/google/cadvisor) required to accurately measure CPU and Memory. Deployment script available in [hack/deploy_cadvisor.sh](hack/deploy_cadvisor.sh)
 
 ### Developing
 

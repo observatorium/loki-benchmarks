@@ -5,6 +5,7 @@ set -eou pipefail
 TARGET_ENV="${TARGET_ENV:-development}"
 
 OBS_NS="${OBS_NS:-observatorium}"
+CADVISOR_NS="${OBS_NS:-cadvisor}"
 OBS_LOKI_QF="${OBS_LOKI_QF:-observatorium-xyz-loki-query-frontend}"
 OBS_LOKI_QR="${OBS_LOKI_QR:-observatorium-xyz-loki-querier}"
 OBS_LOKI_DST="${OBS_LOKI_DST:-observatorium-xyz-loki-distributor}"
@@ -37,6 +38,7 @@ forward_ports() {
     shopt -s extglob
 
     i=0
+    j=0
     cp config/prometheus/config.template config/prometheus/config.yaml
 
     echo -e "\nWaiting for available loki query frontend deployment"
@@ -99,6 +101,21 @@ forward_ports() {
         ((i=i+1))
     done
     sed -i "s/{{LOKI_QUERIER_TARGETS}}/${qr_targets%%+(,)}/i" config/prometheus/config.yaml
+
+    PROJECT_CADVISOR=$(oc get project | grep "$CADVISOR_NS")
+    qr_targets=""
+    if [ -n "$PROJECT_CADVISOR" ]; then
+      echo -e "\nSetup port-forwards to cadvisor pods"
+      for name in $($KUBECTL -n "$CADVISOR_NS" get pod -o name); do
+          echo -e "\nSetup port-forward 808$j:8080 to cadvisor pod: $name"
+          (
+              $KUBECTL -n "$CADVISOR_NS" port-forward "$name" 808$j:8080;
+          ) &
+          qr_targets="$qr_targets'localhost:808$j',"
+          ((j=j+1))
+      done
+    fi
+    sed -i "s/{{CADVISOR_TARGETS}}/${qr_targets%%+(,)}/i" config/prometheus/config.yaml
 }
 
 scrape_loki_metrics() {
