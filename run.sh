@@ -21,16 +21,16 @@ tear_down() {
 }
 
 deploy_observatorium() {
-    pushd ../observatorium/configuration || exit 1
-    ./tests/e2e.sh kind
-    ./tests/e2e.sh deploy
+    pushd ../observatorium || exit 1
+    ./configuration/tests/e2e.sh kind
+    ./configuration/tests/e2e.sh deploy
     popd
 }
 
 undeploy_observatorium() {
-    pushd ../observatorium/configuration || exit 1
+    pushd ../observatorium || exit 1
     echo -e "\nUndeploying observatorium dev manifests"
-    ./kind delete cluster
+    ./configuration/kind delete cluster
     popd
 }
 
@@ -102,7 +102,7 @@ forward_ports() {
     done
     sed -i "s/{{LOKI_QUERIER_TARGETS}}/${qr_targets%%+(,)}/i" config/prometheus/config.yaml
 
-    PROJECT_CADVISOR=$(oc get project | grep "$CADVISOR_NS")
+    PROJECT_CADVISOR=$($KUBECTL get ns | grep "$CADVISOR_NS")
     qr_targets=""
     if [ -n "$PROJECT_CADVISOR" ]; then
       echo -e "\nSetup port-forwards to cadvisor pods"
