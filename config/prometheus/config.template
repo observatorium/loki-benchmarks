@@ -19,3 +19,7 @@ scrape_configs:
     scrape_interval: 10s
     static_configs:
     - targets: [{{LOKI_QUERIER_TARGETS}}]
+  - job_name: 'cadvisor'
+    scrape_interval: 10s
+    static_configs:
+    - targets: [{{CADVISOR_TARGETS}}]
