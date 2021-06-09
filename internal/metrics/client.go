@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	. "github.com/onsi/ginkgo"
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 )
 
 type MetricType string
+type queryFunc func(job string, duration model.Duration) (float64, error)
 
 const (
 	DistributorBytesReceivedTotal MetricType = "loki_distributor_bytes_received_total"
@@ -50,6 +52,17 @@ type Client interface {
 	// Store API
 	RequestBoltDBShipperReadsQPS(job string, duration model.Duration) (float64, error)
 	RequestBoltDBShipperWritesQPS(job string, duration model.Duration) (float64, error)
+
+	// Container API
+	// NOTE: Container API functions requires cadvisor to be deployed and functional
+	ContainerUserCPU(caJob string, duration model.Duration) (float64, error)
+	ContainerWorkingSetMEM(caJob string, duration model.Duration) (float64, error)
+
+	// Process API
+	ProcessCPU(job string, duration model.Duration) (float64, error)
+	ProcessResidentMEM(job string, duration model.Duration) (float64, error)
+
+    Measure(b Benchmarker, f queryFunc, name string,job string, confDescription string, defaultRange model.Duration) error
 }
 
 type client struct {
@@ -67,6 +80,53 @@ func NewClient(url string, timeout time.Duration) (Client, error) {
 		api:     v1.NewAPI(pc),
 		timeout: timeout,
 	}, nil
+}
+
+func (c *client) Measure(b Benchmarker, f queryFunc, name string,job string, confDescription string, defaultRange model.Duration) error {
+	measure, err := f(job, defaultRange)
+	if err != nil {
+		return fmt.Errorf("queryMetric %s failed job: %s err: %w", name, job, err)
+	}
+	b.RecordValue(fmt.Sprintf("%s - %s - %s",job, name, confDescription), measure)
+	return nil
+}
+
+func (c *client) ContainerUserCPU(caJob string, duration model.Duration) (float64, error) {
+	query := fmt.Sprintf(
+		`sum(rate(container_cpu_user_seconds_total{job="%s"}[%s]) * 1000)`, // in m (i.e. 1000 = 1 vCore)
+		caJob, duration,
+	)
+
+	return c.executeScalarQuery(query)
+}
+
+func (c *client) ContainerWorkingSetMEM(caJob string, duration model.Duration) (float64, error) {
+	query := fmt.Sprintf(
+		`sum(avg_over_time(container_memory_working_set_bytes{job="%s"}[%s]) / 1000000)`, // in Mi (i.e. in Megabytes)
+		caJob, duration,
+	)
+
+	return c.executeScalarQuery(query)
+}
+
+// NOTE: Using ProcessResidentMEM is not recommended (information not representative for golang apps)
+// It is recommended to deploy cadvisor and use ContainerWorkingSetMEM
+func (c *client) ProcessResidentMEM(job string, duration model.Duration) (float64, error) {
+	query := fmt.Sprintf(
+		`sum(avg_over_time(process_resident_memory_bytes{job="%s"}[%s]) / 1000000)`, // in Mi (i.e. in Megabytes)
+		job, duration,
+	)
+
+	return c.executeScalarQuery(query)
+}
+
+func (c *client) ProcessCPU(job string, duration model.Duration) (float64, error) {
+	query := fmt.Sprintf(
+		`sum(rate(process_cpu_seconds_total{job="%s"}[%s]) * 1000)`, // in m (i.e. 1000 = 1 vCore)
+		job, duration,
+	)
+
+	return c.executeScalarQuery(query)
 }
 
 func (c *client) requestDurationAvg(job, method, route, code string, duration model.Duration) (float64, error) {
