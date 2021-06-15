@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo"
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
@@ -62,7 +62,7 @@ type Client interface {
 	ProcessCPU(job string, duration model.Duration) (float64, error)
 	ProcessResidentMEM(job string, duration model.Duration) (float64, error)
 
-    Measure(b Benchmarker, f queryFunc, name string,job string, confDescription string, defaultRange model.Duration) error
+	Measure(b ginkgo.Benchmarker, f queryFunc, name string, job string, confDescription string, defaultRange model.Duration) error
 }
 
 type client struct {
@@ -82,12 +82,14 @@ func NewClient(url string, timeout time.Duration) (Client, error) {
 	}, nil
 }
 
-func (c *client) Measure(b Benchmarker, f queryFunc, name string,job string, confDescription string, defaultRange model.Duration) error {
+func (c *client) Measure(b ginkgo.Benchmarker, f queryFunc, name string, job string, confDescription string, defaultRange model.Duration) error {
 	measure, err := f(job, defaultRange)
 	if err != nil {
 		return fmt.Errorf("queryMetric %s failed job: %s err: %w", name, job, err)
 	}
-	b.RecordValue(fmt.Sprintf("%s - %s - %s",job, name, confDescription), measure)
+
+	b.RecordValue(fmt.Sprintf("%s - %s - %s", job, name, confDescription), measure)
+
 	return nil
 }
 

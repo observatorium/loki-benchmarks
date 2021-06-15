@@ -30,12 +30,12 @@ bench-dev: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR)
 	./run.sh
 .PHONY: bench-dev
 
-bench-obs-logs-stage: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR)
-	@TARGET_ENV=observatorium-logs-stage \
-	OBS_NS=observatorium-logs-stage \
+bench-obs-logs-test: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR)
+	@TARGET_ENV=ocp-observatorium-test \
+	OBS_NS=observatorium-logs-test \
 	OBS_LOKI_QF="observatorium-loki-query-frontend" \
 	OBS_LOKI_QR="observatorium-loki-querier" \
 	OBS_LOKI_DST="observatorium-loki-distributor" \
 	OBS_LOKI_ING="observatorium-loki-ingester" \
 	./run.sh
-.PHONY: bench-staging
+.PHONY: bench-obs-logs-test

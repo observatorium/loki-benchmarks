@@ -19,33 +19,35 @@ import (
 var _ = Describe("Scenario: High Volume Reads", func() {
 
 	var (
-		scenarioCfg config.HighVolumeReads
-		beforeOnce  sync.Once
-
-		totalSamples int
-		mu           sync.Mutex // Guard total samples taken before tear down in AfterEach
+		scenarioCfg        config.HighVolumeReads
+		configurationCount int
+		mu                 sync.Mutex // Guard
+		totalSamples       int
 	)
 
 	BeforeEach(func() {
 		scenarioCfg = benchCfg.Scenarios.HighVolumeReads
 		if !scenarioCfg.Enabled {
 			Skip("High Volumes Reads Benchmark not enabled!")
-
 			return
 		}
 
-		beforeOnce.Do(func() {
-			totalSamples = scenarioCfg.Samples.Total
-			readerDuration := time.Duration(int64(scenarioCfg.Samples.Total) * int64(scenarioCfg.Samples.Interval))
+		if totalSamples == 0 {
+			totalSamples = scenarioCfg.Configurations[configurationCount].Samples.Total
+			interval := scenarioCfg.Configurations[configurationCount].Samples.Interval
+			readerDuration := time.Duration(int64(totalSamples) * int64(interval))
+			writerCfg := scenarioCfg.Configurations[configurationCount].Writers
+			readerCfg := scenarioCfg.Configurations[configurationCount].Readers
 
-			writerCfg := scenarioCfg.Writers
-			readerCfg := scenarioCfg.Readers
+			// delete previous logger deployment from earlier. executions (if exist)
+			_ = logger.Undeploy(k8sClient, benchCfg.Logger)
 
-			// Deploy the logger to ingest logs
+			// deploy loggers
 			err := logger.Deploy(k8sClient, benchCfg.Logger, writerCfg, benchCfg.Loki.PushURL())
 			Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-			err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Logger.Namespace, benchCfg.Logger.Name, writerCfg.Replicas, defaultRetry, defaulTimeout)
+			// wait for loggers to be ready
+			err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Logger.Namespace, benchCfg.Logger.Name, writerCfg.Replicas, defaultRetry, defaultTimeout)
 			Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
 			// Wait until we ingested enough logs based on startThreshold
@@ -56,6 +58,11 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 			err = logger.Undeploy(k8sClient, benchCfg.Logger)
 			Expect(err).Should(Succeed(), "Failed to delete logger deployment")
 
+			// delete previous query clients deployment from earlier. executions (if exist)
+			for id := range readerCfg.Queries {
+				_ = querier.Undeploy(k8sClient, benchCfg.Querier, id)
+			}
+
 			// Deploy the query clients
 			for id, query := range readerCfg.Queries {
 				err = querier.Deploy(k8sClient, benchCfg.Querier, readerCfg, benchCfg.Loki.QueryRangeURL(), id, query, readerDuration)
@@ -65,12 +72,12 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 			for id := range readerCfg.Queries {
 				name := querier.DeploymentName(benchCfg.Querier, id)
 
-				err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Querier.Namespace, name, readerCfg.Replicas, defaultRetry, defaulTimeout)
+				err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Querier.Namespace, name, readerCfg.Replicas, defaultRetry, defaultTimeout)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed to wait for ready querier deployment: %s", name))
 			}
-		})
+		}
 
-		time.Sleep(scenarioCfg.Samples.Interval)
+		time.Sleep(scenarioCfg.Configurations[configurationCount].Samples.Interval)
 	})
 
 	AfterEach(func() {
@@ -78,98 +85,58 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 		defer mu.Unlock()
 
 		if totalSamples == 0 {
-			readerCfg := scenarioCfg.Readers
+			readerCfg := scenarioCfg.Configurations[configurationCount].Readers
 			for id := range readerCfg.Queries {
 				Expect(querier.Undeploy(k8sClient, benchCfg.Querier, id)).Should(Succeed(), "Failed to delete querier deployment")
 			}
+			configurationCount++
 		}
 	})
 
-	Measure("should result in measurements of p99, p50 and avg for all successful read requests to the query frontend", func(b Benchmarker) {
-		defaultRange := scenarioCfg.Samples.Range
+	for _, configuration := range benchCfg.Scenarios.HighVolumeReads.Configurations {
+		c := configuration // Make a local copy to avoid the "Using the variable on range scope `verb` in function literal"
+		Measure("should result in measurements - configuration: "+c.Description, func(b Benchmarker) {
+			defaultRange := scenarioCfg.Configurations[configurationCount].Samples.Range
 
-		//
-		// Collect measurements for the query frontend
-		//
-		job := benchCfg.Metrics.QueryFrontendJob()
+			// Collect measurements for query frontend
+			job := benchCfg.Metrics.QueryFrontendJob()
+			err := metricsClient.Measure(b, metricsClient.RequestReadsQPS, "2xx reads QPS", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeP99, "2xx reads p99", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeP50, "2xx reads p50", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeAvg, "2xx reads avg", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
-		// Record Reads QPS
-		qps, err := metricsClient.RequestReadsQPS(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read QPS for all query frontend reads with status code 2xx")
-		b.RecordValue("All query frontend 2xx reads QPS", qps)
+			// Collect measurements for querier
+			job = benchCfg.Metrics.QuerierJob()
+			err = metricsClient.Measure(b, metricsClient.RequestReadsQPS, "2xx reads QPS", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeP99, "2xx reads p99", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeP50, "2xx reads p50", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeAvg, "2xx reads avg", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
-		// Record p99 loki_request_duration_seconds_bucket
-		p99, err := metricsClient.RequestDurationOkQueryRangeP99(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p50 for all query frontend reads with status code 2xx")
-		b.RecordValue("All query frontend 2xx reads p99", p99)
+			// Collect measurements for ingester
+			job = benchCfg.Metrics.IngesterJob()
+			if c.Samples.Interval > 15*time.Minute {
+				err = metricsClient.Measure(b, metricsClient.RequestBoltDBShipperReadsQPS, "Boltdb shipper reads QPS", job, c.Description, defaultRange)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			}
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcQuerySampleP99, "successful GRPC query p99", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcQuerySampleP50, "successful GRPC query p50", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcQuerySampleAvg, "successful GRPC query avg", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
-		// Record p50 loki_request_duration_seconds_bucket
-		p50, err := metricsClient.RequestDurationOkQueryRangeP50(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p50 for all query frontend reads with status code 2xx")
-		b.RecordValue("All query frontend 2xx reads p50", p50)
+			mu.Lock()
+			defer mu.Unlock()
+			totalSamples -= 1
 
-		// Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
-		avg, err := metricsClient.RequestDurationOkQueryRangeAvg(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read average for all query frontend reads with status code 2xx")
-		b.RecordValue("All query frontend 2xx reads avg", avg)
-
-		//
-		// Collect measurements for the querier
-		//
-		job = benchCfg.Metrics.QuerierJob()
-
-		// Record Reads QPS
-		qps, err = metricsClient.RequestReadsQPS(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read QPS for all querier reads with status code 2xx")
-		b.RecordValue("All querier 2xx reads QPS", qps)
-
-		// Record p99 loki_request_duration_seconds_bucket
-		p99, err = metricsClient.RequestDurationOkQueryRangeP99(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p50 for all querier query-range with status code 2xx")
-		b.RecordValue("All querier 2xx query range p99", p99)
-
-		// Record p50 loki_request_duration_seconds_bucket
-		p50, err = metricsClient.RequestDurationOkQueryRangeP50(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p50 for all querier query-range with status code 2xx")
-		b.RecordValue("All querier 2xx query range p50", p50)
-
-		// Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
-		avg, err = metricsClient.RequestDurationOkQueryRangeAvg(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read average for all querier query-range with status code 2xx")
-		b.RecordValue("All querier 2xx query range avg", avg)
-
-		//
-		// Collect measurements for the ingester
-		//
-		job = benchCfg.Metrics.IngesterJob()
-
-		// Record Reads QPS
-		qps, err = metricsClient.RequestReadsGrpcQPS(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read QPS for all ingester reads with status code 2xx")
-		b.RecordValue("All ingester successful reads QPS", qps)
-
-		// Record BoltDB Shipper Reads QPS
-		qps, _ = metricsClient.RequestBoltDBShipperReadsQPS(job, defaultRange)
-		b.RecordValue("All boltdb shipper successful reads QPS", qps)
-
-		// Record p99 loki_request_duration_seconds_bucket
-		p99, err = metricsClient.RequestDurationOkGrpcQuerySampleP99(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p50 for all ingester query sample with status code 2xx")
-		b.RecordValue("All ingester successful query sample p99", p99)
-
-		// Record p50 loki_request_duration_seconds_bucket
-		p50, err = metricsClient.RequestDurationOkGrpcQuerySampleP50(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p50 for all ingester reads with status code 2xx")
-		b.RecordValue("All ingester successful query sample p50", p50)
-
-		// Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
-		avg, err = metricsClient.RequestDurationOkGrpcQuerySampleAvg(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read average for all ingester reads with status code 2xx")
-		b.RecordValue("All ingester successful query sample avg", avg)
-
-		mu.Lock()
-		defer mu.Unlock()
-		totalSamples -= 1
-
-	}, benchCfg.Scenarios.HighVolumeReads.Samples.Total)
+		}, c.Samples.Total)
+	}
 })

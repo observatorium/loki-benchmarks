@@ -30,7 +30,7 @@ var (
 	reportDir string
 
 	defaultRetry        = 5 * time.Second
-	defaulTimeout       = 30 * time.Second
+	defaultTimeout      = 60 * time.Second
 	defaultLatchTimeout = 5 * time.Minute
 )
 
@@ -61,6 +61,7 @@ func init() {
 		panic("Failed to marshal benchmark configuration file")
 	}
 
+	fmt.Printf("\nUsing benchmark configuration:\n===============================\n%s\n", yamlFile)
 	// Create a client to collect metrics
 	metricsClient, err = metrics.NewClient(benchCfg.Metrics.URL, 10*time.Second)
 	if err != nil {

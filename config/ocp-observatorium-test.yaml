@@ -1,0 +1,73 @@
+logger:
+  name: logger
+  namespace:  observatorium-logs-test
+  image: quay.io/periklis/logger:latest
+  tenantId: observatorium
+
+querier:
+  name: querier
+  namespace: observatorium-logs-test
+  image: quay.io/periklis/hey:latest
+  tenantId: observatorium
+
+metrics:
+  url: http://127.0.0.1:9090
+  enableCadvisorMetrics: true
+  # Align these with ./prometheus/config.yaml
+  jobs:
+    distributor: loki-distributor
+    ingester: loki-ingester
+    querier: loki-querier
+    queryFrontend: loki-query-frontend
+  # cadvisor job names
+  cadvisorJobs:
+    ingester: cadvisor_ingesters
+
+loki:
+  distributor: http://observatorium-loki-distributor-http.observatorium-logs-test.svc.cluster.local:3100
+  queryFrontend: http://observatorium-loki-query-frontend-http.observatorium-logs-test.svc.cluster.local:3100
+
+scenarios:
+  highVolumeWrites:
+    enabled: true
+    configurations:
+      - description: "Write 1,000 logs-per-second"
+        samples:
+          interval: "20s"
+          range: "30s"
+          total: 18
+        writers:
+          replicas: 1
+          throughput: 1000
+      - description: "Write 5,000 logs-per-second"
+        samples:
+          interval: "20s"
+          range: "30s"
+          total: 18
+        writers:
+          replicas: 5
+          throughput: 1000
+      - description: "Write 10,000 logs-per-second"
+        samples:
+          interval: "20s"
+          range: "30s"
+          total: 18
+        writers:
+          replicas: 10
+          throughput: 1000
+      - description: "Write 20,000 logs-per-second"
+        samples:
+          interval: "20s"
+          range: "30s"
+          total: 18
+        writers:
+          replicas: 10
+          throughput: 2000
+      - description: "Write 50,000 logs-per-second"
+        samples:
+          interval: "20s"
+          range: "30s"
+          total: 6
+        writers:
+          replicas: 10
+          throughput: 5000

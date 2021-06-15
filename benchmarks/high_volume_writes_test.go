@@ -1,6 +1,7 @@
 package benchmarks_test
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -13,35 +14,38 @@ import (
 )
 
 var _ = Describe("Scenario: High Volume Writes", func() {
-	var (
-		scenarioCfg config.HighVolumeWrites
-		beforeOnce  sync.Once
 
-		totalSamples int
-		mu           sync.Mutex // Guard total samples taken before tear down in AfterEach
+	var (
+		scenarioCfg        config.HighVolumeWrites
+		configurationCount int
+		mu                 sync.Mutex // Guard
+		totalSamples       int
 	)
 
 	BeforeEach(func() {
 		scenarioCfg = benchCfg.Scenarios.HighVolumeWrites
 		if !scenarioCfg.Enabled {
 			Skip("High Volumes Writes Benchmark not enabled!")
-
 			return
 		}
 
-		beforeOnce.Do(func() {
-			totalSamples = scenarioCfg.Samples.Total
+		if totalSamples == 0 {
+			totalSamples = scenarioCfg.Configurations[configurationCount].Samples.Total
+			writerCfg := scenarioCfg.Configurations[configurationCount].Writers
 
-			writerCfg := scenarioCfg.Writers
+			// delete previous logger deployment from earlier. executions (if exist)
+			_ = logger.Undeploy(k8sClient, benchCfg.Logger)
 
+			// deploy loggers
 			err := logger.Deploy(k8sClient, benchCfg.Logger, writerCfg, benchCfg.Loki.PushURL())
 			Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-			err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Logger.Namespace, benchCfg.Logger.Name, writerCfg.Replicas, defaultRetry, defaulTimeout)
+			// wait for loggers to be ready
+			err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Logger.Namespace, benchCfg.Logger.Name, writerCfg.Replicas, defaultRetry, defaultTimeout)
 			Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
-		})
+		}
 
-		time.Sleep(scenarioCfg.Samples.Interval)
+		time.Sleep(scenarioCfg.Configurations[configurationCount].Samples.Interval)
 	})
 
 	AfterEach(func() {
@@ -50,69 +54,54 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 
 		if totalSamples == 0 {
 			Expect(logger.Undeploy(k8sClient, benchCfg.Logger)).Should(Succeed(), "Failed to delete logger deployment")
+			configurationCount++
 		}
 	})
 
-	Measure("should result in measurements of p99, p50 and avg for all successful write requests to the distributor", func(b Benchmarker) {
-		defaultRange := scenarioCfg.Samples.Range
+	for _, configuration := range benchCfg.Scenarios.HighVolumeWrites.Configurations {
+		c := configuration // Make a local copy to avoid the "Using the variable on range scope `verb` in function literal"
+		Measure("should result in measurements - configuration: "+c.Description, func(b Benchmarker) {
+			defaultRange := scenarioCfg.Configurations[configurationCount].Samples.Range
 
-		//
-		// Collect measurements for the distributor
-		//
-		job := benchCfg.Metrics.DistributorJob()
+			// Collect measurements for distributors
+			job := benchCfg.Metrics.DistributorJob()
+			err := metricsClient.Measure(b, metricsClient.RequestWritesQPS, "2xx push QPS", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushP99, "2xx push p99", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushP50, "2xx push p50", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushAvg, "2xx push avg", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
-		// Record Reads QPS
-		qps, err := metricsClient.RequestWritesQPS(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read QPS for all distributor push with status code 2xx")
-		b.RecordValue("All distributor 2xx push QPS", qps)
+			// Collect measurements for Ingesters
+			job = benchCfg.Metrics.IngesterJob()
+			CadvisorIngesterJob := benchCfg.Metrics.CadvisorIngesterJob()
+			err = metricsClient.Measure(b, metricsClient.ProcessCPU, "Processes CPU", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			if benchCfg.Metrics.EnableCadvisorMetrics {
+				err = metricsClient.Measure(b, metricsClient.ContainerUserCPU, "Containers User CPU", CadvisorIngesterJob, c.Description, defaultRange)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+				err = metricsClient.Measure(b, metricsClient.ContainerWorkingSetMEM, "Containers WorkingSet memory", CadvisorIngesterJob, c.Description, defaultRange)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			}
+			err = metricsClient.Measure(b, metricsClient.RequestWritesGrpcQPS, "successful GRPC push QPS", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			if c.Samples.Interval > 15*time.Minute {
+				err = metricsClient.Measure(b, metricsClient.RequestBoltDBShipperWritesQPS, "Boltdb shipper successful writes QPS", job, c.Description, defaultRange)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			}
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcPushP99, "successful GRPC push p99", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcPushP50, "successful GRPC push p50", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcPushAvg, "successful GRPC push avg", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
-		// Record p99 loki_request_duration_seconds_bucket
-		p99, err := metricsClient.RequestDurationOkPushP99(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p99 for all distributor push requests with status code 2xx")
-		b.RecordValue("All distributor 2xx push p99", p99)
+			mu.Lock()
+			defer mu.Unlock()
+			totalSamples -= 1
 
-		// Record p50 loki_request_duration_seconds_bucket
-		p50, err := metricsClient.RequestDurationOkPushP50(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p50 for all distributor push requests with status code 2xx")
-		b.RecordValue("All distributor 2xx push p50", p50)
-
-		// Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
-		avg, err := metricsClient.RequestDurationOkPushAvg(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read average for all distributor push requests with status code 2xx")
-		b.RecordValue("All distributor 2xx push avg", avg)
-
-		//
-		// Collect measurements for the ingester
-		//
-		job = benchCfg.Metrics.IngesterJob()
-
-		// Record Writes QPS
-		qps, err = metricsClient.RequestWritesGrpcQPS(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read QPS for all ingester GRPC push with status code 2xx")
-		b.RecordValue("All ingester successful GRPC push QPS", qps)
-
-		// Record BoltDB Shipper Writes QPS
-		qps, _ = metricsClient.RequestBoltDBShipperWritesQPS(job, defaultRange)
-		b.RecordValue("All boltdb shipper successful writes QPS", qps)
-
-		// Record p99 loki_request_duration_seconds_bucket
-		p99, err = metricsClient.RequestDurationOkGrpcPushP99(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p99 for all ingester GRPC push with status code 2xx")
-		b.RecordValue("All ingester successful GRPC push p99", p99)
-
-		// Record p50 loki_request_duration_seconds_bucket
-		p50, err = metricsClient.RequestDurationOkGrpcPushP50(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read p50 for all ingester GRPC push with status code 2xx")
-		b.RecordValue("All ingester successful GRPC push p50", p50)
-
-		// Record avg from loki_request_duration_seconds_sum / loki_request_duration_seconds_count
-		avg, err = metricsClient.RequestDurationOkGrpcPushAvg(job, defaultRange)
-		Expect(err).Should(Succeed(), "Failed to read average for all ingester GRPC push with status code 2xx")
-		b.RecordValue("All ingester successful GRPC push avg", avg)
-
-		mu.Lock()
-		defer mu.Unlock()
-		totalSamples -= 1
-
-	}, benchCfg.Scenarios.HighVolumeWrites.Samples.Total)
+		}, c.Samples.Total)
+	}
 })
