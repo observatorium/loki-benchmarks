@@ -24,10 +24,11 @@ create_secret() {
   kubectl -n $NAMESPACE delete secret test ||:
   kubectl -n $NAMESPACE create secret generic test \
     --from-literal=endpoint=$(echo -n "$ENDPOINT" | base64) \
-    --from-literal=region=$(echo -n "$REGION" | base64) \
+    --from-literal=aws_region=$(echo -n "$REGION" | base64) \
+    --from-literal=bucket=$(echo -n "$BUCKET_NAME" | base64) \
     --from-literal=bucketnames=$(echo -n "$BUCKET_NAME" | base64) \
-    --from-literal=access_key_id=$(echo -n "$ACCESS_KEY_ID" | base64) \
-    --from-literal=access_key_secret=$(echo -n "$SECRET_ACCESS_KEY" | base64)
+    --from-literal=aws_access_key_id=$(echo -n "$ACCESS_KEY_ID" | base64) \
+    --from-literal=aws_secret_access_key=$(echo -n "$SECRET_ACCESS_KEY" | base64)
 }
 
 main() {
