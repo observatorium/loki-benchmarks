@@ -28,6 +28,60 @@ loki:
   queryFrontend: http://observatorium-loki-query-frontend-http.observatorium-logs-test.svc.cluster.local:3100
 
 scenarios:
+  highVolumeReads:
+    enabled: true
+    configurations:
+      - description: "Read 20 queries-per-second"
+        samples:
+          interval: "15s"
+          range: "1m"
+          total: 10
+        writers:
+          replicas: 10
+          throughput: 100
+        readers:
+          replicas: 1
+          throughput: 10
+          queries:
+            sumRateByLevel: 'sum(rate({component!=""}[5m])) by (level)'
+          startThreshold: 1024000
+      - description: "Read 20*3 queries-per-second"
+        samples:
+          interval: "15s"
+          range: "1m"
+          total: 10
+        writers:
+          replicas: 10
+          throughput: 100
+        readers:
+          replicas: 1
+          throughput: 10
+          queries:
+            topTenComponents: 'topk(10, sum(rate({component!=""}[5m])) by (level))'
+            countOverTime: 'count_over_time({component!=""}[5m])'
+            bytesOverTime: 'bytes_over_time({component!=""}[5m])'
+          startThreshold: 1024000
+      - description: "Read 20*8 queries-per-second"
+        samples:
+          interval: "15s"
+          range: "1m"
+          total: 10
+        writers:
+          replicas: 10
+          throughput: 100
+        readers:
+          replicas: 1
+          throughput: 10
+          queries:
+            sumRateByLevel: 'sum(rate({component!=""}[1m])) by (level)'
+            devopsend: 'sum(rate({component="devopsend"}[1m])) by (level)'
+            fullstackend: 'sum(rate({component="fullstackend"}[1m])) by (level)'
+            frontend: 'sum(rate({component="frontend"}[1m])) by (level)'
+            backend: 'sum(rate({component="backend"}[1m])) by (level)'
+            allpanics: 'sum(rate({msg=~"panic.*"}[1m]))'
+            countpanics: 'count_over_time({msg=~"panic.*"}[5m])'
+            topTenErrors: 'topk(10, sum(rate({component!="", level="error"}[5m])) by (component))'
+          startThreshold: 1024000
   highVolumeWrites:
     enabled: true
     configurations:
