@@ -12,20 +12,19 @@ This suite consists of Loki benchmarks tests for multiple scenarios. Each scenar
    - High Volume Aggregate: Measure `QPS`, `p99`, `p50` and `avg` request duration for all 2xx read requests to all Loki query-frontend, querier and ingester pods.
    - High Volume Aggregate: Measure `QPS`, `p99`, `p50` and `avg` request duration for all 2xx read requests to all Loki query-frontend, querier and ingester pods.
    - Dashboard queries: Measure `QPS`, `p99`, `p50` and `avg` request duration for all 2xx read requests to all Loki query-frontend, querier and ingester pods.
-    
+
 ## Prerequisites
 
 * Checkout a copy of the [observatorium/observatorium](https://github.com/observatorium/observatorium) repository and place it as a sibling directory to the `loki-benchmarks` repository.  
-* Working [cadvisor](https://github.com/google/cadvisor) is required to accurately measure CPU and Memory. Deployment script available at [hack/deploy_cadvisor.sh](hack/deploy_cadvisor.sh)  
+* Working [cadvisor](https://github.com/google/cadvisor) is required to accurately measure CPU and Memory. In order to utilize those tests, checkout a copy of the repository and place it as a sibiling directory to the `loki-benchmarks` repository. Otherwise, set `enableCadvisorMetrics` in the configurations to `false`.
 * gnuplot is required to create graph reports. To install execute: `sudo yum install gnuplot`
 
-## Deployment and benchmark on OCP cluster 
+## Deployment and benchmark on OCP cluster
 
 * Connect to OCP cluster and make sure `oc` command is working  
-* From within `hack` folder execute `deploy_cadvisor.sh` to deploy cadvisor
-* From within `hack` folder execute `deploy_loki_using_observatorium_yaml.sh` to deploy Loki  
+* Run `make deploy-cadvisor` & make `make deploy-observatorium-loki`
 * Start the benchmark using `bench-obs-logs-test` configuration `make bench-obs-logs-test`
-* Upon benchmark execution completion, results are available in the `reports/date+time` folder 
+* Upon benchmark execution completion, results are available in the `reports/date+time` folder
 
 ## How to add new benchmarks to this suite
 

@@ -11,6 +11,8 @@ export REPORT_DIR?=$(CURDIR)/reports/$(shell date +%Y-%m-%d-%H-%M-%S)
 
 export KUBECTL=$(shell command -v kubectl)
 
+CADVISOR_NAMESPACE=cadvisor
+
 all: lint bench-dev
 
 lint: $(GOLANGCI_LINT)
@@ -18,6 +20,13 @@ lint: $(GOLANGCI_LINT)
 
 $(REPORT_DIR):
 	@mkdir -p $(REPORT_DIR)
+
+deploy-cadvisor: $(KUSTOMIZE)
+	oc create namespace $(CADVISOR_NAMESPACE)
+	oc -n $(CADVISOR_NAMESPACE) adm policy add-scc-to-user privileged -z $(CADVISOR_NAMESPACE)
+	oc -n $(CADVISOR_NAMESPACE) adm policy add-cluster-role-to-user cluster-reader -z $(CADVISOR_NAMESPACE)
+	$(KUSTOMIZE) build ../cadvisor/deploy/kubernetes/base | oc apply -f -
+.PHONY: deploy-cadvisor
 
 bench-dev: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR)
 	@TARGET_ENV=development \
@@ -39,3 +48,7 @@ bench-obs-logs-test: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR)
 	OBS_LOKI_ING="observatorium-loki-ingester" \
 	./run.sh
 .PHONY: bench-obs-logs-test
+
+cadvisor-cleanup:
+	oc delete namespace $(CADVISOR_NAMESPACE)
+.PHONY: cadvisor-cleanup
