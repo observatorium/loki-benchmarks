@@ -16,7 +16,7 @@ LOKI_NAMESPACE := observatorium-logs-test
 
 LOKI_STORAGE_BUCKET ?= loki-benchmark-storage
 LOKI_TEMPLATE_FILE ?= /tmp/observatorium-logs-template.yaml
-LOKI_INGESTER_REPLICAS ?= 3
+LOKI_CONFIG_FILE ?= config/loki-parameters.yaml
 
 all: lint bench-dev
 
@@ -40,7 +40,7 @@ deploy-cadvisor: $(KUSTOMIZE)
 deploy-observatorium-loki: download-observatorium-loki-template
 	oc create namespace $(LOKI_NAMESPACE)
 	hack/deploy-example-secret.sh $(LOKI_NAMESPACE) $(LOKI_STORAGE_BUCKET)
-	oc process -f $(LOKI_TEMPLATE_FILE) -p LOKI_INGESTER_REPLICAS=$(LOKI_INGESTER_REPLICAS) -p NAMESPACE=$(LOKI_NAMESPACE) -p LOKI_S3_SECRET=test | oc -n $(LOKI_NAMESPACE) apply -f -
+	oc process -f $(LOKI_TEMPLATE_FILE) -p NAMESPACE=$(LOKI_NAMESPACE) -p LOKI_S3_SECRET=test --param-file $(LOKI_CONFIG_FILE) | oc -n $(LOKI_NAMESPACE) apply -f -
 .PHONY:deploy-observatorium-loki
 
 bench-dev: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR)
