@@ -44,6 +44,7 @@ func Deploy(c client.Client, cfg *config.Logger, scenarioCfg *config.Writers, pu
 								fmt.Sprintf("--url=%s", pushURL),
 								fmt.Sprintf("--logps=%d", scenarioCfg.Throughput),
 								fmt.Sprintf("--tenant=%s", cfg.TenantID),
+								fmt.Sprintf("--message-size=%d", scenarioCfg.MessageSize),
 							},
 						},
 					},

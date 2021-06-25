@@ -39,6 +39,7 @@ scenarios:
         writers:
           replicas: 10
           throughput: 100
+          messageSize: 100
         readers:
           replicas: 1
           throughput: 10
@@ -53,6 +54,7 @@ scenarios:
         writers:
           replicas: 10
           throughput: 100
+          messageSize: 100
         readers:
           replicas: 1
           throughput: 10
@@ -69,6 +71,7 @@ scenarios:
         writers:
           replicas: 10
           throughput: 100
+          messageSize: 100
         readers:
           replicas: 1
           throughput: 10
@@ -93,6 +96,7 @@ scenarios:
         writers:
           replicas: 1
           throughput: 1000
+          messageSize: 100
       - description: "Write 5,000 logs-per-second"
         samples:
           interval: "20s"
@@ -101,6 +105,7 @@ scenarios:
         writers:
           replicas: 5
           throughput: 1000
+          messageSize: 100
       - description: "Write 10,000 logs-per-second"
         samples:
           interval: "20s"
@@ -109,6 +114,7 @@ scenarios:
         writers:
           replicas: 10
           throughput: 1000
+          messageSize: 100
       - description: "Write 20,000 logs-per-second"
         samples:
           interval: "20s"
@@ -117,6 +123,7 @@ scenarios:
         writers:
           replicas: 10
           throughput: 2000
+          messageSize: 100
       - description: "Write 50,000 logs-per-second"
         samples:
           interval: "20s"
@@ -125,3 +132,4 @@ scenarios:
         writers:
           replicas: 10
           throughput: 5000
+          messageSize: 100
