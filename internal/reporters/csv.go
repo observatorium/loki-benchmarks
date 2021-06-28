@@ -9,8 +9,6 @@ import (
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
 	"github.com/onsi/ginkgo/types"
-
-	"github.com/kennygrant/sanitize"
 )
 
 type csvReporter struct {
@@ -30,8 +28,8 @@ func (cr *csvReporter) SpecWillRun(specSummary *types.SpecSummary) {}
 
 func (cr *csvReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 	for key, value := range specSummary.Measurements {
-		filename := sanitize.BaseName(key)
-		filepath := fmt.Sprintf("%s/%s.csv", cr.ReportDir, filename)
+		dirName := getSubDirectory(value.Name, cr.ReportDir)
+		filepath := createFilePath(key, dirName, "csv")
 
 		file, err := os.Create(filepath)
 		if err != nil {

@@ -92,13 +92,26 @@ scrape_loki_metrics() {
 generate_report() {
     source .bingo/variables.env
 
-    for f in $REPORT_DIR/*.gnuplot; do
-        gnuplot -e "set term png; set output '$f.png'" "$f"
+    for f in $REPORT_DIR/*/*.gnuplot; do
+      gnuplot -e "set term png; set output '$f.png'" "$f"
     done
 
-    cp ./reports/README.template $REPORT_DIR/README.md
-    sed -i "s/{{TARGET_ENV}}/$TARGET_ENV/i" $REPORT_DIR/README.md
-    $EMBEDMD -w $REPORT_DIR/README.md
+    for d in $REPORT_DIR/*; do
+      if [ -d $d ]; then
+        echo $d
+        cp ./reports/README.template $d/README.md
+        sed -i "s/{{TARGET_ENV}}/$TARGET_ENV/i" $d/README.md
+        $EMBEDMD -w $d/README.md
+      fi
+    done
+
+    # for d in $(ls -d $REPORT_DIR/*/); do
+
+    #
+    #   for f in $(ls $d*.gnuplot); do
+    #     gnuplot -e "set term png; set output '$f.png'" "$f"
+    #   done
+    # done
 }
 
 

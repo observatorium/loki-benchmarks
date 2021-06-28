@@ -6,11 +6,14 @@ import (
 	"os"
 	"testing"
 	"time"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
+
+	"github.com/kennygrant/sanitize"
 
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -62,6 +65,9 @@ func init() {
 	}
 
 	fmt.Printf("\nUsing benchmark configuration:\n===============================\n%s\n", yamlFile)
+	CreateConfigurationFolders(benchCfg.Scenarios.HighVolumeReads.Configurations, reportDir)
+	CreateConfigurationFolders(benchCfg.Scenarios.HighVolumeWrites.Configurations, reportDir)
+
 	// Create a client to collect metrics
 	metricsClient, err = metrics.NewClient(benchCfg.Metrics.URL, 10*time.Second)
 	if err != nil {
@@ -84,6 +90,17 @@ func init() {
 	k8sClient, err = client.New(cfg, opts)
 	if err != nil {
 		panic("Failed to create new k8s client")
+	}
+}
+
+func CreateConfigurationFolders(configurations []config.Configuration, directory string) {
+	for _, configuration := range configurations {
+		dirName := sanitize.BaseName(configuration.Description)
+		path := filepath.Join(directory, dirName)
+
+		if err := os.MkdirAll(path, os.ModeDir); err != nil {
+			panic("Failed to create report directies")
+		}
 	}
 }
 

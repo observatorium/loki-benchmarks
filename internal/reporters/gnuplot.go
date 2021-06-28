@@ -8,8 +8,6 @@ import (
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
 	"github.com/onsi/ginkgo/types"
-
-	"github.com/kennygrant/sanitize"
 )
 
 type gnuplotReporter struct {
@@ -29,8 +27,8 @@ func (cr *gnuplotReporter) SpecWillRun(specSummary *types.SpecSummary) {}
 
 func (cr *gnuplotReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 	for key, value := range specSummary.Measurements {
-		filename := sanitize.BaseName(key)
-		filepath := fmt.Sprintf("%s/%s.gnuplot", cr.ReportDir, filename)
+		dirName := getSubDirectory(value.Name, cr.ReportDir)
+		filepath := createFilePath(key, dirName, "gnuplot")
 
 		file, err := os.Create(filepath)
 		if err != nil {
