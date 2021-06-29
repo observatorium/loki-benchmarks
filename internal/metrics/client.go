@@ -16,17 +16,15 @@ type MetricType string
 type queryFunc func(label, job string, duration model.Duration) (float64, error)
 
 const (
+	BytesToGigabytesMultiplier string = "1000000000"
 	DistributorBytesReceivedTotal MetricType = "loki_distributor_bytes_received_total"
 )
 
 type Client interface {
 	DistributorBytesReceivedTotal() (float64, error)
+	DistributorGiPDReceivedTotal(label, job string, duration model.Duration) (float64, error)
 
 	// HTTP API
-	RequestDurationOkQueryAvg(label, job string, duration model.Duration) (float64, error)
-	RequestDurationOkQueryP50(label, job string, duration model.Duration) (float64, error)
-	RequestDurationOkQueryP99(label, job string, duration model.Duration) (float64, error)
-
 	RequestDurationOkQueryRangeAvg(label, job string, duration model.Duration) (float64, error)
 	RequestDurationOkQueryRangeP50(label, job string, duration model.Duration) (float64, error)
 	RequestDurationOkQueryRangeP99(label, job string, duration model.Duration) (float64, error)
@@ -49,6 +47,8 @@ type Client interface {
 
 	RequestReadsGrpcQPS(label, job string, duration model.Duration) (float64, error)
 	RequestWritesGrpcQPS(label, job string, duration model.Duration) (float64, error)
+
+	RequestQueryRangeThroughput(label, job string, duration model.Duration) (float64, error)
 
 	// Store API
 	RequestBoltDBShipperReadsQPS(label, job string, duration model.Duration) (float64, error)
@@ -123,8 +123,8 @@ func (c *client) ContainerUserCPU(label, job string, duration model.Duration) (f
 
 func (c *client) ContainerWorkingSetMEM(label, job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(avg_over_time(container_memory_working_set_bytes{%s=~".*%s.*"}[%s]) / 1000000)`, // in Mi (i.e. in Megabytes)
-		label, job, duration,
+		`sum(avg_over_time(container_memory_working_set_bytes{%s=~".*%s.*"}[%s]) / %s)`, // in Gi
+		label, job, duration, BytesToGigabytesMultiplier,
 	)
 
 	return c.executeScalarQuery(query)
@@ -134,8 +134,8 @@ func (c *client) ContainerWorkingSetMEM(label, job string, duration model.Durati
 // It is recommended to deploy cadvisor and use ContainerWorkingSetMEM
 func (c *client) ProcessResidentMEM(label, job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(avg_over_time(process_resident_memory_bytes{%s=~".*%s.*"}[%s]) / 1000000)`, // in Mi (i.e. in Megabytes)
-		label, job, duration,
+		`sum(avg_over_time(process_resident_memory_bytes{%s=~".*%s.*"}[%s]) / %s)`, // in Gi
+		label, job, duration, BytesToGigabytesMultiplier,
 	)
 
 	return c.executeScalarQuery(query)
@@ -176,6 +176,17 @@ func (c *client) requestQPS(label, job, route, code string, duration model.Durat
 	)
 
 	return c.executeScalarQuery(query)
+}
+
+func (c *client) requestThroughput(label, job, endpoint, code, queryRange, metricType, latencyType, le string, duration model.Duration) (float64, error) {
+	query := fmt.Sprintf(
+		`(sum by (namespace, job) (rate(loki_logql_querystats_bytes_processed_per_seconds_bucket{status_code=~"%s", endpoint=~"%s", range="%s", type=~"%s", %s=~".*%s.*", latency_type="%s", le="%s"}[%s])) / sum by (namespace, job) (rate(loki_logql_querystats_bytes_processed_per_seconds_count{status_code=~"%s", endpoint=~"%s", range="%s", type=~"%s", %s=~".*%s.*"}[%s])))`,
+		code, endpoint, queryRange, metricType, label, job, latencyType, le, duration,
+		code, endpoint, queryRange, metricType, label, job, duration,
+	)
+
+	res, _ := c.executeScalarQuery(query)
+	return res, nil
 }
 
 func (c *client) requestBoltDBShipperQPS(label, job, operation, code string, duration model.Duration) (float64, error) {

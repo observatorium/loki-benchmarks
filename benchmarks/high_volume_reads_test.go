@@ -108,9 +108,20 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeAvg, "2xx reads avg", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestQueryRangeThroughput, "2xx reads throughput", job.QueryLabel, job.Job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 			// Collect measurements for querier
 			job = benchCfg.Metrics.QuerierJob()
+			cadvisorJob := benchCfg.Metrics.CadvisorIngesterJob()
+			err = metricsClient.Measure(b, metricsClient.ProcessCPU, "Processes CPU", job.QueryLabel, job.Job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			if benchCfg.Metrics.EnableCadvisorMetrics {
+				err = metricsClient.Measure(b, metricsClient.ContainerUserCPU, "Containers User CPU", cadvisorJob.QueryLabel, cadvisorJob.Job, c.Description, defaultRange)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+				err = metricsClient.Measure(b, metricsClient.ContainerWorkingSetMEM, "Containers WorkingSet memory", cadvisorJob.QueryLabel, cadvisorJob.Job, c.Description, defaultRange)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			}
 			err = metricsClient.Measure(b, metricsClient.RequestReadsQPS, "2xx reads QPS", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeP99, "2xx reads p99", job.QueryLabel, job.Job, c.Description, defaultRange)
@@ -119,6 +130,8 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeAvg, "2xx reads avg", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestQueryRangeThroughput, "2xx reads throughput", job.QueryLabel, job.Job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 			// Collect measurements for ingester
 			job = benchCfg.Metrics.IngesterJob()
@@ -126,6 +139,8 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 				err = metricsClient.Measure(b, metricsClient.RequestBoltDBShipperReadsQPS, "Boltdb shipper reads QPS", job.QueryLabel, job.Job, c.Description, defaultRange)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			}
+			err = metricsClient.Measure(b, metricsClient.RequestReadsGrpcQPS, "successful GRPC reads QPS", job.QueryLabel, job.Job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcQuerySampleP99, "successful GRPC query p99", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcQuerySampleP50, "successful GRPC query p50", job.QueryLabel, job.Job, c.Description, defaultRange)
