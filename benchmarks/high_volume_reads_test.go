@@ -102,6 +102,8 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 			job := benchCfg.Metrics.QueryFrontendJob()
 			err := metricsClient.Measure(b, metricsClient.RequestReadsQPS, "2xx reads QPS", job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.RequestQueryRangeThroughput, "2xx reads throughput", job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeP99, "2xx reads p99", job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeP50, "2xx reads p50", job, c.Description, defaultRange)
