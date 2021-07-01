@@ -35,7 +35,8 @@ scenarios:
           total: 2
         writers:
           replicas: 10
-          throughput: 100
+          args:
+            logps: 100
         readers:
           replicas: 2
           throughput: 10
@@ -49,7 +50,8 @@ scenarios:
           total: 2
         writers:
           replicas: 10
-          throughput: 100
+          args:
+            logps: 100
         readers:
           replicas: 2
           throughput: 10
@@ -65,7 +67,8 @@ scenarios:
           total: 2
         writers:
           replicas: 10
-          throughput: 100
+          args:
+            logps: 100
         readers:
           replicas: 2
           throughput: 10
@@ -89,7 +92,8 @@ scenarios:
           total: 2
         writers:
           replicas: 1
-          throughput: 100
+          args:
+            logps: 100
       - description: "Write 1,000 logs-per-second"
         samples:
           interval: "60s"
@@ -97,4 +101,5 @@ scenarios:
           total: 2
         writers:
           replicas: 10
-          throughput: 100
+          args:
+            logps: 100
