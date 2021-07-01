@@ -38,8 +38,6 @@ scenarios:
           total: 10
         writers:
           replicas: 10
-          throughput: 100
-          messageSize: 100
         readers:
           replicas: 1
           throughput: 10
@@ -53,8 +51,6 @@ scenarios:
           total: 10
         writers:
           replicas: 10
-          throughput: 100
-          messageSize: 100
         readers:
           replicas: 1
           throughput: 10
@@ -70,8 +66,6 @@ scenarios:
           total: 10
         writers:
           replicas: 10
-          throughput: 100
-          messageSize: 100
         readers:
           replicas: 1
           throughput: 10
@@ -95,8 +89,9 @@ scenarios:
           total: 18
         writers:
           replicas: 1
-          throughput: 1000
-          messageSize: 100
+          args:
+            logps: 1000
+            message-size: 100
       - description: "Write 5,000 logs-per-second"
         samples:
           interval: "20s"
@@ -104,8 +99,9 @@ scenarios:
           total: 18
         writers:
           replicas: 5
-          throughput: 1000
-          messageSize: 100
+          args:
+            logps: 1000
+            message-size: 100
       - description: "Write 10,000 logs-per-second"
         samples:
           interval: "20s"
@@ -113,8 +109,9 @@ scenarios:
           total: 18
         writers:
           replicas: 10
-          throughput: 1000
-          messageSize: 100
+          args:
+            logps: 1000
+            message-size: 100
       - description: "Write 20,000 logs-per-second"
         samples:
           interval: "20s"
@@ -122,8 +119,9 @@ scenarios:
           total: 18
         writers:
           replicas: 10
-          throughput: 2000
-          messageSize: 100
+          args:
+            logps: 2000
+            message-size: 100
       - description: "Write 50,000 logs-per-second"
         samples:
           interval: "20s"
@@ -131,5 +129,6 @@ scenarios:
           total: 6
         writers:
           replicas: 10
-          throughput: 5000
-          messageSize: 100
+          args:
+            logps: 5000
+            message-size: 100

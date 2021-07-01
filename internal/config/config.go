@@ -92,8 +92,7 @@ func (lc *Loki) QueryRangeURL() string {
 
 type Writers struct {
 	Replicas   int32 `yaml:"replicas"`
-	Throughput int32 `yaml:"throughput"`
-	MessageSize int32 `yaml:"messageSize"`
+	Arguments  map[string]int32 `yaml:"args"`
 }
 
 type Readers struct {

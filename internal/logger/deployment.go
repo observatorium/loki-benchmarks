@@ -14,6 +14,15 @@ import (
 )
 
 func Deploy(c client.Client, cfg *config.Logger, scenarioCfg *config.Writers, pushURL string) error {
+	args := []string{
+		fmt.Sprintf("--url=%s", pushURL),
+		fmt.Sprintf("--tenant=%s", cfg.TenantID),
+	}
+
+	for key, value := range scenarioCfg.Arguments {
+		args = append(args, fmt.Sprintf("--%s=%d", key, value))
+	}
+
 	obj := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cfg.Name,
@@ -40,12 +49,7 @@ func Deploy(c client.Client, cfg *config.Logger, scenarioCfg *config.Writers, pu
 						{
 							Name:  cfg.Name,
 							Image: cfg.Image,
-							Args: []string{
-								fmt.Sprintf("--url=%s", pushURL),
-								fmt.Sprintf("--logps=%d", scenarioCfg.Throughput),
-								fmt.Sprintf("--tenant=%s", cfg.TenantID),
-								fmt.Sprintf("--message-size=%d", scenarioCfg.MessageSize),
-							},
+							Args: args,
 						},
 					},
 				},
