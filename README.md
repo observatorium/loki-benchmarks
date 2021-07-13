@@ -33,6 +33,7 @@ This suite consists of Loki benchmarks tests for multiple scenarios. Each scenar
 * Declare a new scenario with expected measurement values for each profile in the [config](./config) directory.
 * Extend the golang `Scenarios` struct in [internal/config/config.go](./internal/config/config.go) with the new scenario.
 * Add a new `_test.go` file in the [benchmarks](./benchmarks) directory.
+* Overriding `url` and `tenant` requires that the logger implementation provides such named CLI flags
 
 ### Run the tests
 

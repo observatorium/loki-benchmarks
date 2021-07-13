@@ -58,7 +58,7 @@ func init() {
 
 	err = yaml.Unmarshal(yamlFile, benchCfg)
 	if err != nil {
-		panic("Failed to marshal benchmark configuration file")
+		panic(fmt.Sprintf("Failed to marshal benchmark configuration file %s with errors %v", filename, err))
 	}
 
 	fmt.Printf("\nUsing benchmark configuration:\n===============================\n%s\n", yamlFile)

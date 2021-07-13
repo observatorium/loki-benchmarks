@@ -3,17 +3,23 @@ package logger
 import (
 	"context"
 	"fmt"
-
+	"github.com/observatorium/loki-benchmarks/internal/config"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/observatorium/loki-benchmarks/internal/config"
 )
 
 func Deploy(c client.Client, cfg *config.Logger, scenarioCfg *config.Writers, pushURL string) error {
+	var args []string
+
+	args = append(args, fmt.Sprintf("--%s=%s", "url", pushURL))
+	args = append(args, fmt.Sprintf("--%s=%s", "tenant", cfg.TenantID))
+
+	for k, v := range scenarioCfg.Args {
+		args = append(args, fmt.Sprintf("--%s=%s", k, v))
+	}
+
 	obj := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cfg.Name,
@@ -40,11 +46,7 @@ func Deploy(c client.Client, cfg *config.Logger, scenarioCfg *config.Writers, pu
 						{
 							Name:  cfg.Name,
 							Image: cfg.Image,
-							Args: []string{
-								fmt.Sprintf("--url=%s", pushURL),
-								fmt.Sprintf("--logps=%d", scenarioCfg.Throughput),
-								fmt.Sprintf("--tenant=%s", cfg.TenantID),
-							},
+							Args:  args,
 						},
 					},
 				},
