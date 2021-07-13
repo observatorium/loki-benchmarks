@@ -47,3 +47,11 @@ func (c *client) RequestWritesQPS(job string, duration model.Duration) (float64,
 	route := "loki_api_v1_push"
 	return c.requestQPS(job, route, "2.*|429", duration)
 }
+
+func (c *client) RequestQueryRangeThroughput(job string, duration model.Duration) (float64, error) {
+	return c.requestThroughput(job, "2..", "range", "filter|metric", "slow", "4e+09", duration)
+}
+
+func (c *client) RequestQueryInstantThroughput(job string, duration model.Duration) (float64, error) {
+	return c.requestThroughput(job, "2..", "instant", "filter|metric", "slow", "4e+09", duration)
+}

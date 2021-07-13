@@ -31,105 +31,184 @@ scenarios:
   highVolumeReads:
     enabled: true
     configurations:
-      - description: "Read 20 queries-per-second"
+      - description: "Query range 1 second"
         samples:
           interval: "15s"
           range: "1m"
           total: 10
         writers:
           replicas: 10
-          args:
-            logps: 100
         readers:
           replicas: 1
           throughput: 10
           queries:
-            sumRateByLevel: 'sum(rate({component!=""}[5m])) by (level)'
-          startThreshold: 1024000
-      - description: "Read 20*3 queries-per-second"
+            sumRateByLevel: 'sum(rate({component!=""}[1s])) by (level)'
+            sumRateErrosOnly: 'sum(rate({component!="", level="error"}[1s]))'
+          startThreshold: 1000000
+      - description: "Query range 1 minute"
         samples:
           interval: "15s"
           range: "1m"
           total: 10
         writers:
           replicas: 10
-          args:
-            logps: 100
-        readers:
-          replicas: 1
-          throughput: 10
-          queries:
-            topTenComponents: 'topk(10, sum(rate({component!=""}[5m])) by (level))'
-            countOverTime: 'count_over_time({component!=""}[5m])'
-            bytesOverTime: 'bytes_over_time({component!=""}[5m])'
-          startThreshold: 1024000
-      - description: "Read 20*8 queries-per-second"
-        samples:
-          interval: "15s"
-          range: "1m"
-          total: 10
-        writers:
-          replicas: 10
-          args:
-            logps: 100
         readers:
           replicas: 1
           throughput: 10
           queries:
             sumRateByLevel: 'sum(rate({component!=""}[1m])) by (level)'
-            devopsend: 'sum(rate({component="devopsend"}[1m])) by (level)'
-            fullstackend: 'sum(rate({component="fullstackend"}[1m])) by (level)'
-            frontend: 'sum(rate({component="frontend"}[1m])) by (level)'
-            backend: 'sum(rate({component="backend"}[1m])) by (level)'
-            allpanics: 'sum(rate({msg=~"panic.*"}[1m]))'
-            countpanics: 'count_over_time({msg=~"panic.*"}[5m])'
-            topTenErrors: 'topk(10, sum(rate({component!="", level="error"}[5m])) by (component))'
-          startThreshold: 1024000
+            sumRateErrosOnly: 'sum(rate({component!="", level="error"}[1m]))'
+          startThreshold: 1500000
+      - description: "Query range 1 hour"
+        samples:
+          interval: "15s"
+          range: "1m"
+          total: 10
+        writers:
+          replicas: 10
+        readers:
+          replicas: 1
+          throughput: 10
+          queries:
+            sumRateByLevel: 'sum(rate({component!=""}[1h])) by (level)'
+            sumRateErrosOnly: 'sum(rate({component!="", level="error"}[1h]))'
+          startThreshold: 3000000
+      - description: "Query range 1 day"
+        samples:
+          interval: "15s"
+          range: "1m"
+          total: 10
+        writers:
+          replicas: 10
+        readers:
+          replicas: 1
+          throughput: 10
+          queries:
+            sumRateByLevel: 'sum(rate({component!=""}[1d])) by (level)'
+            sumRateErrosOnly: 'sum(rate({component!="", level="error"}[1d]))'
+          startThreshold: 5000000
+      - description: "Query range 1 week"
+        samples:
+          interval: "15s"
+          range: "1m"
+          total: 10
+        writers:
+          replicas: 10
+        readers:
+          replicas: 1
+          throughput: 10
+          queries:
+            sumRateByLevel: 'sum(rate({component!=""}[1w])) by (level)'
+            sumRateErrosOnly: 'sum(rate({component!="", level="error"}[1w]))'
+          startThreshold: 10000000
+      - description: "Query range 2 weeks"
+        samples:
+          interval: "15s"
+          range: "1m"
+          total: 10
+        writers:
+          replicas: 10
+        readers:
+          replicas: 1
+          throughput: 10
+          queries:
+            sumRateByLevel: 'sum(rate({component!=""}[2w])) by (level)'
+            sumRateErrosOnly: 'sum(rate({component!="", level="error"}[2w]))'
+          startThreshold: 20000000
+      - description: "Query range 1 month"
+        samples:
+          interval: "15s"
+          range: "1m"
+          total: 10
+        writers:
+          replicas: 10
+        readers:
+          replicas: 1
+          throughput: 10
+          queries:
+            sumRateByLevel: 'sum(rate({component!=""}[31d])) by (level)'
+            sumRateErrosOnly: 'sum(rate({component!="", level="error"}[31d]))'
+          startThreshold: 50000000
   highVolumeWrites:
     enabled: true
     configurations:
-      - description: "Write 1,000 logs-per-second"
+      - description: "Write 250 GB per day"
         samples:
           interval: "20s"
           range: "30s"
-          total: 18
-        writers:
-          replicas: 1
-          args:
-            logps: 1000
-      - description: "Write 5,000 logs-per-second"
-        samples:
-          interval: "20s"
-          range: "30s"
-          total: 18
-        writers:
-          replicas: 5
-          args:
-            logps: 1000
-      - description: "Write 10,000 logs-per-second"
-        samples:
-          interval: "20s"
-          range: "30s"
-          total: 18
+          total: 15
         writers:
           replicas: 10
           args:
             logps: 1000
-      - description: "Write 20,000 logs-per-second"
+            message-size: 300
+      - description: "Write 500 GB per day"
         samples:
           interval: "20s"
           range: "30s"
-          total: 18
+          total: 15
         writers:
           replicas: 10
           args:
-            logps: 2000
-      - description: "Write 50,000 logs-per-second"
+            logps: 1000
+            message-size: 600
+      - description: "Write 1 TB per day"
         samples:
           interval: "20s"
           range: "30s"
-          total: 6
+          total: 15
         writers:
-          replicas: 10
+          replicas: 20
+          args:
+            logps: 1000
+            message-size: 500
+      - description: "Write 2 TB per day"
+        samples:
+          interval: "20s"
+          range: "30s"
+          total: 15
+        writers:
+          replicas: 20
+          args:
+            logps:: 2000
+            message-size: 500
+      - description: "Write 4 TB per day"
+        samples:
+          interval: "20s"
+          range: "30s"
+          total: 15
+        writers:
+          replicas: 20
           args:
             logps: 5000
+            message-size: 500
+      - description: "Write 8 TB per day"
+        samples:
+          interval: "20s"
+          range: "30s"
+          total: 15
+        writers:
+          replicas: 20
+          args:
+            logps: 5000
+            message-size: 900
+      - description: "Write 16 TB per day"
+        samples:
+          interval: "20s"
+          range: "30s"
+          total: 15
+        writers:
+          replicas: 25
+          args:
+            logps: 10000
+            message-size: 800
+      - description: "Write 32 TB per day"
+        samples:
+          interval: "20s"
+          range: "30s"
+          total: 15
+        writers:
+          replicas: 40
+          args:
+            logps: 10000
+            message-size: 1000

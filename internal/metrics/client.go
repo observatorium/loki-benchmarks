@@ -49,6 +49,9 @@ type Client interface {
 	RequestReadsGrpcQPS(job string, duration model.Duration) (float64, error)
 	RequestWritesGrpcQPS(job string, duration model.Duration) (float64, error)
 
+	RequestQueryRangeThroughput(job string, duration model.Duration) (float64, error)
+	RequestQueryInstantThroughput(job string, duration model.Duration) (float64, error)
+
 	// Store API
 	RequestBoltDBShipperReadsQPS(job string, duration model.Duration) (float64, error)
 	RequestBoltDBShipperWritesQPS(job string, duration model.Duration) (float64, error)
@@ -154,6 +157,16 @@ func (c *client) requestQPS(job, route, code string, duration model.Duration) (f
 	query := fmt.Sprintf(
 		`sum(rate(loki_request_duration_seconds_count{job="%s", route=~"%s", status_code=~"%s"}[%s]))`,
 		job, route, code, duration,
+	)
+
+	return c.executeScalarQuery(query)
+}
+
+func (c *client) requestThroughput(job, code, queryRange, metricType, latencyType, le string, duration model.Duration) (float64, error) {
+	query := fmt.Sprintf(
+		`(sum(rate(loki_logql_querystats_bytes_processed_per_seconds_bucket{status_code=~"%s", range="%s", type=~"%s", job=~"%s", latency_type="%s", le="%s"}[%s])) by (namespace, job) /	sum(rate(loki_logql_querystats_bytes_processed_per_seconds_count{status_code=~"%s", range="%s", type=~"%s", job=~"%s"}[%s])) by (namespace, job))`,
+		code, queryRange, metricType, job, latencyType, le, duration,
+		code, queryRange, metricType, job, duration,
 	)
 
 	return c.executeScalarQuery(query)
