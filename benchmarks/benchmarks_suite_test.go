@@ -112,7 +112,7 @@ func CreateResultsDirectoryFor(configurations []config.Configuration, directory 
 		dirName := sanitize.BaseName(configuration.Description)
 		path := filepath.Join(directory, dirName)
 
-		if err := os.MkdirAll(path, os.ModeDir); err != nil {
+		if err := os.Mkdir(path, 0700); err != nil {
 			panic("Failed to create report directies")
 		}
 	}
