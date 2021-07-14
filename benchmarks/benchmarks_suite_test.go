@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
+
+	"github.com/kennygrant/sanitize"
 
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -62,6 +65,8 @@ func init() {
 	}
 
 	fmt.Printf("\nUsing benchmark configuration:\n===============================\n%s\n", yamlFile)
+	ConfigureScenarioResultDirectories(benchCfg.Scenarios, reportDir)
+
 	// Create a client to collect metrics
 	metricsClient, err = metrics.NewClient(benchCfg.Metrics.URL, 10*time.Second)
 	if err != nil {
@@ -87,12 +92,69 @@ func init() {
 	}
 }
 
+func ConfigureScenarioResultDirectories(scenarios *config.Scenarios, directory string) {
+	configurations := []config.Configuration{}
+
+	if scenarios.HighVolumeReads.Enabled {
+		configurations = append(configurations, scenarios.HighVolumeReads.Configurations...)
+	}
+
+	if scenarios.HighVolumeWrites.Enabled {
+		configurations = append(configurations, scenarios.HighVolumeWrites.Configurations...)
+	}
+
+	CreateResultsDirectoryFor(configurations, directory)
+	CreateResultsReadmeFor(configurations, directory)
+}
+
+func CreateResultsDirectoryFor(configurations []config.Configuration, directory string) {
+	for _, configuration := range configurations {
+		dirName := sanitize.BaseName(configuration.Description)
+		path := filepath.Join(directory, dirName)
+
+		if err := os.Mkdir(path, 0700); err != nil {
+			panic("Failed to create report directies")
+		}
+	}
+}
+
+func CreateResultsReadmeFor(configurations []config.Configuration, directory string) {
+	path := filepath.Join(directory, "README.md")
+	file, err := os.Create(path)
+
+	if err != nil {
+		panic("Failed to create readme files")
+	}
+	defer file.Close()
+
+	title := "# Benchmark Report\n\n" +
+		"This document contains baseline benchmark results for Loki under synthetic load.\n\n"
+	tableOfContents := "## Table of Contents\n\n" +
+		"- [Benchmark Profile](#benchmark-profile)\n"
+	profileSection := "---\n\n" +
+		"## Benchmark Profile\n\n" +
+		"Generated using profile:\n" +
+		"[embedmd]:# (../../config/{{TARGET_ENV}}.yaml)"
+
+	for index, config := range configurations {
+		dirName := sanitize.BaseName(config.Description)
+		path = filepath.Join(dirName, "README.md")
+
+		tableOfContents += fmt.Sprintf("- [Scenario %d: %s](./%s)\n", index+1, config.Description, path)
+	}
+
+	_, _ = file.WriteString(title)
+	_, _ = file.WriteString(tableOfContents + "\n")
+	_, _ = file.WriteString(profileSection)
+}
+
 func TestBenchmarks(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	jr := reporters.NewJUnitReporter(fmt.Sprintf("%s/junit.xml", reportDir))
 	csv := internalreporters.NewCsvReporter(reportDir)
 	gp := internalreporters.NewGnuplotReporter(reportDir)
+	rm := internalreporters.NewReadmeReporter(reportDir)
 
-	RunSpecsWithDefaultAndCustomReporters(t, "Benchmarks Suite", []Reporter{jr, csv, gp})
+	RunSpecsWithDefaultAndCustomReporters(t, "Benchmarks Suite", []Reporter{jr, csv, gp, rm})
 }

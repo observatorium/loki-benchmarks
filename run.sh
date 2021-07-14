@@ -92,15 +92,13 @@ scrape_loki_metrics() {
 generate_report() {
     source .bingo/variables.env
 
-    for f in $REPORT_DIR/*.gnuplot; do
-        gnuplot -e "set term png; set output '$f.png'" "$f"
-    done
-
-    cp ./reports/README.template $REPORT_DIR/README.md
     sed -i "s/{{TARGET_ENV}}/$TARGET_ENV/i" $REPORT_DIR/README.md
     $EMBEDMD -w $REPORT_DIR/README.md
-}
 
+    for f in $REPORT_DIR/*/*.gnuplot; do
+      gnuplot -e "set term png; set output '$f.png'" "$f"
+    done
+}
 
 bench() {
     if [[ "$TARGET_ENV" = "development" ]] && $DEPLOY_KIND_OBSERVATORIUM; then
