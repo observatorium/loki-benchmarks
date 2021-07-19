@@ -3,7 +3,6 @@ package querier
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"strings"
 	"time"
 
@@ -21,6 +20,26 @@ func DeploymentName(cfg *config.Querier, id string) string {
 }
 
 func Deploy(c client.Client, cfg *config.Querier, scenarioCfg *config.Readers, uri, id, query string, d time.Duration) error {
+	var args []string
+
+	if scenarioCfg.Command != "" {
+		args = append(args, scenarioCfg.Command)
+	}
+
+	args = append(args, fmt.Sprintf("--%s=%s", "url", uri))
+	args = append(args, fmt.Sprintf("--%s=%s", "tenant", cfg.TenantID))
+
+	for k, v := range scenarioCfg.Args {
+		args = append(args, fmt.Sprintf("--%s=%s", k, v))
+	}
+
+	var queries []string
+	for _, v := range scenarioCfg.Queries {
+		queries = append(queries, v)
+	}
+
+	args = append(args, fmt.Sprintf("--queries=%s", strings.Join(queries, ",")))
+
 	name := DeploymentName(cfg, id)
 
 	obj := &appsv1.Deployment{
@@ -49,17 +68,7 @@ func Deploy(c client.Client, cfg *config.Querier, scenarioCfg *config.Readers, u
 						{
 							Name:  name,
 							Image: cfg.Image,
-							Args: []string{
-								"-q",
-								fmt.Sprintf("%d", scenarioCfg.QueriesPerSecond),
-								"-z",
-								d.String(),
-								"-m",
-								"GET",
-								"-H",
-								fmt.Sprintf(`X-Scope-OrgID: %s`, cfg.TenantID),
-								fmt.Sprintf("%s?query=%s", uri, url.QueryEscape(query)),
-							},
+							Args:  args,
 						},
 					},
 				},

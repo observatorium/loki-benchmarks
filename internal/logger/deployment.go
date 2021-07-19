@@ -13,6 +13,10 @@ import (
 func Deploy(c client.Client, cfg *config.Logger, scenarioCfg *config.Writers, pushURL string) error {
 	var args []string
 
+	if scenarioCfg.Command != "" {
+		args = append(args, scenarioCfg.Command)
+	}
+
 	args = append(args, fmt.Sprintf("--%s=%s", "url", pushURL))
 	args = append(args, fmt.Sprintf("--%s=%s", "tenant", cfg.TenantID))
 

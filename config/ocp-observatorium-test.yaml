@@ -39,7 +39,8 @@ scenarios:
         writers:
           replicas: 10
           args:
-            logps: 100
+            destination: loki
+            log-lines-rate: 100
         readers:
           replicas: 1
           throughput: 10
@@ -54,7 +55,8 @@ scenarios:
         writers:
           replicas: 10
           args:
-            logps: 100
+            destination: loki
+            log-lines-rate: 100
         readers:
           replicas: 1
           throughput: 10
@@ -71,7 +73,8 @@ scenarios:
         writers:
           replicas: 10
           args:
-            logps: 100
+            destination: loki
+            log-lines-rate: 100
         readers:
           replicas: 1
           throughput: 10
@@ -96,7 +99,8 @@ scenarios:
         writers:
           replicas: 1
           args:
-            logps: 1000
+            destination: loki
+            log-lines-rate: 1000
       - description: "Write 5,000 logs-per-second"
         samples:
           interval: "20s"
@@ -105,7 +109,8 @@ scenarios:
         writers:
           replicas: 5
           args:
-            logps: 1000
+            destination: loki
+            log-lines-rate: 1000
       - description: "Write 10,000 logs-per-second"
         samples:
           interval: "20s"
@@ -114,7 +119,8 @@ scenarios:
         writers:
           replicas: 10
           args:
-            logps: 1000
+            destination: loki
+            log-lines-rate: 1000
       - description: "Write 20,000 logs-per-second"
         samples:
           interval: "20s"
@@ -123,7 +129,8 @@ scenarios:
         writers:
           replicas: 10
           args:
-            logps: 2000
+            destination: loki
+            log-lines-rate: 2000
       - description: "Write 50,000 logs-per-second"
         samples:
           interval: "20s"
@@ -132,4 +139,5 @@ scenarios:
         writers:
           replicas: 10
           args:
-            logps: 5000
+            destination: loki
+            log-lines-rate: 5000

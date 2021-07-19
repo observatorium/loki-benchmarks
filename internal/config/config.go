@@ -82,24 +82,18 @@ func (lc *Loki) PushURL() string {
 	return fmt.Sprintf("%s/loki/api/v1/push", lc.Distributor)
 }
 
-func (lc *Loki) QueryURL() string {
-	return fmt.Sprintf("%s/loki/api/v1/query", lc.QueryFrontend)
-}
-
-func (lc *Loki) QueryRangeURL() string {
-	return fmt.Sprintf("%s/loki/api/v1/query_range", lc.QueryFrontend)
-}
-
 type Writers struct {
 	Replicas int32             `yaml:"replicas"`
 	Args     map[string]string `yaml:"args"`
+	Command  string            `yaml:"command"`
 }
 
 type Readers struct {
-	Replicas         int32             `yaml:"replicas"`
-	Queries          map[string]string `yaml:"queries"`
-	StartThreshold   float64           `yaml:"startThreshold"`
-	QueriesPerSecond int32             `yaml:"throughput"`
+	Replicas       int32             `yaml:"replicas"`
+	Args           map[string]string `yaml:"args"`
+	Command        string            `yaml:"command"`
+	StartThreshold float64           `yaml:"startThreshold"`
+	Queries        map[string]string `yaml:"queries"`
 }
 
 type Samples struct {

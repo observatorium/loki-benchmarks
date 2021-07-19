@@ -33,6 +33,9 @@ This suite consists of Loki benchmarks tests for multiple scenarios. Each scenar
 * Declare a new scenario with expected measurement values for each profile in the [config](./config) directory.
 * Extend the golang `Scenarios` struct in [internal/config/config.go](./internal/config/config.go) with the new scenario.
 * Add a new `_test.go` file in the [benchmarks](./benchmarks) directory.
+* When using [`cluster-logging-load-client`](quay.io/openshift-logging/cluster-logging-load-client:latest) as logger,
+  the `command` configuration parameter is either **generate** or **query** and  
+  all other `args` configuration parameters are described in [https://github.com/ViaQ/cluster-logging-load-client](https://github.com/ViaQ/cluster-logging-load-client)
 * Overriding `url` and `tenant` requires that the logger implementation provides such named CLI flags
 
 ### Run the tests
