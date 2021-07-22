@@ -1,6 +1,7 @@
 /bin/
 junit.xml
 /reports/*
+benchmarks/reports/*
 /config/prometheus/config.yaml
 loki-objectstorage-secret.yaml
 observatorium-logs-template.yaml

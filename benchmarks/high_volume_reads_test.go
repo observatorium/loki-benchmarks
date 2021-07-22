@@ -65,7 +65,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
 			// Deploy the query clients
 			for id, query := range readerCfg.Queries {
-				err = querier.Deploy(k8sClient, benchCfg.Querier, readerCfg, benchCfg.Loki.QueryRangeURL(), id, query, readerDuration)
+				err = querier.Deploy(k8sClient, benchCfg.Querier, readerCfg, benchCfg.Loki.QueryFrontend, id, query, readerDuration)
 				Expect(err).Should(Succeed(), "Failed to deploy querier")
 			}
 
