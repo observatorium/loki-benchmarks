@@ -49,6 +49,9 @@ func init() {
 		panic("Missing REPORT_DIR env variable")
 	}
 
+	promURL := os.Getenv("PROMETHEUS_URL")
+	promToken := os.Getenv("PROMETHEUS_TOKEN")
+
 	// Read config for benchmark tests
 	filename := fmt.Sprintf("../config/%s.yaml", env)
 
@@ -65,10 +68,13 @@ func init() {
 	}
 
 	fmt.Printf("\nUsing benchmark configuration:\n===============================\n%s\n", yamlFile)
-	ConfigureScenarioResultDirectories(benchCfg.Scenarios, reportDir)
+
+	if promURL == "" {
+		promURL = benchCfg.Metrics.URL
+	}
 
 	// Create a client to collect metrics
-	metricsClient, err = metrics.NewClient(benchCfg.Metrics.URL, 10*time.Second)
+	metricsClient, err = metrics.NewClient(promURL, promToken, 10*time.Second)
 	if err != nil {
 		panic("Failed to create metrics client")
 	}
@@ -90,6 +96,8 @@ func init() {
 	if err != nil {
 		panic("Failed to create new k8s client")
 	}
+
+	ConfigureScenarioResultDirectories(benchCfg.Scenarios, reportDir)
 }
 
 func ConfigureScenarioResultDirectories(scenarios *config.Scenarios, directory string) {

@@ -65,37 +65,37 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 
 			// Collect measurements for distributors
 			job := benchCfg.Metrics.DistributorJob()
-			err := metricsClient.Measure(b, metricsClient.RequestWritesQPS, "2xx push QPS", job, c.Description, defaultRange)
+			err := metricsClient.Measure(b, metricsClient.RequestWritesQPS, "2xx push QPS", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushP99, "2xx push p99", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushP99, "2xx push p99", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushP50, "2xx push p50", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushP50, "2xx push p50", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushAvg, "2xx push avg", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushAvg, "2xx push avg", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 			// Collect measurements for Ingesters
 			job = benchCfg.Metrics.IngesterJob()
-			CadvisorIngesterJob := benchCfg.Metrics.CadvisorIngesterJob()
-			err = metricsClient.Measure(b, metricsClient.ProcessCPU, "Processes CPU", job, c.Description, defaultRange)
+			cadvisorJob := benchCfg.Metrics.CadvisorIngesterJob()
+			err = metricsClient.Measure(b, metricsClient.ProcessCPU, "Processes CPU", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			if benchCfg.Metrics.EnableCadvisorMetrics {
-				err = metricsClient.Measure(b, metricsClient.ContainerUserCPU, "Containers User CPU", CadvisorIngesterJob, c.Description, defaultRange)
+				err = metricsClient.Measure(b, metricsClient.ContainerUserCPU, "Containers User CPU", cadvisorJob.QueryLabel, cadvisorJob.Job, c.Description, defaultRange)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-				err = metricsClient.Measure(b, metricsClient.ContainerWorkingSetMEM, "Containers WorkingSet memory", CadvisorIngesterJob, c.Description, defaultRange)
+				err = metricsClient.Measure(b, metricsClient.ContainerWorkingSetMEM, "Containers WorkingSet memory", cadvisorJob.QueryLabel, cadvisorJob.Job, c.Description, defaultRange)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			}
-			err = metricsClient.Measure(b, metricsClient.RequestWritesGrpcQPS, "successful GRPC push QPS", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestWritesGrpcQPS, "successful GRPC push QPS", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			if c.Samples.Interval > 15*time.Minute {
-				err = metricsClient.Measure(b, metricsClient.RequestBoltDBShipperWritesQPS, "Boltdb shipper successful writes QPS", job, c.Description, defaultRange)
+				err = metricsClient.Measure(b, metricsClient.RequestBoltDBShipperWritesQPS, "Boltdb shipper successful writes QPS", job.QueryLabel, job.Job, c.Description, defaultRange)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			}
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcPushP99, "successful GRPC push p99", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcPushP99, "successful GRPC push p99", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcPushP50, "successful GRPC push p50", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcPushP50, "successful GRPC push p50", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcPushAvg, "successful GRPC push avg", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcPushAvg, "successful GRPC push avg", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 			mu.Lock()

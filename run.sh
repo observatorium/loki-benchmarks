@@ -4,6 +4,7 @@ set -eou pipefail
 
 TARGET_ENV="${TARGET_ENV:-development}"
 DEPLOY_KIND_OBSERVATORIUM="${DEPLOY_KIND_OBSERVATORIUM:-true}"
+DEPLOY_OCP_PROMETHEUS="${DEPLOY_OCP_PROMETHEUS:-false}"
 
 OBS_NS="${OBS_NS:-observatorium}"
 CADVISOR_NS="${CADVISOR_NS:-cadvisor}"
@@ -56,10 +57,7 @@ setup_ports() {
     sed -i "s/{{$prometheus_template_targets}}/${qr_targets%%+(,)}/i" config/prometheus/config.yaml
 }
 
-forward_ports() {
-    shopt -s extglob
-    cp config/prometheus/config.template config/prometheus/config.yaml
-
+wait_for_deployments() {
     echo -e "\nWaiting for available loki query frontend deployment"
     $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QF" --timeout=300s
     echo -e "\nWaiting for available loki distributor deployment"
@@ -68,6 +66,12 @@ forward_ports() {
     $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_ING" --timeout=300s
     echo -e "\nWaiting for available querier deployment"
     $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_QR" --timeout=300s
+}
+
+forward_ports() {
+    shopt -s extglob
+
+    cp config/prometheus/config.template config/prometheus/config.yaml
 
     setup_ports "loki query frontend" app.kubernetes.io/component=query-frontend LOKI_QUERY_FRONTEND_TARGETS 3100 "$OBS_NS"
     setup_ports "loki distributor" app.kubernetes.io/component=distributor LOKI_DISTRIBUTOR_TARGETS 3100 "$OBS_NS"
@@ -106,19 +110,28 @@ bench() {
         deploy_observatorium
     fi
 
-    echo -e "\nForward ports to loki deployments"
-    forward_ports
+    wait_for_deployments
 
-    echo -e "\nSet prometheus relabel regex"
-    set_prometheus_relabel_regex
+    if $DEPLOY_OCP_PROMETHEUS; then
+        secret=$($KUBECTL -n openshift-user-workload-monitoring get secret | grep prometheus-user-workload-token | head -n 1 | awk '{print $1 }')
+        export PROMETHEUS_URL="https://$($KUBECTL -n openshift-monitoring get route thanos-querier -o json | jq -r '.spec.host')"
+        export PROMETHEUS_TOKEN=$($KUBECTL -n openshift-user-workload-monitoring get secret $secret -o json | jq -r '.data.token' | base64 -d)
+    else
+        echo -e "\nForward ports to loki deployments"
+        forward_ports
 
-    echo -e "\nScrape metrics from Loki deployments"
-    scrape_loki_metrics
+        echo -e "\nSet prometheus relabel regex"
+        set_prometheus_relabel_regex
 
+        echo -e "\nScrape metrics from Loki deployments"
+        scrape_loki_metrics
+    fi
+
+    export DEPLOY_OCP_PROMETHEUS
     source .bingo/variables.env
 
     echo -e "\nRun benchmarks"
-    $GINKGO -v --noisySkippings=false ./benchmarks
+    $GINKGO -v --noisySkippings=false ./benchmarks ||:
 
     echo -e "\nGenerate benchmark report"
     generate_report

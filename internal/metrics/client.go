@@ -8,11 +8,12 @@ import (
 	"github.com/onsi/ginkgo"
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 )
 
 type MetricType string
-type queryFunc func(job string, duration model.Duration) (float64, error)
+type queryFunc func(label, job string, duration model.Duration) (float64, error)
 
 const (
 	DistributorBytesReceivedTotal MetricType = "loki_distributor_bytes_received_total"
@@ -22,47 +23,47 @@ type Client interface {
 	DistributorBytesReceivedTotal() (float64, error)
 
 	// HTTP API
-	RequestDurationOkQueryAvg(job string, duration model.Duration) (float64, error)
-	RequestDurationOkQueryP50(job string, duration model.Duration) (float64, error)
-	RequestDurationOkQueryP99(job string, duration model.Duration) (float64, error)
+	RequestDurationOkQueryAvg(label, job string, duration model.Duration) (float64, error)
+	RequestDurationOkQueryP50(label, job string, duration model.Duration) (float64, error)
+	RequestDurationOkQueryP99(label, job string, duration model.Duration) (float64, error)
 
-	RequestDurationOkQueryRangeAvg(job string, duration model.Duration) (float64, error)
-	RequestDurationOkQueryRangeP50(job string, duration model.Duration) (float64, error)
-	RequestDurationOkQueryRangeP99(job string, duration model.Duration) (float64, error)
+	RequestDurationOkQueryRangeAvg(label, job string, duration model.Duration) (float64, error)
+	RequestDurationOkQueryRangeP50(label, job string, duration model.Duration) (float64, error)
+	RequestDurationOkQueryRangeP99(label, job string, duration model.Duration) (float64, error)
 
-	RequestDurationOkPushAvg(job string, duration model.Duration) (float64, error)
-	RequestDurationOkPushP50(job string, duration model.Duration) (float64, error)
-	RequestDurationOkPushP99(job string, duration model.Duration) (float64, error)
+	RequestDurationOkPushAvg(label, job string, duration model.Duration) (float64, error)
+	RequestDurationOkPushP50(label, job string, duration model.Duration) (float64, error)
+	RequestDurationOkPushP99(label, job string, duration model.Duration) (float64, error)
 
-	RequestReadsQPS(job string, duration model.Duration) (float64, error)
-	RequestWritesQPS(job string, duration model.Duration) (float64, error)
+	RequestReadsQPS(label, job string, duration model.Duration) (float64, error)
+	RequestWritesQPS(label, job string, duration model.Duration) (float64, error)
 
 	// GRPC API
-	RequestDurationOkGrpcQuerySampleAvg(job string, duration model.Duration) (float64, error)
-	RequestDurationOkGrpcQuerySampleP50(job string, duration model.Duration) (float64, error)
-	RequestDurationOkGrpcQuerySampleP99(job string, duration model.Duration) (float64, error)
+	RequestDurationOkGrpcQuerySampleAvg(label, job string, duration model.Duration) (float64, error)
+	RequestDurationOkGrpcQuerySampleP50(label, job string, duration model.Duration) (float64, error)
+	RequestDurationOkGrpcQuerySampleP99(label, job string, duration model.Duration) (float64, error)
 
-	RequestDurationOkGrpcPushAvg(job string, duration model.Duration) (float64, error)
-	RequestDurationOkGrpcPushP50(job string, duration model.Duration) (float64, error)
-	RequestDurationOkGrpcPushP99(job string, duration model.Duration) (float64, error)
+	RequestDurationOkGrpcPushAvg(label, job string, duration model.Duration) (float64, error)
+	RequestDurationOkGrpcPushP50(label, job string, duration model.Duration) (float64, error)
+	RequestDurationOkGrpcPushP99(label, job string, duration model.Duration) (float64, error)
 
-	RequestReadsGrpcQPS(job string, duration model.Duration) (float64, error)
-	RequestWritesGrpcQPS(job string, duration model.Duration) (float64, error)
+	RequestReadsGrpcQPS(label, job string, duration model.Duration) (float64, error)
+	RequestWritesGrpcQPS(label, job string, duration model.Duration) (float64, error)
 
 	// Store API
-	RequestBoltDBShipperReadsQPS(job string, duration model.Duration) (float64, error)
-	RequestBoltDBShipperWritesQPS(job string, duration model.Duration) (float64, error)
+	RequestBoltDBShipperReadsQPS(label, job string, duration model.Duration) (float64, error)
+	RequestBoltDBShipperWritesQPS(label, job string, duration model.Duration) (float64, error)
 
 	// Container API
 	// NOTE: Container API functions requires cadvisor to be deployed and functional
-	ContainerUserCPU(caJob string, duration model.Duration) (float64, error)
-	ContainerWorkingSetMEM(caJob string, duration model.Duration) (float64, error)
+	ContainerUserCPU(label, job string, duration model.Duration) (float64, error)
+	ContainerWorkingSetMEM(label, job string, duration model.Duration) (float64, error)
 
 	// Process API
-	ProcessCPU(job string, duration model.Duration) (float64, error)
-	ProcessResidentMEM(job string, duration model.Duration) (float64, error)
+	ProcessCPU(label, job string, duration model.Duration) (float64, error)
+	ProcessResidentMEM(label, job string, duration model.Duration) (float64, error)
 
-	Measure(b ginkgo.Benchmarker, f queryFunc, name string, job string, confDescription string, defaultRange model.Duration) error
+	Measure(b ginkgo.Benchmarker, f queryFunc, name, label, job, confDescription string, defaultRange model.Duration) error
 }
 
 type client struct {
@@ -70,8 +71,26 @@ type client struct {
 	timeout time.Duration
 }
 
-func NewClient(url string, timeout time.Duration) (Client, error) {
-	pc, err := api.NewClient(api.Config{Address: url})
+func NewClient(url, token string, timeout time.Duration) (Client, error) {
+	httpConfig := config.HTTPClientConfig{
+		BearerToken: config.Secret(token),
+		TLSConfig: config.TLSConfig{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	rt, rtErr := config.NewRoundTripperFromConfig(httpConfig, "benchmarks-metrics", false)
+
+	if rtErr != nil {
+		fmt.Print(rtErr)
+		return nil, fmt.Errorf("failed creating prometheus configuration: %w", rtErr)
+	}
+
+	pc, err := api.NewClient(api.Config{
+		Address:      url,
+		RoundTripper: rt,
+	})
+
 	if err != nil {
 		return nil, fmt.Errorf("failed creating prometheus client: %w", err)
 	}
@@ -82,8 +101,8 @@ func NewClient(url string, timeout time.Duration) (Client, error) {
 	}, nil
 }
 
-func (c *client) Measure(b ginkgo.Benchmarker, f queryFunc, name string, job string, confDescription string, defaultRange model.Duration) error {
-	measure, err := f(job, defaultRange)
+func (c *client) Measure(b ginkgo.Benchmarker, f queryFunc, name, label, job, confDescription string, defaultRange model.Duration) error {
+	measure, err := f(label, job, defaultRange)
 	if err != nil {
 		return fmt.Errorf("queryMetric %s failed job: %s err: %w", name, job, err)
 	}
@@ -93,19 +112,19 @@ func (c *client) Measure(b ginkgo.Benchmarker, f queryFunc, name string, job str
 	return nil
 }
 
-func (c *client) ContainerUserCPU(caJob string, duration model.Duration) (float64, error) {
+func (c *client) ContainerUserCPU(label, job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(rate(container_cpu_user_seconds_total{job="%s"}[%s]) * 1000)`, // in m (i.e. 1000 = 1 vCore)
-		caJob, duration,
+		`sum(rate(container_cpu_user_seconds_total{%s=~".*%s.*"}[%s]) * 1000)`, // in m (i.e. 1000 = 1 vCore)
+		label, job, duration,
 	)
 
 	return c.executeScalarQuery(query)
 }
 
-func (c *client) ContainerWorkingSetMEM(caJob string, duration model.Duration) (float64, error) {
+func (c *client) ContainerWorkingSetMEM(label, job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(avg_over_time(container_memory_working_set_bytes{job="%s"}[%s]) / 1000000)`, // in Mi (i.e. in Megabytes)
-		caJob, duration,
+		`sum(avg_over_time(container_memory_working_set_bytes{%s=~".*%s.*"}[%s]) / 1000000)`, // in Mi (i.e. in Megabytes)
+		label, job, duration,
 	)
 
 	return c.executeScalarQuery(query)
@@ -113,56 +132,56 @@ func (c *client) ContainerWorkingSetMEM(caJob string, duration model.Duration) (
 
 // NOTE: Using ProcessResidentMEM is not recommended (information not representative for golang apps)
 // It is recommended to deploy cadvisor and use ContainerWorkingSetMEM
-func (c *client) ProcessResidentMEM(job string, duration model.Duration) (float64, error) {
+func (c *client) ProcessResidentMEM(label, job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(avg_over_time(process_resident_memory_bytes{job="%s"}[%s]) / 1000000)`, // in Mi (i.e. in Megabytes)
-		job, duration,
+		`sum(avg_over_time(process_resident_memory_bytes{%s=~".*%s.*"}[%s]) / 1000000)`, // in Mi (i.e. in Megabytes)
+		label, job, duration,
 	)
 
 	return c.executeScalarQuery(query)
 }
 
-func (c *client) ProcessCPU(job string, duration model.Duration) (float64, error) {
+func (c *client) ProcessCPU(label, job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(rate(process_cpu_seconds_total{job="%s"}[%s]) * 1000)`, // in m (i.e. 1000 = 1 vCore)
-		job, duration,
+		`sum(rate(process_cpu_seconds_total{%s=~".*%s.*"}[%s]) * 1000)`, // in m (i.e. 1000 = 1 vCore)
+		label, job, duration,
 	)
 
 	return c.executeScalarQuery(query)
 }
 
-func (c *client) requestDurationAvg(job, method, route, code string, duration model.Duration) (float64, error) {
+func (c *client) requestDurationAvg(label, job, method, route, code string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`(sum(rate(loki_request_duration_seconds_sum{job="%s", method="%s", route="%s", status_code=~"%s"}[%s])) / sum(rate(loki_request_duration_seconds_count{job="%s", method="%s", route="%s", status_code=~"%s"}[%s])))`,
-		job, method, route, code, duration,
-		job, method, route, code, duration,
+		`(sum(rate(loki_request_duration_seconds_sum{%s=~".*%s.*", method="%s", route=~"%s", status_code=~"%s"}[%s])) / sum(rate(loki_request_duration_seconds_count{%s=~".*%s.*", method="%s", route=~"%s", status_code=~"%s"}[%s])))`,
+		label, job, method, route, code, duration,
+		label, job, method, route, code, duration,
 	)
 
 	return c.executeScalarQuery(query)
 }
 
-func (c *client) requestDurationQuantile(job, method, route, code string, duration model.Duration, percentile int) (float64, error) {
+func (c *client) requestDurationQuantile(label, job, method, route, code string, duration model.Duration, percentile int) (float64, error) {
 	query := fmt.Sprintf(
-		`histogram_quantile(0.%d, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job="%s", method="%s", route="%s", status_code=~"%s"}[%s])))`,
-		percentile, job, method, route, code, duration,
+		`histogram_quantile(0.%d, sum by (job, le) (rate(loki_request_duration_seconds_bucket{%s=~".*%s.*", method="%s", route=~"%s", status_code=~"%s"}[%s])))`,
+		percentile, label, job, method, route, code, duration,
 	)
 
 	return c.executeScalarQuery(query)
 }
 
-func (c *client) requestQPS(job, route, code string, duration model.Duration) (float64, error) {
+func (c *client) requestQPS(label, job, route, code string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(rate(loki_request_duration_seconds_count{job="%s", route=~"%s", status_code=~"%s"}[%s]))`,
-		job, route, code, duration,
+		`sum(rate(loki_request_duration_seconds_count{%s=~".*%s.*", route=~"%s", status_code=~"%s"}[%s]))`,
+		label, job, route, code, duration,
 	)
 
 	return c.executeScalarQuery(query)
 }
 
-func (c *client) requestBoltDBShipperQPS(job, operation, code string, duration model.Duration) (float64, error) {
+func (c *client) requestBoltDBShipperQPS(label, job, operation, code string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(rate(loki_request_duration_seconds_count{job="%s", operation="%s", status_code=~"%s"}[%s]))`,
-		job, operation, code, duration,
+		`sum(rate(loki_request_duration_seconds_count{%s=~".*%s.*", operation="%s", status_code=~"%s"}[%s]))`,
+		label, job, operation, code, duration,
 	)
 
 	return c.executeScalarQuery(query)
