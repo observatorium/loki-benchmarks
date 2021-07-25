@@ -1,13 +1,13 @@
 logger:
   name: logger
   namespace:  observatorium-logs-test
-  image: quay.io/periklis/logger:latest
+  image: quay.io/openshift-logging/cluster-logging-load-client:latest
   tenantId: observatorium
 
 querier:
   name: querier
   namespace: observatorium-logs-test
-  image: quay.io/periklis/hey:latest
+  image: quay.io/openshift-logging/cluster-logging-load-client:latest
   tenantId: observatorium
 
 metrics:
@@ -31,53 +31,63 @@ scenarios:
   highVolumeReads:
     enabled: true
     configurations:
-      - description: "Read 20 queries-per-second"
+      - description: "Read 10 queries-per-second"
         samples:
-          interval: "15s"
+          interval: "30s"
           range: "1m"
           total: 10
         writers:
-          replicas: 10
+          replicas: 3
+          command: generate
           args:
             destination: loki
             log-lines-rate: 100
         readers:
+          startThreshold: 2048000
           replicas: 1
-          throughput: 10
+          command: query
           queries:
             sumRateByLevel: 'sum(rate({component!=""}[5m])) by (level)'
-          startThreshold: 1024000
+          args:
+            destination: loki
+            log-lines-rate: 10
       - description: "Read 20*3 queries-per-second"
         samples:
-          interval: "15s"
+          interval: "30s"
           range: "1m"
           total: 10
         writers:
-          replicas: 10
+          replicas: 3
+          command: generate
           args:
             destination: loki
             log-lines-rate: 100
         readers:
-          replicas: 1
-          throughput: 10
+          startThreshold: 2048000
+          replicas: 2
+          command: query
           queries:
             topTenComponents: 'topk(10, sum(rate({component!=""}[5m])) by (level))'
             countOverTime: 'count_over_time({component!=""}[5m])'
             bytesOverTime: 'bytes_over_time({component!=""}[5m])'
-          startThreshold: 1024000
+          args:
+            destination: loki
+            log-lines-rate: 10
       - description: "Read 20*8 queries-per-second"
         samples:
-          interval: "15s"
+          interval: "30s"
           range: "1m"
           total: 10
         writers:
-          replicas: 10
+          replicas: 3
+          command: generate
           args:
             destination: loki
             log-lines-rate: 100
         readers:
-          replicas: 1
-          throughput: 10
+          startThreshold: 2048000
+          replicas: 2
+          command: query
           queries:
             sumRateByLevel: 'sum(rate({component!=""}[1m])) by (level)'
             devopsend: 'sum(rate({component="devopsend"}[1m])) by (level)'
@@ -87,7 +97,9 @@ scenarios:
             allpanics: 'sum(rate({msg=~"panic.*"}[1m]))'
             countpanics: 'count_over_time({msg=~"panic.*"}[5m])'
             topTenErrors: 'topk(10, sum(rate({component!="", level="error"}[5m])) by (component))'
-          startThreshold: 1024000
+          args:
+            destination: loki
+            log-lines-rate: 10
   highVolumeWrites:
     enabled: true
     configurations:
@@ -98,6 +110,7 @@ scenarios:
           total: 18
         writers:
           replicas: 1
+          command: generate
           args:
             destination: loki
             log-lines-rate: 1000
@@ -108,6 +121,7 @@ scenarios:
           total: 18
         writers:
           replicas: 5
+          command: generate
           args:
             destination: loki
             log-lines-rate: 1000
@@ -118,6 +132,7 @@ scenarios:
           total: 18
         writers:
           replicas: 10
+          command: generate
           args:
             destination: loki
             log-lines-rate: 1000
@@ -128,6 +143,7 @@ scenarios:
           total: 18
         writers:
           replicas: 10
+          command: generate
           args:
             destination: loki
             log-lines-rate: 2000
@@ -138,6 +154,7 @@ scenarios:
           total: 6
         writers:
           replicas: 10
+          command: generate
           args:
             destination: loki
             log-lines-rate: 5000

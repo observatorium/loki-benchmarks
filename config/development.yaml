@@ -44,7 +44,7 @@ scenarios:
     configurations:
       - description: "Read 10 queries-per-second"
         samples:
-          interval: "15s"
+          interval: "30s"
           range: "1m"
           total: 10
         writers:
@@ -54,7 +54,7 @@ scenarios:
             destination: loki
             log-lines-rate: 100
         readers:
-          startThreshold: 1024000
+          startThreshold: 2048000
           replicas: 1
           command: query
           queries:
