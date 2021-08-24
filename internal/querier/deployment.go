@@ -28,17 +28,11 @@ func Deploy(c client.Client, cfg *config.Querier, scenarioCfg *config.Readers, u
 
 	args = append(args, fmt.Sprintf("--%s=%s", "url", uri))
 	args = append(args, fmt.Sprintf("--%s=%s", "tenant", cfg.TenantID))
+	args = append(args, fmt.Sprintf("--%s=%s", "queries", query))
 
 	for k, v := range scenarioCfg.Args {
 		args = append(args, fmt.Sprintf("--%s=%s", k, v))
 	}
-
-	var queries []string
-	for _, v := range scenarioCfg.Queries {
-		queries = append(queries, v)
-	}
-
-	args = append(args, fmt.Sprintf("--queries=%s", strings.Join(queries, ",")))
 
 	name := DeploymentName(cfg, id)
 

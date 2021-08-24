@@ -15,10 +15,18 @@ metrics:
   enableCadvisorMetrics: false
   # Align these with ./prometheus/config.yaml
   jobs:
-    distributor: loki-distributor
-    ingester: loki-ingester
-    querier: loki-querier
-    queryFrontend: loki-query-frontend
+    distributor:
+        job: loki-distributor
+        queryLabel: job
+    ingester:
+        job: loki-ingester
+        queryLabel: job
+    querier:
+        job: loki-querier
+        queryLabel: job
+    queryFrontend:
+        job: loki-query-frontend
+        queryLabel: job
 
 loki:
   distributor: http://observatorium-xyz-loki-distributor-http.observatorium.svc.cluster.local:3100
@@ -31,7 +39,7 @@ scenarios:
       - description: "Write 100 logs-per-second"
         samples:
           interval: "60s"
-          range: "30s"
+          range: "120s"
           total: 2
         writers:
           replicas: 1
@@ -39,22 +47,24 @@ scenarios:
           args:
             destination: loki
             log-lines-rate: 100
+            synthetic-payload-size: 100
   highVolumeReads:
     enabled: true
     configurations:
       - description: "Read 10 queries-per-second"
         samples:
-          interval: "15s"
-          range: "1m"
-          total: 10
+          interval: "60s"
+          range: "120s"
+          total: 2
         writers:
           replicas: 3
           command: generate
           args:
             destination: loki
-            log-lines-rate: 100
+            log-lines-rate: 400
+            synthetic-payload-size: 200
         readers:
-          startThreshold: 1024000
+          startThreshold: 15728640
           replicas: 1
           command: query
           queries:
@@ -62,4 +72,3 @@ scenarios:
           args:
             destination: loki
             log-lines-rate: 10
-

@@ -2,48 +2,57 @@ package metrics
 
 import "github.com/prometheus/common/model"
 
-func (c *client) RequestDurationOkQueryAvg(job string, duration model.Duration) (float64, error) {
-	return c.requestDurationAvg(job, "GET", "loki_api_v1_query", "2.*", duration)
+func (c *client) RequestDurationOkQueryAvg(label, job string, duration model.Duration) (float64, error) {
+	route := "loki_api_v1_query|metrics"
+	return c.requestDurationAvg(label, job, "GET", route, "2.*", duration)
 }
 
-func (c *client) RequestDurationOkQueryP50(job string, duration model.Duration) (float64, error) {
-	return c.requestDurationQuantile(job, "GET", "loki_api_v1_query", "2.*", duration, 50)
+func (c *client) RequestDurationOkQueryP50(label, job string, duration model.Duration) (float64, error) {
+	route := "loki_api_v1_query|metrics"
+	return c.requestDurationQuantile(label, job, "GET", route, "2.*", duration, 50)
 }
 
-func (c *client) RequestDurationOkQueryP99(job string, duration model.Duration) (float64, error) {
-	return c.requestDurationQuantile(job, "GET", "loki_api_v1_query", "2.*", duration, 99)
+func (c *client) RequestDurationOkQueryP99(label, job string, duration model.Duration) (float64, error) {
+	route := "loki_api_v1_query|metrics"
+	return c.requestDurationQuantile(label, job, "GET", route, "2.*", duration, 99)
 }
 
-func (c *client) RequestDurationOkQueryRangeAvg(job string, duration model.Duration) (float64, error) {
-	return c.requestDurationAvg(job, "GET", "loki_api_v1_query_range", "2.*", duration)
+func (c *client) RequestDurationOkQueryRangeAvg(label, job string, duration model.Duration) (float64, error) {
+	route := "loki_api_v1_query_range|metrics"
+	return c.requestDurationAvg(label, job, "GET", route, "2.*", duration)
 }
 
-func (c *client) RequestDurationOkQueryRangeP50(job string, duration model.Duration) (float64, error) {
-	return c.requestDurationQuantile(job, "GET", "loki_api_v1_query_range", "2.*", duration, 50)
+func (c *client) RequestDurationOkQueryRangeP50(label, job string, duration model.Duration) (float64, error) {
+	route := "loki_api_v1_query_range|metrics"
+	return c.requestDurationQuantile(label, job, "GET", route, "2.*", duration, 50)
 }
 
-func (c *client) RequestDurationOkQueryRangeP99(job string, duration model.Duration) (float64, error) {
-	return c.requestDurationQuantile(job, "GET", "loki_api_v1_query_range", "2.*", duration, 99)
+func (c *client) RequestDurationOkQueryRangeP99(label, job string, duration model.Duration) (float64, error) {
+	route := "loki_api_v1_query_range|metrics"
+	return c.requestDurationQuantile(label, job, "GET", route, "2.*", duration, 99)
 }
 
-func (c *client) RequestDurationOkPushAvg(job string, duration model.Duration) (float64, error) {
-	return c.requestDurationAvg(job, "POST", "loki_api_v1_push", "2.*", duration)
+func (c *client) RequestDurationOkPushAvg(label, job string, duration model.Duration) (float64, error) {
+	route := "loki_api_v1_push|metrics"
+	return c.requestDurationAvg(label, job, "POST", route, "2.*", duration)
 }
 
-func (c *client) RequestDurationOkPushP50(job string, duration model.Duration) (float64, error) {
-	return c.requestDurationQuantile(job, "POST", "loki_api_v1_push", "2.*", duration, 50)
+func (c *client) RequestDurationOkPushP50(label, job string, duration model.Duration) (float64, error) {
+	route := "loki_api_v1_push|metrics"
+	return c.requestDurationQuantile(label, job, "POST", route, "2.*", duration, 50)
 }
 
-func (c *client) RequestDurationOkPushP99(job string, duration model.Duration) (float64, error) {
-	return c.requestDurationQuantile(job, "POST", "loki_api_v1_push", "2.*", duration, 99)
+func (c *client) RequestDurationOkPushP99(label, job string, duration model.Duration) (float64, error) {
+	route := "loki_api_v1_push|metrics"
+	return c.requestDurationQuantile(label, job, "POST", route, "2.*", duration, 99)
 }
 
-func (c *client) RequestReadsQPS(job string, duration model.Duration) (float64, error) {
-	route := "loki_api_v1_series|api_prom_series|api_prom_query|api_prom_label|api_prom_label_name_values|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_name_values"
-	return c.requestQPS(job, route, "2.*", duration)
+func (c *client) RequestReadsQPS(label, job string, duration model.Duration) (float64, error) {
+	route := "loki_api_v1_series|api_prom_series|api_prom_query|api_prom_label|api_prom_label_name_values|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_name_values|metrics"
+	return c.requestQPS(label, job, route, "2.*", duration)
 }
 
-func (c *client) RequestWritesQPS(job string, duration model.Duration) (float64, error) {
-	route := "loki_api_v1_push"
-	return c.requestQPS(job, route, "2.*|429", duration)
+func (c *client) RequestWritesQPS(label, job string, duration model.Duration) (float64, error) {
+	route := "loki_api_v1_push|metrics"
+	return c.requestQPS(label, job, route, "2.*|429", duration)
 }

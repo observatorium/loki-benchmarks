@@ -21,9 +21,10 @@ This suite consists of Loki benchmarks tests for multiple scenarios. Each scenar
 
 ## Deployment and benchmark on OCP cluster
 
-* Connect to OCP cluster and make sure `oc` command is working  
-* Run `make deploy-cadvisor` & make `make deploy-observatorium-loki`
-* Start the benchmark using `bench-obs-logs-test` configuration `make bench-obs-logs-test`
+* In order to run Loki on OCP, configure the cluster with the `m4.16xlarge` size
+* Connect to OCP cluster and make sure `oc`, `kubectl`, `aws` commands is working
+* Run `make deploy-s3-bucket && make deploy-all-ocp-components`
+* Start the benchmark tool by running `make bench-obs-logs-test`
 * Upon benchmark execution completion, results are available in the `reports/date+time` folder
 
 ## How to add new benchmarks to this suite

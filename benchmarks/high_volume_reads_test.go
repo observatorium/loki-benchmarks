@@ -100,37 +100,37 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
 			// Collect measurements for query frontend
 			job := benchCfg.Metrics.QueryFrontendJob()
-			err := metricsClient.Measure(b, metricsClient.RequestReadsQPS, "2xx reads QPS", job, c.Description, defaultRange)
+			err := metricsClient.Measure(b, metricsClient.RequestReadsQPS, "2xx reads QPS", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeP99, "2xx reads p99", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeP99, "2xx reads p99", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeP50, "2xx reads p50", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeP50, "2xx reads p50", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeAvg, "2xx reads avg", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeAvg, "2xx reads avg", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 			// Collect measurements for querier
 			job = benchCfg.Metrics.QuerierJob()
-			err = metricsClient.Measure(b, metricsClient.RequestReadsQPS, "2xx reads QPS", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestReadsQPS, "2xx reads QPS", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeP99, "2xx reads p99", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeP99, "2xx reads p99", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeP50, "2xx reads p50", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeP50, "2xx reads p50", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeAvg, "2xx reads avg", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkQueryRangeAvg, "2xx reads avg", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 			// Collect measurements for ingester
 			job = benchCfg.Metrics.IngesterJob()
 			if c.Samples.Interval > 15*time.Minute {
-				err = metricsClient.Measure(b, metricsClient.RequestBoltDBShipperReadsQPS, "Boltdb shipper reads QPS", job, c.Description, defaultRange)
+				err = metricsClient.Measure(b, metricsClient.RequestBoltDBShipperReadsQPS, "Boltdb shipper reads QPS", job.QueryLabel, job.Job, c.Description, defaultRange)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			}
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcQuerySampleP99, "successful GRPC query p99", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcQuerySampleP99, "successful GRPC query p99", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcQuerySampleP50, "successful GRPC query p50", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcQuerySampleP50, "successful GRPC query p50", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcQuerySampleAvg, "successful GRPC query avg", job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcQuerySampleAvg, "successful GRPC query avg", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 			mu.Lock()
