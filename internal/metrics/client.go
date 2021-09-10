@@ -21,7 +21,7 @@ const (
 )
 
 type Client interface {
-	DistributorBytesReceivedTotal() (float64, error)
+	DistributorBytesReceivedTotal(duration model.Duration) (float64, error)
 	DistributorGiPDReceivedTotal(label, job string, duration model.Duration) (float64, error)
 
 	// HTTP API
@@ -215,7 +215,7 @@ func (c *client) executeScalarQuery(query string) (float64, error) {
 	if res.Type() == model.ValVector {
 		vec := res.(model.Vector)
 		if vec.Len() == 0 {
-			return 0.0, fmt.Errorf("empty result set for query: %s", query)
+			return 0.0, nil
 		}
 
 		return float64(vec[0].Value), nil

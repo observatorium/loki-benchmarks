@@ -51,7 +51,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 			Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
 			// Wait until we ingested enough logs based on startThreshold
-			err = latch.WaitUntilGreaterOrEqual(metricsClient, metrics.DistributorBytesReceivedTotal, readerCfg.StartThreshold, defaultLatchTimeout)
+			err = latch.WaitUntilGreaterOrEqual(metricsClient, metrics.DistributorBytesReceivedTotal, readerCfg.StartThreshold, defaultLatchRange, defaultLatchTimeout)
 			Expect(err).Should(Succeed(), "Failed to wait until latch activated")
 
 			// Undeploy logger to assert only read traffic
@@ -113,7 +113,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
 			// Collect measurements for querier
 			job = benchCfg.Metrics.QuerierJob()
-			cadvisorJob := benchCfg.Metrics.CadvisorIngesterJob()
+			cadvisorJob := benchCfg.Metrics.CadvisorQuerierJob()
 			err = metricsClient.Measure(b, metricsClient.ProcessCPU, "Processes CPU", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			if benchCfg.Metrics.EnableCadvisorMetrics {
@@ -135,8 +135,17 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
 			// Collect measurements for ingester
 			job = benchCfg.Metrics.IngesterJob()
+			cadvisorJob = benchCfg.Metrics.CadvisorIngesterJob()
 			if c.Samples.Interval > 15*time.Minute {
 				err = metricsClient.Measure(b, metricsClient.RequestBoltDBShipperReadsQPS, "Boltdb shipper reads QPS", job.QueryLabel, job.Job, c.Description, defaultRange)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			}
+			err = metricsClient.Measure(b, metricsClient.ProcessCPU, "Processes CPU", job.QueryLabel, job.Job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			if benchCfg.Metrics.EnableCadvisorMetrics {
+				err = metricsClient.Measure(b, metricsClient.ContainerUserCPU, "Containers User CPU", cadvisorJob.QueryLabel, cadvisorJob.Job, c.Description, defaultRange)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+				err = metricsClient.Measure(b, metricsClient.ContainerWorkingSetMEM, "Containers WorkingSet memory", cadvisorJob.QueryLabel, cadvisorJob.Job, c.Description, defaultRange)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			}
 			err = metricsClient.Measure(b, metricsClient.RequestReadsGrpcQPS, "successful GRPC reads QPS", job.QueryLabel, job.Job, c.Description, defaultRange)

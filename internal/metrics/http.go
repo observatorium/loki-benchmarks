@@ -39,7 +39,7 @@ func (c *client) RequestReadsQPS(label, job string, duration model.Duration) (fl
 
 func (c *client) RequestWritesQPS(label, job string, duration model.Duration) (float64, error) {
 	route := "loki_api_v1_push"
-	return c.requestQPS(label, job, route, "2.*|429", duration)
+	return c.requestQPS(label, job, route, "2.*", duration)
 }
 
 func (c *client) RequestQueryRangeThroughput(label, job string, duration model.Duration) (float64, error) {
