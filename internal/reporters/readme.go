@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/onsi/ginkgo/config"
@@ -33,6 +34,7 @@ func (cr *readmeReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 
 	path := ""
 	contents := map[string][]string{}
+	contentKeys := []string{}
 
 	for key, value := range specSummary.Measurements {
 		if path == "" {
@@ -40,12 +42,14 @@ func (cr *readmeReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 			path = filepath.Join(dirName, "README.md")
 		}
 
-		components := strings.Split(key, " - ")
+		sanitizedKey := strings.ReplaceAll(key, "_", "-")
+		components := strings.Split(sanitizedKey, " - ")
 		lokiComponent := strings.Join(strings.Split(components[0], "-"), " ")
 
 		if scenarios := contents[lokiComponent]; scenarios != nil {
 			contents[lokiComponent] = append(scenarios, components[1])
 		} else {
+			contentKeys = append(contentKeys, lokiComponent)
 			contents[lokiComponent] = []string{components[1]}
 		}
 	}
@@ -62,18 +66,23 @@ func (cr *readmeReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 	tableOfContents := "## Table of Contents\n\n"
 	resultsSection := "---\n\n## Benchmark Results\n\n"
 
-	for key, values := range contents {
+	sort.Strings(contentKeys)
+
+	for _, key := range contentKeys {
+		values := contents[key]
+		sort.Strings(values)
+
 		displayKey := strings.Title(key)
 		markdownKey := strings.Join(strings.Split(key, " "), "-")
 
-		tableOfContents += fmt.Sprintf("- [%s](#component-%s)\n", displayKey, markdownKey)
+		tableOfContents += fmt.Sprintf("- [%s](#component-%s)\n", displayKey, strings.ToLower(markdownKey))
 		resultsSection += fmt.Sprintf("### Component: %s\n\n", displayKey)
 
 		for _, value := range values {
 			displayValue := strings.Title(value)
 			markdownValue := strings.Join(strings.Split(value, " "), "-")
 
-			tableOfContents += fmt.Sprintf("\t- [%s](%s)\n", displayValue, markdownValue)
+			tableOfContents += fmt.Sprintf("\t- [%s](#%s)\n", displayValue, strings.ToLower(markdownValue))
 
 			imageName := fmt.Sprintf("%s-%s.gnuplot.png", markdownKey, markdownValue)
 			resultsSection += fmt.Sprintf("#### %s\n\n", displayValue)

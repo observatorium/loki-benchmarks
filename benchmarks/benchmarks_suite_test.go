@@ -32,6 +32,8 @@ var (
 
 	reportDir string
 
+	defaultLatchRange = "5m"
+
 	defaultRetry        = 5 * time.Second
 	defaultTimeout      = 60 * time.Second
 	defaultLatchTimeout = 5 * time.Minute
