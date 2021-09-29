@@ -6,17 +6,21 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/kennygrant/sanitize"
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
 	"github.com/onsi/ginkgo/types"
 )
 
 type readmeReporter struct {
-	ReportDir string
+	ReportDir       string
+	tableOfContents string
+	resultsSection  string
+	isDone          bool
 }
 
 func NewReadmeReporter(reportDir string) reporters.Reporter {
-	return &readmeReporter{ReportDir: reportDir}
+	return &readmeReporter{ReportDir: reportDir, tableOfContents: "", resultsSection: "", isDone: false}
 }
 
 func (cr *readmeReporter) SpecSuiteWillBegin(config config.GinkgoConfigType, summary *types.SuiteSummary) {
@@ -33,11 +37,12 @@ func (cr *readmeReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 
 	path := ""
 	contents := map[string][]string{}
-
+	header := ""
 	for key, value := range specSummary.Measurements {
 		if path == "" {
-			dirName := getSubDirectory(value.Name, cr.ReportDir)
-			path = filepath.Join(dirName, "README.md")
+			nameComponents := strings.Split(value.Name, " - ")
+			header = sanitize.BaseName(nameComponents[len(nameComponents)-1])
+			path = filepath.Join(cr.ReportDir, "README.md")
 		}
 
 		components := strings.Split(key, " - ")
@@ -50,40 +55,43 @@ func (cr *readmeReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 		}
 	}
 
-	file, err := os.Create(path)
-
-	if err != nil {
-		return
-	}
-	defer file.Close()
-
-	title := "# Benchmark Report\n\n" +
-		"This document contains baseline benchmark results for Loki under synthetic load.\n\n"
-	tableOfContents := "## Table of Contents\n\n"
-	resultsSection := "---\n\n## Benchmark Results\n\n"
+	cr.resultsSection += "\n\n---\n\n## " + header + "\n\n"
+	cr.tableOfContents += "- " + header + "\n"
 
 	for key, values := range contents {
 		displayKey := strings.Title(key)
 		markdownKey := strings.Join(strings.Split(key, " "), "-")
 
-		tableOfContents += fmt.Sprintf("- [%s](#component-%s)\n", displayKey, markdownKey)
-		resultsSection += fmt.Sprintf("### Component: %s\n\n", displayKey)
+		cr.tableOfContents += fmt.Sprintf("\t- [%s](#component-%s)\n", displayKey, markdownKey)
+		cr.resultsSection += fmt.Sprintf("### Component: %s\n\n", displayKey)
 
 		for _, value := range values {
 			displayValue := strings.Title(value)
 			markdownValue := strings.Join(strings.Split(value, " "), "-")
 
-			tableOfContents += fmt.Sprintf("\t- [%s](%s)\n", displayValue, markdownValue)
+			cr.tableOfContents += fmt.Sprintf("\t\t- [%s](%s)\n", displayValue, markdownValue)
 
 			imageName := fmt.Sprintf("%s-%s.gnuplot.png", markdownKey, markdownValue)
-			resultsSection += fmt.Sprintf("#### %s\n\n", displayValue)
-			resultsSection += fmt.Sprintf("![./%s](./%s)\n\n", imageName, imageName)
+			cr.resultsSection += fmt.Sprintf("#### %s\n\n", displayValue)
+			cr.resultsSection += fmt.Sprintf("![./%s](./%s)\n\n", imageName, imageName)
 		}
 	}
 
-	_, _ = file.WriteString(title)
-	_, _ = file.WriteString(tableOfContents + "\n")
-	_, _ = file.WriteString(resultsSection)
+	if !cr.isDone {
+		cr.isDone = true
+		return
+	}
+
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+
+	if err != nil {
+		return
+	}
+
+	defer file.Close()
+
+	_, _ = file.WriteString(cr.tableOfContents)
+	_, _ = file.WriteString(cr.resultsSection)
 }
 
 func (cr *readmeReporter) AfterSuiteDidRun(setupSummary *types.SetupSummary) {}
