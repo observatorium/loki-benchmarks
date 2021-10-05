@@ -13,14 +13,11 @@ import (
 )
 
 type readmeReporter struct {
-	ReportDir       string
-	tableOfContents string
-	resultsSection  string
-	isDone          bool
+	ReportDir string
 }
 
 func NewReadmeReporter(reportDir string) reporters.Reporter {
-	return &readmeReporter{ReportDir: reportDir, tableOfContents: "", resultsSection: "", isDone: false}
+	return &readmeReporter{ReportDir: reportDir}
 }
 
 func (cr *readmeReporter) SpecSuiteWillBegin(config config.GinkgoConfigType, summary *types.SuiteSummary) {
@@ -35,14 +32,16 @@ func (cr *readmeReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 		return
 	}
 
-	path := ""
+	tablePath := ""
+	resultPath := ""
 	contents := map[string][]string{}
 	header := ""
 	for key, value := range specSummary.Measurements {
-		if path == "" {
+		if resultPath == "" {
 			nameComponents := strings.Split(value.Name, " - ")
 			header = sanitize.BaseName(nameComponents[len(nameComponents)-1])
-			path = filepath.Join(cr.ReportDir, "README.md")
+			tablePath = filepath.Join(cr.ReportDir, "table.md")
+			resultPath = filepath.Join(cr.ReportDir, "result.md")
 		}
 
 		components := strings.Split(key, " - ")
@@ -55,43 +54,45 @@ func (cr *readmeReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 		}
 	}
 
-	cr.resultsSection += "\n\n---\n\n## " + header + "\n\n"
-	cr.tableOfContents += "- " + header + "\n"
+	resultsSection := "\n\n---\n\n## " + header + "\n\n"
+	tableOfContents := "- " + header + "\n"
 
 	for key, values := range contents {
 		displayKey := strings.Title(key)
 		markdownKey := strings.Join(strings.Split(key, " "), "-")
 
-		cr.tableOfContents += fmt.Sprintf("\t- [%s](#component-%s)\n", displayKey, markdownKey)
-		cr.resultsSection += fmt.Sprintf("### Component: %s\n\n", displayKey)
+		tableOfContents += fmt.Sprintf("\t- [%s](#component-%s)\n", displayKey, markdownKey)
+		resultsSection += fmt.Sprintf("### Component: %s\n\n", displayKey)
 
 		for _, value := range values {
 			displayValue := strings.Title(value)
 			markdownValue := strings.Join(strings.Split(value, " "), "-")
 
-			cr.tableOfContents += fmt.Sprintf("\t\t- [%s](%s)\n", displayValue, markdownValue)
+			tableOfContents += fmt.Sprintf("\t\t- [%s](%s)\n", displayValue, markdownValue)
 
 			imageName := fmt.Sprintf("%s-%s.gnuplot.png", markdownKey, markdownValue)
-			cr.resultsSection += fmt.Sprintf("#### %s\n\n", displayValue)
-			cr.resultsSection += fmt.Sprintf("![./%s](./%s)\n\n", imageName, imageName)
+			resultsSection += fmt.Sprintf("#### %s\n\n", displayValue)
+			resultsSection += fmt.Sprintf("![./%s](./%s)\n\n", imageName, imageName)
 		}
 	}
 
-	if !cr.isDone {
-		cr.isDone = true
-		return
-	}
-
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	resultFile, err := os.OpenFile(resultPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 
 	if err != nil {
 		return
 	}
 
-	defer file.Close()
+	defer resultFile.Close()
 
-	_, _ = file.WriteString(cr.tableOfContents)
-	_, _ = file.WriteString(cr.resultsSection)
+	tableFile, err := os.OpenFile(tablePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		return
+	}
+
+	defer tableFile.Close()
+
+	_, _ = tableFile.WriteString(tableOfContents)
+	_, _ = resultFile.WriteString(resultsSection)
 }
 
 func (cr *readmeReporter) AfterSuiteDidRun(setupSummary *types.SetupSummary) {}

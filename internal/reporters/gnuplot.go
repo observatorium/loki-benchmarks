@@ -27,7 +27,6 @@ func (cr *gnuplotReporter) SpecWillRun(specSummary *types.SpecSummary) {}
 
 func (cr *gnuplotReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 	for key, value := range specSummary.Measurements {
-		//dirName := getSubDirectory(value.Name, cr.ReportDir)
 		filepath := createFilePath(key, cr.ReportDir, "gnuplot")
 
 		file, err := os.Create(filepath)

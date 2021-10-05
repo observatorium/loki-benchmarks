@@ -28,7 +28,6 @@ func (cr *csvReporter) SpecWillRun(specSummary *types.SpecSummary) {}
 
 func (cr *csvReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 	for key, value := range specSummary.Measurements {
-		//dirName := getSubDirectory(value.Name, cr.ReportDir)
 		filepath := createFilePath(key, cr.ReportDir, "csv")
 
 		file, err := os.Create(filepath)

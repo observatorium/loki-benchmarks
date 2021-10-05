@@ -104,6 +104,12 @@ generate_report() {
     done
 }
 
+clean() {
+    cat "$REPORT_DIR/table.md" >> "$REPORT_DIR/README.md"
+    cat "$REPORT_DIR/result.md" >> "$REPORT_DIR/README.md"
+    rm "$REPORT_DIR/result.md" "$REPORT_DIR/table.md"
+}
+
 bench() {
     if [[ "$TARGET_ENV" = "development" ]] && $DEPLOY_KIND_OBSERVATORIUM; then
         echo "Deploying observatorium dev manifests"
@@ -135,6 +141,7 @@ bench() {
 
     echo -e "\nGenerate benchmark report"
     generate_report
+    clean
 }
 
 bench
