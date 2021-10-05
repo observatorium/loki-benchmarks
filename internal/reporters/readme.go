@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/kennygrant/sanitize"
@@ -36,6 +37,8 @@ func (cr *readmeReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 	resultPath := ""
 	contents := map[string][]string{}
 	header := ""
+	contentKeys := []string{}
+  
 	for key, value := range specSummary.Measurements {
 		if resultPath == "" {
 			nameComponents := strings.Split(value.Name, " - ")
@@ -44,12 +47,14 @@ func (cr *readmeReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 			resultPath = filepath.Join(cr.ReportDir, "result.md")
 		}
 
-		components := strings.Split(key, " - ")
+		sanitizedKey := strings.ReplaceAll(key, "_", "-")
+		components := strings.Split(sanitizedKey, " - ")
 		lokiComponent := strings.Join(strings.Split(components[0], "-"), " ")
 
 		if scenarios := contents[lokiComponent]; scenarios != nil {
 			contents[lokiComponent] = append(scenarios, components[1])
 		} else {
+			contentKeys = append(contentKeys, lokiComponent)
 			contents[lokiComponent] = []string{components[1]}
 		}
 	}
@@ -57,18 +62,24 @@ func (cr *readmeReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 	resultsSection := "\n\n---\n\n## " + header + "\n\n"
 	tableOfContents := "- " + header + "\n"
 
-	for key, values := range contents {
+	sort.Strings(contentKeys)
+
+	for _, key := range contentKeys {
+		values := contents[key]
+		sort.Strings(values)
+
 		displayKey := strings.Title(key)
 		markdownKey := strings.Join(strings.Split(key, " "), "-")
 
-		tableOfContents += fmt.Sprintf("\t- [%s](#component-%s)\n", displayKey, markdownKey)
+		tableOfContents += fmt.Sprintf("\t- [%s](#component-%s)\n", displayKey, strings.ToLower(markdownKey))
 		resultsSection += fmt.Sprintf("### Component: %s\n\n", displayKey)
 
 		for _, value := range values {
 			displayValue := strings.Title(value)
 			markdownValue := strings.Join(strings.Split(value, " "), "-")
 
-			tableOfContents += fmt.Sprintf("\t\t- [%s](%s)\n", displayValue, markdownValue)
+			tableOfContents += fmt.Sprintf("\t\t- [%s](%s)\n", displayValue, strings.ToLower(markdownValue))
+
 
 			imageName := fmt.Sprintf("%s-%s.gnuplot.png", markdownKey, markdownValue)
 			resultsSection += fmt.Sprintf("#### %s\n\n", displayValue)
