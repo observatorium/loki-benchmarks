@@ -114,7 +114,7 @@ func ConfigureScenarioResultDirectories(scenarios *config.Scenarios, directory s
 
 func CreateResultsReadmeFor(configurations []config.Configuration, directory string) {
 	path := filepath.Join(directory, "README.md")
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	file, err := os.Create(path)
 
 	if err != nil {
 		panic("Failed to create readme files")

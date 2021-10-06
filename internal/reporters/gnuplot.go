@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/kennygrant/sanitize"
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
 	"github.com/onsi/ginkgo/types"
@@ -27,7 +28,7 @@ func (cr *gnuplotReporter) SpecWillRun(specSummary *types.SpecSummary) {}
 
 func (cr *gnuplotReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 	for key, value := range specSummary.Measurements {
-		filepath := createFilePath(key, cr.ReportDir, "gnuplot")
+		filepath := fmt.Sprintf("%s/%s.gnuplot", cr.ReportDir, sanitize.BaseName(key))
 
 		file, err := os.Create(filepath)
 		if err != nil {

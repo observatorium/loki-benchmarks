@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/kennygrant/sanitize"
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
 	"github.com/onsi/ginkgo/types"
@@ -28,7 +29,7 @@ func (cr *csvReporter) SpecWillRun(specSummary *types.SpecSummary) {}
 
 func (cr *csvReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 	for key, value := range specSummary.Measurements {
-		filepath := createFilePath(key, cr.ReportDir, "csv")
+		filepath := fmt.Sprintf("%s/%s.csv", cr.ReportDir, sanitize.BaseName(key))
 
 		file, err := os.Create(filepath)
 		if err != nil {

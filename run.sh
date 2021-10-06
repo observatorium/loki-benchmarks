@@ -102,12 +102,9 @@ generate_report() {
     for f in $REPORT_DIR/*.gnuplot; do
         gnuplot -e "set term png; set output '$f.png'" "$f"
     done
-}
 
-clean() {
-    cat "$REPORT_DIR/table.md" >> "$REPORT_DIR/README.md"
     cat "$REPORT_DIR/result.md" >> "$REPORT_DIR/README.md"
-    rm "$REPORT_DIR/result.md" "$REPORT_DIR/table.md"
+    rm "$REPORT_DIR/result.md"
 }
 
 bench() {
@@ -141,7 +138,6 @@ bench() {
 
     echo -e "\nGenerate benchmark report"
     generate_report
-    clean
 }
 
 bench
