@@ -51,6 +51,15 @@ func (m *Metrics) CadvisorIngesterJob() MetricsJob {
 	return job
 }
 
+func (m *Metrics) CadvisorQuerierJob() MetricsJob {
+	job, ok := m.CadvisorJobs["querier"]
+	if !ok {
+		return MetricsJob{Job: "cadvisor_querier", QueryLabel: "job"}
+	}
+
+	return job
+}
+
 func (m *Metrics) IngesterJob() MetricsJob {
 	job, ok := m.Jobs["ingester"]
 	if !ok {

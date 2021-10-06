@@ -39,13 +39,15 @@ scenarios:
       - description: "Write 100 logs-per-second"
         samples:
           interval: "60s"
-          range: "120s"
+          range: "60s"
           total: 2
         writers:
           replicas: 1
           command: generate
           args:
+            source: synthetic
             destination: loki
+            loki-labels: host
             log-lines-rate: 100
             synthetic-payload-size: 100
   highVolumeReads:
@@ -54,21 +56,21 @@ scenarios:
       - description: "Read 10 queries-per-second"
         samples:
           interval: "60s"
-          range: "120s"
+          range: "60s"
           total: 2
         writers:
-          replicas: 3
+          replicas: 10
           command: generate
           args:
+            source: application
             destination: loki
-            log-lines-rate: 400
-            synthetic-payload-size: 200
+            log-lines-rate: 1000
         readers:
-          startThreshold: 15728640
+          startThreshold: 25000000
           replicas: 1
           command: query
           queries:
-            sumRateByLevel: 'sum(rate({component!=""}[5m])) by (level)'
+            sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
           args:
             destination: loki
             log-lines-rate: 10
