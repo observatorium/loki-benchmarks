@@ -3,6 +3,7 @@ package reporter
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/kennygrant/sanitize"
@@ -28,7 +29,7 @@ func (cr *gnuplotReporter) SpecWillRun(specSummary *types.SpecSummary) {}
 
 func (cr *gnuplotReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 	for key, value := range specSummary.Measurements {
-		filepath := fmt.Sprintf("%s/%s.gnuplot", cr.ReportDir, sanitize.BaseName(key))
+		filepath := fmt.Sprintf("%s/%s.gnuplot", cr.ReportDir, strings.ToLower(sanitize.BaseName(key)))
 
 		file, err := os.Create(filepath)
 		if err != nil {

@@ -74,11 +74,11 @@ func (cr *readmeReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 
 		for _, value := range values {
 			displayValue := strings.Title(value)
-			markdownValue := strings.Join(strings.Split(value, " "), "-")
+			markdownValue := strings.ToLower(strings.Join(strings.Split(value, " "), "-"))
 
-			tableOfContents += fmt.Sprintf("\t\t- [%s](%s)\n", displayValue, strings.ToLower(markdownValue))
+			tableOfContents += fmt.Sprintf("\t\t- [%s](%s)\n", displayValue, markdownValue)
 
-			imageName := fmt.Sprintf("%s-%s-%s.gnuplot.png", markdownKey, markdownValue, header)
+			imageName := fmt.Sprintf("%s-%s-%s.gnuplot.png", markdownKey, markdownValue, strings.ToLower(header))
 			resultsSection += fmt.Sprintf("#### %s\n\n", displayValue)
 			resultsSection += fmt.Sprintf("![./%s](./%s)\n\n", imageName, imageName)
 		}

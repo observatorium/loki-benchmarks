@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/kennygrant/sanitize"
@@ -29,7 +30,7 @@ func (cr *csvReporter) SpecWillRun(specSummary *types.SpecSummary) {}
 
 func (cr *csvReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 	for key, value := range specSummary.Measurements {
-		filepath := fmt.Sprintf("%s/%s.csv", cr.ReportDir, sanitize.BaseName(key))
+		filepath := fmt.Sprintf("%s/%s.csv", cr.ReportDir, strings.ToLower(sanitize.BaseName(key)))
 
 		file, err := os.Create(filepath)
 		if err != nil {

@@ -27,10 +27,12 @@ lint: $(GOLANGCI_LINT)
 
 $(REPORT_DIR):
 	@mkdir -p $(REPORT_DIR)
+	@cp reports/README.template $(REPORT_DIR)
+	@mv $(REPORT_DIR)/README.template $(REPORT_DIR)/README.md
 
-download-observatorium-loki-template:
+download-obs-loki-template:
 	wget -nv -O $(LOKI_TEMPLATE_FILE) https://raw.githubusercontent.com/rhobs/configuration/main/resources/services/observatorium-logs-template.yaml
-.PHONY: download-observatorium-loki-template
+.PHONY: download-obs-loki-template
 
 deploy-cadvisor: $(KUSTOMIZE)
 	oc create namespace $(CADVISOR_NAMESPACE)
@@ -39,20 +41,23 @@ deploy-cadvisor: $(KUSTOMIZE)
 	oc -n $(CADVISOR_NAMESPACE) adm policy add-cluster-role-to-user cluster-reader -z $(CADVISOR_NAMESPACE)
 .PHONY: deploy-cadvisor
 
-deploy-observatorium-loki: download-observatorium-loki-template
+deploy-obs-loki: download-obs-loki-template
 	oc create namespace $(LOKI_NAMESPACE)
 	hack/deploy-example-secret.sh $(LOKI_NAMESPACE) $(LOKI_STORAGE_BUCKET)
 	oc process -f $(LOKI_TEMPLATE_FILE) -p NAMESPACE=$(LOKI_NAMESPACE) -p LOKI_S3_SECRET=test --param-file $(LOKI_CONFIG_FILE) | oc -n $(LOKI_NAMESPACE) apply -f -
-.PHONY:deploy-observatorium-loki
+.PHONY:deploy-obs-loki
 
 deploy-s3-bucket:
 	hack/create-s3-bucket.sh $(LOKI_STORAGE_BUCKET)
 .PHONY: deploy-s3-bucket
 
-deploy-all-ocp-components: deploy-cadvisor deploy-observatorium-loki
+deploy-ocp-prometheus:
 	oc -n openshift-monitoring apply -f hack/ocp-monitoring/cluster-monitoring-config.yaml
 	oc -n openshift-user-workload-monitoring apply -f hack/ocp-monitoring/user-workload-monitoring-config.yaml
-.PHONY: deploy-all-ocp-components
+.PHONY: deploy-ocp-prometheus
+
+deploy-obs-benchmarks: deploy-obs-loki deploy-ocp-prometheus
+.PHONY: deploy-obs-benchmarks
 
 bench-dev: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR)
 	@TARGET_ENV=development \
@@ -80,11 +85,14 @@ cadvisor-cleanup:
 	oc delete namespace $(CADVISOR_NAMESPACE)
 .PHONY: cadvisor-cleanup
 
-observatorium-loki-cleanup:
+obs-loki-cleanup:
 	oc delete namespace $(LOKI_NAMESPACE)
-.PHONY: observatorium-loki-cleanup
+.PHONY: obs-loki-cleanup
 
-ocp-components-cleanup: cadvisor-cleanup observatorium-loki-cleanup
+ocp-prometheus-cleanup:
 	oc -n openshift-monitoring delete configmap/cluster-monitoring-config
 	oc -n openshift-user-workload-monitoring delete configmap/user-workload-monitoring-config
-.PHONY: ocp-components-cleanup
+.PHONY: ocp-prometheus-cleanup
+
+obs-benchmarks-cleanup: obs-loki-cleanup ocp-prometheus-cleanup
+.PHONY: obs-benchmarks-cleanup

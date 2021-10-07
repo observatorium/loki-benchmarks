@@ -100,7 +100,7 @@ generate_report() {
     $EMBEDMD -w $REPORT_DIR/README.md
 
     for f in $REPORT_DIR/*.gnuplot; do
-        gnuplot -e "set term png; set output '$f.png'" "$f"
+      gnuplot -e "set term png; set output '$f.png'" "$f"
     done
 
     cat "$REPORT_DIR/result.md" >> "$REPORT_DIR/README.md"

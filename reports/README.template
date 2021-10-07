@@ -1,0 +1,8 @@
+# Benchmark Report
+
+This document contains baseline benchmark results for Loki under synthetic load.
+
+## Table of Contents
+
+- Benchmark Profile
+	- Generated using profile: [embedmd]:# (../../config/development.yaml)

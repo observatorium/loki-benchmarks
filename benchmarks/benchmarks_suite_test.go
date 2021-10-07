@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -29,6 +28,8 @@ var (
 	metricsClient metrics.Client
 
 	reportDir string
+
+	defaultLatchRange = "5m"
 
 	defaultRetry        = 5 * time.Second
 	defaultTimeout      = 60 * time.Second
@@ -94,43 +95,6 @@ func init() {
 	if err != nil {
 		panic("Failed to create new k8s client")
 	}
-
-	ConfigureScenarioResultDirectories(benchCfg.Scenarios, reportDir)
-}
-
-func ConfigureScenarioResultDirectories(scenarios *config.Scenarios, directory string) {
-	configurations := []config.Configuration{}
-
-	if scenarios.HighVolumeReads.Enabled {
-		configurations = append(configurations, scenarios.HighVolumeReads.Configurations...)
-	}
-
-	if scenarios.HighVolumeWrites.Enabled {
-		configurations = append(configurations, scenarios.HighVolumeWrites.Configurations...)
-	}
-
-	CreateResultsReadmeFor(configurations, directory)
-}
-
-func CreateResultsReadmeFor(configurations []config.Configuration, directory string) {
-	path := filepath.Join(directory, "README.md")
-	file, err := os.Create(path)
-
-	if err != nil {
-		panic("Failed to create readme files")
-	}
-	defer file.Close()
-
-	title := "# Benchmark Report\n\n" +
-		"This document contains baseline benchmark results for Loki under synthetic load.\n\n"
-	tableOfContents := "## Table of Contents"
-	profileSection := "\n" +
-		"- Benchmark Profile\n" +
-		"\t- Generated using profile: [embedmd]:# (../../config/{{TARGET_ENV}}.yaml)"
-
-	_, _ = file.WriteString(title)
-	_, _ = file.WriteString(tableOfContents + "\n")
-	_, _ = file.WriteString(profileSection + "\n")
 }
 
 func TestBenchmarks(t *testing.T) {

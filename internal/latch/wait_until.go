@@ -4,11 +4,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/prometheus/common/model"
 	"github.com/observatorium/loki-benchmarks/internal/metrics"
 )
 
-func WaitUntilGreaterOrEqual(m metrics.Client, lm metrics.MetricType, threshold float64, timeout time.Duration) error {
+func WaitUntilGreaterOrEqual(m metrics.Client, lm metrics.MetricType, threshold float64, duration string, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
+	dur, parseErr := model.ParseDuration(duration)
+
+	if parseErr != nil {
+		return fmt.Errorf("failed to parse duration: %w", parseErr)
+	}
 
 	for {
 		if time.Now().UnixNano() == deadline.UnixNano() {
@@ -22,7 +28,7 @@ func WaitUntilGreaterOrEqual(m metrics.Client, lm metrics.MetricType, threshold 
 
 		switch lm {
 		case metrics.DistributorBytesReceivedTotal:
-			sample, err = m.DistributorBytesReceivedTotal()
+			sample, err = m.DistributorBytesReceivedTotal(dur)
 			if err != nil {
 				continue
 			}
