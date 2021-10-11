@@ -2,7 +2,7 @@
 
 This document contains baseline benchmark results for Loki under synthetic load.
 
+Generated using profile: [embedmd]:# (../../config/{{TARGET_ENV}}.yaml)
+
 ## Table of Contents
 
-- Benchmark Profile
-	- Generated using profile: [embedmd]:# (../../config/development.yaml)
