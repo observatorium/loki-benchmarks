@@ -3,8 +3,10 @@ package reporter
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/kennygrant/sanitize"
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
 	"github.com/onsi/ginkgo/types"
@@ -27,8 +29,7 @@ func (cr *gnuplotReporter) SpecWillRun(specSummary *types.SpecSummary) {}
 
 func (cr *gnuplotReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 	for key, value := range specSummary.Measurements {
-		dirName := getSubDirectory(value.Name, cr.ReportDir)
-		filepath := createFilePath(key, dirName, "gnuplot")
+		filepath := fmt.Sprintf("%s/%s.gnuplot", cr.ReportDir, strings.ToLower(sanitize.BaseName(key)))
 
 		file, err := os.Create(filepath)
 		if err != nil {

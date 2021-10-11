@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -12,8 +11,6 @@ import (
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
-
-	"github.com/kennygrant/sanitize"
 
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -98,66 +95,6 @@ func init() {
 	if err != nil {
 		panic("Failed to create new k8s client")
 	}
-
-	ConfigureScenarioResultDirectories(benchCfg.Scenarios, reportDir)
-}
-
-func ConfigureScenarioResultDirectories(scenarios *config.Scenarios, directory string) {
-	configurations := []config.Configuration{}
-
-	if scenarios.HighVolumeReads.Enabled {
-		configurations = append(configurations, scenarios.HighVolumeReads.Configurations...)
-	}
-
-	if scenarios.HighVolumeWrites.Enabled {
-		configurations = append(configurations, scenarios.HighVolumeWrites.Configurations...)
-	}
-
-	CreateResultsDirectoryFor(configurations, directory)
-	CreateResultsReadmeFor(configurations, directory)
-}
-
-func CreateResultsDirectoryFor(configurations []config.Configuration, directory string) {
-	for _, configuration := range configurations {
-		dirName := sanitize.BaseName(configuration.Description)
-		path := filepath.Join(directory, dirName)
-
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			if err := os.Mkdir(path, 0700); err != nil {
-				panic(fmt.Sprintf("Failed to create report directories, error %s", err))
-			}
-		}
-	}
-}
-
-func CreateResultsReadmeFor(configurations []config.Configuration, directory string) {
-	path := filepath.Join(directory, "README.md")
-	file, err := os.Create(path)
-
-	if err != nil {
-		panic("Failed to create readme files")
-	}
-	defer file.Close()
-
-	title := "# Benchmark Report\n\n" +
-		"This document contains baseline benchmark results for Loki under synthetic load.\n\n"
-	tableOfContents := "## Table of Contents\n\n" +
-		"- [Benchmark Profile](#benchmark-profile)\n"
-	profileSection := "---\n\n" +
-		"## Benchmark Profile\n\n" +
-		"Generated using profile:\n" +
-		"[embedmd]:# (../../config/{{TARGET_ENV}}.yaml)"
-
-	for index, config := range configurations {
-		dirName := sanitize.BaseName(config.Description)
-		path = filepath.Join(dirName, "README.md")
-
-		tableOfContents += fmt.Sprintf("- [Scenario %d: %s](./%s)\n", index+1, config.Description, path)
-	}
-
-	_, _ = file.WriteString(title)
-	_, _ = file.WriteString(tableOfContents + "\n")
-	_, _ = file.WriteString(profileSection)
 }
 
 func TestBenchmarks(t *testing.T) {

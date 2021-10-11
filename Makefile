@@ -27,6 +27,8 @@ lint: $(GOLANGCI_LINT)
 
 $(REPORT_DIR):
 	@mkdir -p $(REPORT_DIR)
+	@cp reports/README.template $(REPORT_DIR)
+	@mv $(REPORT_DIR)/README.template $(REPORT_DIR)/README.md
 
 download-obs-loki-template:
 	wget -nv -O $(LOKI_TEMPLATE_FILE) https://raw.githubusercontent.com/rhobs/configuration/main/resources/services/observatorium-logs-template.yaml
