@@ -58,7 +58,7 @@ func (cr *readmeReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 	}
 
 	resultsSection := "\n\n---\n\n## " + header + "\n\n"
-	tableOfContents := "- " + header + "\n"
+	tableOfContents := "- [" + header + "](#" + strings.ToLower(header) + ")\n"
 
 	sort.Strings(contentKeys)
 
@@ -69,17 +69,17 @@ func (cr *readmeReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 		displayKey := strings.Title(key)
 		markdownKey := strings.Join(strings.Split(key, " "), "-")
 
-		tableOfContents += fmt.Sprintf("\t- [%s](#component-%s)\n", displayKey, strings.ToLower(markdownKey))
-		resultsSection += fmt.Sprintf("### Component: %s\n\n", displayKey)
+		tableOfContents += fmt.Sprintf("\t- [%s](#component-%s-%s)\n", displayKey, strings.ToLower(header), strings.ToLower(markdownKey))
+		resultsSection += fmt.Sprintf("### Component: %s %s\n\n", header, displayKey)
 
 		for _, value := range values {
 			displayValue := strings.Title(value)
 			markdownValue := strings.ToLower(strings.Join(strings.Split(value, " "), "-"))
 
-			tableOfContents += fmt.Sprintf("\t\t- [%s](%s)\n", displayValue, markdownValue)
+			tableOfContents += fmt.Sprintf("\t\t- [%s](#%s-%s-%s)\n", displayValue, strings.ToLower(header), strings.ToLower(markdownKey), markdownValue)
 
 			imageName := fmt.Sprintf("%s-%s-%s.gnuplot.png", markdownKey, markdownValue, strings.ToLower(header))
-			resultsSection += fmt.Sprintf("#### %s\n\n", displayValue)
+			resultsSection += fmt.Sprintf("#### %s %s %s\n\n", header, displayKey, displayValue)
 			resultsSection += fmt.Sprintf("![./%s](./%s)\n\n", imageName, imageName)
 		}
 	}
