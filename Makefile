@@ -10,11 +10,12 @@ export GO111MODULE=on
 export REPORT_DIR?=$(CURDIR)/reports/$(shell date +%Y-%m-%d-%H-%M-%S)
 
 export KUBECTL=$(shell which kubectl)
+export USERNAME=$(USER)
 
 CADVISOR_NAMESPACE := cadvisor
 LOKI_NAMESPACE := observatorium-logs-test
 
-LOKI_STORAGE_BUCKET ?= loki-benchmark-storage
+LOKI_STORAGE_BUCKET ?= loki-benchmark-$(USERNAME)
 LOKI_TEMPLATE_FILE ?= /tmp/observatorium-logs-template.yaml
 LOKI_CONFIG_FILE ?= config/loki-parameters.yaml
 
@@ -82,17 +83,20 @@ bench-obs-logs-test: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR)
 .PHONY: bench-obs-logs-test
 
 cadvisor-cleanup:
-	oc delete namespace $(CADVISOR_NAMESPACE)
+	oc --ignore-not-found=true delete namespace $(CADVISOR_NAMESPACE)
 .PHONY: cadvisor-cleanup
 
 obs-loki-cleanup:
-	oc delete namespace $(LOKI_NAMESPACE)
+	oc --ignore-not-found=true delete namespace $(LOKI_NAMESPACE)
 .PHONY: obs-loki-cleanup
 
 ocp-prometheus-cleanup:
-	oc -n openshift-monitoring delete configmap/cluster-monitoring-config
-	oc -n openshift-user-workload-monitoring delete configmap/user-workload-monitoring-config
+	oc --ignore-not-found=true -n openshift-monitoring delete configmap/cluster-monitoring-config
+	oc --ignore-not-found=true -n openshift-user-workload-monitoring delete configmap/user-workload-monitoring-config
 .PHONY: ocp-prometheus-cleanup
 
 obs-benchmarks-cleanup: obs-loki-cleanup ocp-prometheus-cleanup
 .PHONY: obs-benchmarks-cleanup
+
+ocp-loki-bench: obs-loki-cleanup ocp-prometheus-cleanup deploy-obs-loki deploy-ocp-prometheus deploy-s3-bucket bench-obs-logs-test
+.PHONY: ocp-bench

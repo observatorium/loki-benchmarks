@@ -23,6 +23,7 @@ const (
 type Client interface {
 	DistributorBytesReceivedTotal(duration model.Duration) (float64, error)
 	DistributorGiPDReceivedTotal(label, job string, duration model.Duration) (float64, error)
+	DistributorGiPDDiscardedTotal(label, job string, duration model.Duration) (float64, error)
 
 	// HTTP API
 	RequestDurationOkQueryRangeAvg(label, job string, duration model.Duration) (float64, error)
