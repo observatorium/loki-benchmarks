@@ -17,6 +17,7 @@ type queryFunc func(label, job string, duration model.Duration) (float64, error)
 
 const (
 	BytesToGigabytesMultiplier string = "1000000000"
+	BytesToMegabytesMultiplier string = "1000000"
 	DistributorBytesReceivedTotal MetricType = "loki_distributor_bytes_received_total"
 )
 
@@ -124,8 +125,8 @@ func (c *client) ContainerUserCPU(label, job string, duration model.Duration) (f
 
 func (c *client) ContainerWorkingSetMEM(label, job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(avg_over_time(container_memory_working_set_bytes{%s=~".*%s.*"}[%s]) / %s)`, // in Gi
-		label, job, duration, BytesToGigabytesMultiplier,
+		`sum(avg_over_time(container_memory_working_set_bytes{%s=~".*%s.*"}[%s]) / %s)`, // in MBi
+		label, job, duration, BytesToMegabytesMultiplier,
 	)
 
 	return c.executeScalarQuery(query)
