@@ -7,14 +7,13 @@ BUCKET_NAME=$1
 REGION=$(aws configure get region)
 
 recreate_bucket() {
+    aws s3 rb s3://"$BUCKET_NAME" --region "$REGION" --force  || true
     if [[ "$REGION" = "us-east-1" ]]; then
-        aws s3api delete-bucket --bucket "$BUCKET_NAME" || true
         aws s3api create-bucket \
             --acl private \
             --bucket "$BUCKET_NAME" \
             --region "$REGION"
     else
-        aws s3api delete-bucket --bucket "$BUCKET_NAME" -region "$REGION" || true
         aws s3api create-bucket \
             --acl private \
             --bucket "$BUCKET_NAME" \
