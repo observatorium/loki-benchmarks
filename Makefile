@@ -52,7 +52,11 @@ $(REPORT_DIR):
 	@mv $(REPORT_DIR)/README.template $(REPORT_DIR)/README.md
 
 download-obs-loki-template:
+ifeq ($(LOKI_TEMPLATE_FILE_SKIP_DOWNLOAD), true)
+	@echo "Skip downloading "$(LOKI_TEMPLATE_FILE)
+else
 	wget -nv -O $(LOKI_TEMPLATE_FILE) https://raw.githubusercontent.com/rhobs/configuration/main/resources/services/observatorium-logs-template.yaml
+endif
 .PHONY: download-obs-loki-template
 
 deploy-cadvisor: $(KUSTOMIZE)
