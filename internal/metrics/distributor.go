@@ -32,3 +32,4 @@ func (c *client) DistributorGiPDDiscardedTotal(label, job string, duration model
 
 	return c.executeScalarQuery(query)
 }
+

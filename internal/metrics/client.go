@@ -26,6 +26,9 @@ type Client interface {
 	DistributorGiPDReceivedTotal(label, job string, duration model.Duration) (float64, error)
 	DistributorGiPDDiscardedTotal(label, job string, duration model.Duration) (float64, error)
 
+	// Load
+	LoadNetworkGiPDTotal(label, job string, duration model.Duration) (float64, error)
+
 	// HTTP API
 	RequestDurationOkQueryRangeAvg(label, job string, duration model.Duration) (float64, error)
 	RequestDurationOkQueryRangeP50(label, job string, duration model.Duration) (float64, error)

@@ -80,6 +80,11 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 			err = metricsClient.Measure(b, metricsClient.DistributorGiPDDiscardedTotal, "GiPD Discarded Total", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
+			// Collect measurements for load
+			job = benchCfg.Metrics.DistributorJob()
+			err = metricsClient.Measure(b, metricsClient.LoadNetworkGiPDTotal, "GiPD Load Total", job.QueryLabel, job.Job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+
 			// Collect measurements for Ingesters
 			job = benchCfg.Metrics.IngesterJob()
 			cadvisorJob := benchCfg.Metrics.CadvisorIngesterJob()
