@@ -65,7 +65,7 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 
 			// Collect measurements for distributors
 			job := benchCfg.Metrics.DistributorJob()
-			err := metricsClient.Measure(b, metricsClient.RequestWritesQPS, "2xx push QPS", job.QueryLabel, job.Job, c.Description, defaultRange)
+			err := metricsClient.Measure(b, metricsClient.RequestWritesQPS, "2xx push (Req/s)", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushP99, "2xx push p99", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
@@ -75,25 +75,26 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushAvg, "2xx push avg", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.DistributorGiPDReceivedTotal, "GiPD Received Total", job.QueryLabel, job.Job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.DistributorGiPDReceivedTotal, "Received Total (Gi/Day)", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.DistributorGiPDDiscardedTotal, "GiPD Discarded Total", job.QueryLabel, job.Job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.DistributorGiPDDiscardedTotal, "Discarded Total (Gi/Day)", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 			// Collect measurements for load
-			job = benchCfg.Metrics.DistributorJob()
-			err = metricsClient.Measure(b, metricsClient.LoadNetworkGiPDTotal, "GiPD Load Total", job.QueryLabel, job.Job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.LoadNetworkTotal, "Load Total (MB/s)", job.QueryLabel, job.Job, c.Description, defaultRange)
+			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+			err = metricsClient.Measure(b, metricsClient.LoadNetworkGiPDTotal, "Load Total (Gi/Day)", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 			// Collect measurements for Ingesters
 			job = benchCfg.Metrics.IngesterJob()
 			cadvisorJob := benchCfg.Metrics.CadvisorIngesterJob()
-			err = metricsClient.Measure(b, metricsClient.ProcessCPU, "Processes CPU", job.QueryLabel, job.Job, c.Description, defaultRange)
+			err = metricsClient.Measure(b, metricsClient.ProcessCPU, "Processes CPU (Mi/Core)", job.QueryLabel, job.Job, c.Description, defaultRange)
 			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			if benchCfg.Metrics.EnableCadvisorMetrics {
-				err = metricsClient.Measure(b, metricsClient.ContainerUserCPU, "Containers User CPU", cadvisorJob.QueryLabel, cadvisorJob.Job, c.Description, defaultRange)
+				err = metricsClient.Measure(b, metricsClient.ContainerUserCPU, "Containers User CPU (Mi/Core)", cadvisorJob.QueryLabel, cadvisorJob.Job, c.Description, defaultRange)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-				err = metricsClient.Measure(b, metricsClient.ContainerWorkingSetMEM, "Containers WorkingSet memory", cadvisorJob.QueryLabel, cadvisorJob.Job, c.Description, defaultRange)
+				err = metricsClient.Measure(b, metricsClient.ContainerWorkingSetMEM, "Containers WorkingSet memory (MB)", cadvisorJob.QueryLabel, cadvisorJob.Job, c.Description, defaultRange)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			}
 			if c.Samples.Interval > 15*time.Minute {

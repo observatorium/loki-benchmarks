@@ -5,6 +5,15 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+func (c *client) LoadNetworkTotal(_, _ string, duration model.Duration) (float64, error) {
+	query := fmt.Sprintf(
+		`sum(rate(container_network_transmit_bytes_total{pod=~"logger-.*"}[%s])) / %s`, // in MB/sec
+		duration, BytesToMegabytesMultiplier,
+	)
+
+	return c.executeScalarQuery(query)
+}
+
 func (c *client) LoadNetworkGiPDTotal(_, _ string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
 		`sum(rate(container_network_transmit_bytes_total{pod=~"logger-.*"}[%s])) / %s * 86400`, // in Gi per day

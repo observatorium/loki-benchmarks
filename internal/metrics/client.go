@@ -27,6 +27,7 @@ type Client interface {
 	DistributorGiPDDiscardedTotal(label, job string, duration model.Duration) (float64, error)
 
 	// Load
+	LoadNetworkTotal(label, job string, duration model.Duration) (float64, error)
 	LoadNetworkGiPDTotal(label, job string, duration model.Duration) (float64, error)
 
 	// HTTP API
