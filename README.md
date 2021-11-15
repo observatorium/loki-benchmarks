@@ -126,3 +126,13 @@ reports
    ├── junit.xml
    └── README.md
 ```
+
+### Troubleshooting
+
+During benchmark execution, use [hack/ocp-deploy-grafana.sh](hack/ocp-deploy-grafana.sh) to deploy grafna and connect to Loki as a datasource: 
+- Use a web browser to access grafana UI. The URL, username and password are printed by the script 
+- In the UI, under settings -> data-sources hit `Save & test` to verify that Loki data-source is connected and that there are no errors
+- In explore tab change the data-source to `Loki` and use `{client="promtail"}` query to visualize log lines
+- Use additional queries such as `rate({client="promtail"}[1m])` to verify the behaviour of Loki and the benchmark
+
+
