@@ -6,8 +6,11 @@ BUCKET_NAME=$1
 
 REGION=$(aws configure get region)
 
-recreate_bucket() {
+delete_bucket() {
     aws s3 rb s3://"$BUCKET_NAME" --region "$REGION" --force  || true
+}
+
+create_bucket() {
     if [[ "$REGION" = "us-east-1" ]]; then
         aws s3api create-bucket \
             --acl private \
@@ -30,8 +33,10 @@ block_public_access_to_bucket() {
 }
 
 main() {
+  echo "deleting bucket $BUCKET_NAME (if exists)"
+  delete_bucket
   echo "creating bucket $BUCKET_NAME"
-  recreate_bucket
+  create_bucket
   block_public_access_to_bucket
 }
 
