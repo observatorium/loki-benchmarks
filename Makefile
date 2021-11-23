@@ -52,7 +52,9 @@ $(REPORT_DIR):
 	@mv $(REPORT_DIR)/README.template $(REPORT_DIR)/README.md
 
 download-obs-loki-template: ## download loki observatorium template
-	wget -nv -O $(LOKI_TEMPLATE_FILE) https://raw.githubusercontent.com/rhobs/configuration/main/resources/services/observatorium-logs-template.yaml
+	if ! [ -f $(LOKI_TEMPLATE_FILE) ]; then \
+		wget -nv -O $(LOKI_TEMPLATE_FILE) https://raw.githubusercontent.com/rhobs/configuration/main/resources/services/observatorium-logs-template.yaml; \
+	fi;
 .PHONY: download-obs-loki-template
 
 deploy-obs-loki: ## deploy loki from local observatorium template
