@@ -16,17 +16,19 @@ This suite consists of Loki benchmarks tests for multiple scenarios. Each scenar
 ## Prerequisites
 
 * Software: `gnuplot`
-
-To install into a Linux environment, e.g. on Fedora execute: `sudo dnf install gnuplot`
+  
+Note: Install on Linux environment, e.g. on Fedora using: `sudo dnf install gnuplot`
 
 ### Kubernetes
 
-* Software: `kubectl`
+* Required software: `kubectl`
 * Repositories:
   * [Observatorium](https://github.com/observatorium/observatorium)
   * Optional: [Cadvisor](https://github.com/google/cadvisor)
 
-When checking out the other repositories, place the resulting directories as sibling directory to the `loki-benchmarks` one. Cadvisor is only required if measuring CPU and memory of the container. In addition, change the value of the `enableCadvisorMetrics` key in the configuration to be `true`. It is `false` by default.
+Note: Clone git repositories into sibling directories to the `loki-benchmarks` one.   
+
+Note: Cadvisor is only required if measuring CPU and memory of the container. In addition, change the value of the `enableCadvisorMetrics` key in the configuration to be `true`. It is `false` by default.
 
 #### Deployment
 
@@ -35,18 +37,24 @@ When checking out the other repositories, place the resulting directories as sib
 
 ### OCP AWS Cluster
 
-* Software: `oc`, `aws`
+* Required software: `oc`, `aws`
 * Cluster Size: `m4.16xlarge`
 
 #### Deployment
 
-1. Create the S3 bucket: `make deploy-s3-bucket`
-2. Configure the parameters (`config/loki-parameters`) and deploy Loki & configure Prometheus: `make deploy-obs-benchmarks`
-3. Run the benchmarks: `make bench-obs-logs-test`
+1. Configure benchmark parameters `config/loki-parameters`
+1. Create S3 bucket: `make deploy-s3-bucket`
+1. Deploy prometheus `make deploy-ocp-prometheus`
+1. Download loki observatorium template locally `make download-obs-loki-template`
+1. Deploy Loki `make deploy-ocp-loki`
+1. Run the benchmarks: `make ocp-run-benchmarks`
+
+Note: For additional details and all-in-one commands use: `make help`
 
 Upon benchmark execution completion, results are available in the `reports/date+time` folder.
 
-To uninstall Loki and the Prometheus configuration, run: `make obs-benchmarks-cleanup`. To reconfigure the Loki deployment, change the parameters file and run `make obs-benchmarks-cleanup && make deploy-obs-benchmarks`.
+Uninstall using: `make ocp-all-cleanup`.
+
 
 ## How to add new benchmarks to this suite
 
