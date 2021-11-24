@@ -39,11 +39,8 @@ OCP_PROM_CONFIG_FILE := /tmp/cluster-monitoring-config.yaml
 help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-##@ Development
-
-all: lint bench-dev
-
-lint: $(GOLANGCI_LINT)
+##@ Ingredients
+lint: $(GOLANGCI_LINT) ## Lint the code
 	@$(GOLANGCI_LINT) run
 
 $(REPORT_DIR):
@@ -51,39 +48,40 @@ $(REPORT_DIR):
 	@cp reports/README.template $(REPORT_DIR)
 	@mv $(REPORT_DIR)/README.template $(REPORT_DIR)/README.md
 
-download-obs-loki-template: ## download loki observatorium template
-	if ! [ -f $(LOKI_TEMPLATE_FILE) ]; then \
-		wget -nv -O $(LOKI_TEMPLATE_FILE) https://raw.githubusercontent.com/rhobs/configuration/main/resources/services/observatorium-logs-template.yaml; \
-	fi;
+download-obs-loki-template: ## Download loki observatorium template locally
+	wget -nv -O $(LOKI_TEMPLATE_FILE) https://raw.githubusercontent.com/rhobs/configuration/main/resources/services/observatorium-logs-template.yaml
 .PHONY: download-obs-loki-template
 
-deploy-obs-loki: ## deploy loki from local observatorium template
-	if ! [ -f $(LOKI_TEMPLATE_FILE) ]; then \
-		echo -e "==> Can't find Loki observatorium deployment template file: "$(LOKI_TEMPLATE_FILE)"\n"; \
-		echo -e "==> Use \" make download-obs-loki-template \" to download the template \n\n"; \
-		false; \
-	fi;
+obs-loki-template-cleanup: ## Cleanup local loki observatorium template
+	rm -f $(LOKI_TEMPLATE_FILE)
+.PHONY: obs-loki-template-cleanup
+
+ifeq ($(shell test -e $(LOKI_TEMPLATE_FILE) && echo -n yes),yes)
+deploy-obs-loki: ## Deploy loki from local observatorium template
 	oc create namespace $(LOKI_NAMESPACE)
 	hack/deploy-example-secret.sh $(LOKI_NAMESPACE) $(LOKI_STORAGE_BUCKET)
 	oc process -f $(LOKI_TEMPLATE_FILE) -p NAMESPACE=$(LOKI_NAMESPACE) -p LOKI_S3_SECRET=test --param-file $(LOKI_CONFIG_FILE) | oc -n $(LOKI_NAMESPACE) apply -f -
+else
+deploy-obs-loki:
+	$(error Can't find Loki observatorium deployment template file: $(LOKI_TEMPLATE_FILE). Use "make download-obs-loki-template" to download )
+endif
 .PHONY:deploy-obs-loki
 
-obs-loki-cleanup:
+obs-loki-cleanup: ## Cleanup loki deployment
 	oc --ignore-not-found=true delete namespace $(LOKI_NAMESPACE)
 .PHONY: obs-loki-cleanup
 
-ocp-prometheus-cleanup:
-	oc --ignore-not-found=true -n openshift-monitoring delete configmap/cluster-monitoring-config
-	oc --ignore-not-found=true -n openshift-user-workload-monitoring delete configmap/user-workload-monitoring-config
-.PHONY: ocp-prometheus-cleanup
-
-##@ Local development
-deploy-cadvisor: $(KUSTOMIZE) ## deploy cadvisor (https://github.com/google/cadvisor)
+##@ Development
+deploy-cadvisor: $(KUSTOMIZE) ## Deploy cadvisor (https://github.com/google/cadvisor)
 	oc create namespace $(CADVISOR_NAMESPACE)
 	$(KUSTOMIZE) build ../cadvisor/deploy/kubernetes/base | oc -n $(CADVISOR_NAMESPACE) apply -f -
 	oc -n $(CADVISOR_NAMESPACE) adm policy add-scc-to-user privileged -z $(CADVISOR_NAMESPACE)
 	oc -n $(CADVISOR_NAMESPACE) adm policy add-cluster-role-to-user cluster-reader -z $(CADVISOR_NAMESPACE)
 .PHONY: deploy-cadvisor
+
+cadvisor-cleanup: ## Cleanup cadvisor
+	oc --ignore-not-found=true delete namespace $(CADVISOR_NAMESPACE)
+.PHONY: cadvisor-cleanup
 
 bench-dev: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR) ## Execute benchmark
 	@TARGET_ENV=development \
@@ -96,25 +94,32 @@ bench-dev: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR) ## Execute benchmark
 	./run.sh
 .PHONY: bench-dev
 
-cadvisor-cleanup: ## cleanup cadvisor
-	oc --ignore-not-found=true delete namespace $(CADVISOR_NAMESPACE)
-.PHONY: cadvisor-cleanup
+##@ Benchmark Loki on OpenShift
+deploy-s3-bucket: ## Deploy s3 bucket
+	hack/create-s3-bucket.sh $(LOKI_STORAGE_BUCKET)
+.PHONY: deploy-s3-bucket
 
-##@ OCP deployment
+s3-bucket-cleanup: ## Delete s3 bucket
+	hack/delete-s3-bucket.sh $(LOKI_STORAGE_BUCKET)
+.PHONY: s3-bucket-cleanup
 
 deploy-ocp-prometheus: ## Deploy prometheus
 	oc -n openshift-monitoring apply -f hack/ocp-monitoring/cluster-monitoring-config.yaml
 	oc -n openshift-user-workload-monitoring apply -f hack/ocp-monitoring/user-workload-monitoring-config.yaml
 .PHONY: deploy-ocp-prometheus
 
-deploy-s3-bucket: ## Deploy loki s3 bucket
-	hack/create-s3-bucket.sh $(LOKI_STORAGE_BUCKET)
-.PHONY: deploy-s3-bucket
+ocp-prometheus-cleanup: ## Cleanup prometheus deployment
+	oc --ignore-not-found=true -n openshift-monitoring delete -f hack/ocp-monitoring/cluster-monitoring-config.yaml
+	oc --ignore-not-found=true -n openshift-user-workload-monitoring delete  -f hack/ocp-monitoring/user-workload-monitoring-config.yaml
+.PHONY: ocp-prometheus-cleanup
 
-deploy-ocp-loki: deploy-obs-loki deploy-ocp-prometheus ## Deploy loki
+deploy-ocp-loki: deploy-obs-loki ## Deploy loki
 .PHONY: deploy-ocp-loki
 
-bench-obs-logs-test: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR) ## Run benchmarks
+ocp-loki-cleanup: obs-loki-cleanup ## Cleanup loki deployment
+.PHONY: ocp-loki-cleanup
+
+ocp-run-benchmarks: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR) ## Run benchmarks
 	@TARGET_ENV=ocp-observatorium-test \
 	DEPLOY_OCP_PROMETHEUS=true \
 	OBS_NS=$(LOKI_NAMESPACE) \
@@ -123,15 +128,14 @@ bench-obs-logs-test: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR) ## Run ben
 	OBS_LOKI_DST="observatorium-loki-distributor" \
 	OBS_LOKI_ING="observatorium-loki-ingester" \
 	./run.sh
-.PHONY: bench-obs-logs-test
+.PHONY: ocp-run-benchmarks
 
-obs-ocp-cleanup: ocp-prometheus-cleanup obs-loki-cleanup  ## Cleanup
-.PHONY: obs-ocp-cleanup
+ocp-all-cleanup: obs-loki-template-cleanup s3-bucket-cleanup ocp-prometheus-cleanup  ocp-loki-cleanup ## Cleanup all
+.PHONY: ocp-all-cleanup
 
 ##@ All-in-one
+ocp-init-bench: ocp-all-cleanup download-obs-loki-template deploy-s3-bucket ## Setup benchmarks on OpenShift (first deployment only)
+.PHONY: ocp-init-bench
 
-local-loki-bench: cadvisor-cleanup deploy-cadvisor bench-dev ## Deploy and Execute loki benchmarks locally
-.PHONY: local-loki-bench
-
-ocp-loki-bench: obs-ocp-cleanup download-obs-loki-template deploy-s3-bucket deploy-ocp-loki bench-obs-logs-test ## Deploy and Execute loki benchmarks on OCP
+ocp-loki-bench: deploy-s3-bucket ocp-prometheus-cleanup deploy-ocp-prometheus ocp-loki-cleanup deploy-ocp-loki ocp-run-benchmarks ## Deploy and Execute loki benchmarks on OCP
 .PHONY: ocp-loki-bench

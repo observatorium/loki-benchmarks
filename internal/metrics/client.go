@@ -16,8 +16,8 @@ type MetricType string
 type queryFunc func(label, job string, duration model.Duration) (float64, error)
 
 const (
-	BytesToGigabytesMultiplier string = "1000000000"
-	BytesToMegabytesMultiplier string = "1000000"
+	BytesToGigabytesMultiplier    string     = "1000000000"
+	BytesToMegabytesMultiplier    string     = "1000000"
 	DistributorBytesReceivedTotal MetricType = "loki_distributor_bytes_received_total"
 )
 
@@ -190,8 +190,8 @@ func (c *client) requestThroughput(label, job, endpoint, code, queryRange, metri
 		code, endpoint, queryRange, metricType, label, job, latencyType, le, duration,
 		code, endpoint, queryRange, metricType, label, job, duration,
 	)
-
 	res, _ := c.executeScalarQuery(query)
+
 	return res, nil
 }
 
