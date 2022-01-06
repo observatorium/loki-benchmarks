@@ -16,13 +16,19 @@ type MetricType string
 type queryFunc func(label, job string, duration model.Duration) (float64, error)
 
 const (
-	BytesToGigabytesMultiplier string = "1000000000"
+	BytesToGigabytesMultiplier    string     = "1000000000"
+	BytesToMegabytesMultiplier    string     = "1000000"
 	DistributorBytesReceivedTotal MetricType = "loki_distributor_bytes_received_total"
 )
 
 type Client interface {
 	DistributorBytesReceivedTotal(duration model.Duration) (float64, error)
 	DistributorGiPDReceivedTotal(label, job string, duration model.Duration) (float64, error)
+	DistributorGiPDDiscardedTotal(label, job string, duration model.Duration) (float64, error)
+
+	// Load
+	LoadNetworkTotal(label, job string, duration model.Duration) (float64, error)
+	LoadNetworkGiPDTotal(label, job string, duration model.Duration) (float64, error)
 
 	// HTTP API
 	RequestDurationOkQueryRangeAvg(label, job string, duration model.Duration) (float64, error)
@@ -123,8 +129,8 @@ func (c *client) ContainerUserCPU(label, job string, duration model.Duration) (f
 
 func (c *client) ContainerWorkingSetMEM(label, job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(avg_over_time(container_memory_working_set_bytes{%s=~".*%s.*"}[%s]) / %s)`, // in Gi
-		label, job, duration, BytesToGigabytesMultiplier,
+		`sum(avg_over_time(container_memory_working_set_bytes{%s=~".*%s.*"}[%s]) / %s)`, // in MBi
+		label, job, duration, BytesToMegabytesMultiplier,
 	)
 
 	return c.executeScalarQuery(query)
@@ -184,8 +190,8 @@ func (c *client) requestThroughput(label, job, endpoint, code, queryRange, metri
 		code, endpoint, queryRange, metricType, label, job, latencyType, le, duration,
 		code, endpoint, queryRange, metricType, label, job, duration,
 	)
-
 	res, _ := c.executeScalarQuery(query)
+
 	return res, nil
 }
 

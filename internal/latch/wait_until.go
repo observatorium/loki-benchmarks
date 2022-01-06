@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/prometheus/common/model"
 	"github.com/observatorium/loki-benchmarks/internal/metrics"
+	"github.com/prometheus/common/model"
 )
 
 func WaitUntilGreaterOrEqual(m metrics.Client, lm metrics.MetricType, threshold float64, duration string, timeout time.Duration) error {
