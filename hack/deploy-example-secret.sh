@@ -5,7 +5,7 @@ set -eou pipefail
 NAMESPACE=$1
 BUCKET_NAME=$2
 
-kubectl -n $NAMESPACE delete secret test ||:
+kubectl --ignore-not-found=true -n $NAMESPACE delete secret test
 kubectl -n $NAMESPACE create secret generic test \
     --from-literal=aws_region=$(echo -n $(aws configure get region)) \
     --from-literal=bucket=$(echo -n "$BUCKET_NAME") \
