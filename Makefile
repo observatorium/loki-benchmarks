@@ -10,6 +10,7 @@ export GO111MODULE=on
 export REPORT_DIR?=$(CURDIR)/reports/$(shell date +%Y-%m-%d-%H-%M-%S)
 
 export KUBECTL=$(shell which kubectl)
+export USERNAME=$(USER)
 
 CADVISOR_NAMESPACE := cadvisor
 LOKI_NAMESPACE := observatorium-logs-test
