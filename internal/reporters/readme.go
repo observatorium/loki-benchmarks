@@ -57,8 +57,8 @@ func (cr *readmeReporter) SpecDidComplete(specSummary *types.SpecSummary) {
 		}
 	}
 
-	resultsSection := "\n\n---\n\n## " + header + "\n\n"
-	tableOfContents := "- [" + header + "](#" + strings.ToLower(header) + ")\n"
+	resultsSection := fmt.Sprintf("\n\n---\n\n## %s\n\n", header)
+	tableOfContents := fmt.Sprintf("- [%s](#%s)\n", header, strings.ToLower(header))
 
 	sort.Strings(contentKeys)
 
