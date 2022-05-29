@@ -65,7 +65,7 @@ wait_for_deployments() {
     echo -e "\nWaiting for available loki ingester deployment"
     $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_ING" --timeout=600s
     echo -e "\nWaiting for available querier deployment"
-    $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_QR" --timeout=600s
+    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QR" --timeout=600s
 }
 
 forward_ports() {
