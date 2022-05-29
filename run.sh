@@ -5,6 +5,9 @@ set -eou pipefail
 TARGET_ENV="${TARGET_ENV:-development}"
 DEPLOY_KIND_OBSERVATORIUM="${DEPLOY_KIND_OBSERVATORIUM:-true}"
 DEPLOY_OCP_PROMETHEUS="${DEPLOY_OCP_PROMETHEUS:-false}"
+DEPLOY_LOKI_OPERATOR="${DEPLOY_LOKI_OPERATOR:-false}"
+OPERATOR_VERSION="${OPERATOR_VERSION:-latest}"
+OPERATOR_REGISTRY_ORG="${OPERATOR_REGISTRY_ORG:-openshift-logging}"
 
 OBS_NS="${OBS_NS:-observatorium}"
 CADVISOR_NS="${CADVISOR_NS:-cadvisor}"
@@ -21,6 +24,17 @@ tear_down() {
         echo -e "\nUndeploying observatorium dev manifests"
         undeploy_observatorium
     fi
+}
+
+deploy_loki_operator() {
+    deploy_observatorium
+    pushd ~/grafana_loki/loki/operator || exit 1
+    go mod tidy
+    go mod vendor
+    echo "make oci-build oci-push deploy REGISTRY_ORG=$OPERATOR_REGISTRY_ORG VERSION=$OPERATOR_VERSION"
+    make oci-build oci-push deploy REGISTRY_ORG="$OPERATOR_REGISTRY_ORG" VERSION="$OPERATOR_VERSION"
+    $KUBECTL -n "$OBS_NS" apply -f hack/lokistack_dev.yaml
+    popd
 }
 
 deploy_observatorium() {
@@ -59,13 +73,13 @@ setup_ports() {
 
 wait_for_deployments() {
     echo -e "\nWaiting for available loki query frontend deployment"
-    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QF" --timeout=300s
+    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QF" --timeout=600s
     echo -e "\nWaiting for available loki distributor deployment"
-    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_DST" --timeout=300s
+    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_DST" --timeout=600s
     echo -e "\nWaiting for available loki ingester deployment"
-    $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_ING" --timeout=300s
+    $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_ING" --timeout=600s
     echo -e "\nWaiting for available querier deployment"
-    $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_QR" --timeout=300s
+    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QR" --timeout=600s
 }
 
 forward_ports() {
@@ -108,7 +122,12 @@ generate_report() {
 }
 
 bench() {
-    if [[ "$TARGET_ENV" = "development" ]] && $DEPLOY_KIND_OBSERVATORIUM; then
+    if [[ "$TARGET_ENV" = "operator-observatorium-test" ]] && $DEPLOY_LOKI_OPERATOR; then
+        echo "Deploying loki operator"
+        deploy_loki_operator
+        $KUBECTL -n "$OBS_NS" rollout status "deploy/controller-manager" --timeout=600s
+        $KUBECTL -n "$OBS_NS" rollout status "deploy/minio" --timeout=600s
+    elif [[ "$TARGET_ENV" = "development" ]] && $DEPLOY_KIND_OBSERVATORIUM; then
         echo "Deploying observatorium dev manifests"
         deploy_observatorium
     fi
@@ -123,11 +142,13 @@ bench() {
         echo -e "\nForward ports to loki deployments"
         forward_ports
 
-        echo -e "\nSet prometheus relabel regex"
-        set_prometheus_relabel_regex
+        if ! $DEPLOY_LOKI_OPERATOR; then
+            echo -e "\nSet prometheus relabel regex"
+            set_prometheus_relabel_regex
 
-        echo -e "\nScrape metrics from Loki deployments"
-        scrape_loki_metrics
+            echo -e "\nScrape metrics from Loki deployments"
+            scrape_loki_metrics
+        fi
     fi
 
     export DEPLOY_OCP_PROMETHEUS
