@@ -142,13 +142,11 @@ bench() {
         echo -e "\nForward ports to loki deployments"
         forward_ports
 
-        if ! $DEPLOY_LOKI_OPERATOR; then
-            echo -e "\nSet prometheus relabel regex"
-            set_prometheus_relabel_regex
+        echo -e "\nSet prometheus relabel regex"
+        set_prometheus_relabel_regex
 
-            echo -e "\nScrape metrics from Loki deployments"
-            scrape_loki_metrics
-        fi
+        echo -e "\nScrape metrics from Loki deployments"
+        scrape_loki_metrics
     fi
 
     export DEPLOY_OCP_PROMETHEUS
