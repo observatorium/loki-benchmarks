@@ -79,7 +79,11 @@ wait_for_deployments() {
     echo -e "\nWaiting for available loki ingester deployment"
     $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_ING" --timeout=600s
     echo -e "\nWaiting for available querier deployment"
-    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QR" --timeout=600s
+    if [[ "$TARGET_ENV" = "operator-observatorium-test" ]] && $DEPLOY_LOKI_OPERATOR; then
+        $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QR" --timeout=600s
+    else
+        $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_QR" --timeout=600s
+    fi
 }
 
 forward_ports() {
