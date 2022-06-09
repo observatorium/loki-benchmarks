@@ -27,8 +27,9 @@ tear_down() {
 }
 
 deploy_loki_operator() {
+    undeploy_observatorium
     deploy_observatorium
-    pushd ../loki/operator || exit 1
+    pushd ~/grafana_loki/loki/operator || exit 1
     go mod tidy
     go mod vendor
     echo "make oci-build oci-push deploy REGISTRY_ORG=$OPERATOR_REGISTRY_ORG VERSION=$OPERATOR_VERSION"

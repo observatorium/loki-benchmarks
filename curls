@@ -1,0 +1,1 @@
+curl -v -H "X-Scope-OrgID: test" -H "Content-Type: application/json" -XPOST -s "http://localhost:3100/loki/api/v1/push" --data-raw   '{"streams": [{ "stream": { "fooasd4": "bar3" }, "values": [ [ "1654011138000000000", "fizzbuzerze" ] ] }]}'
