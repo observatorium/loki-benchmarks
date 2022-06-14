@@ -83,7 +83,7 @@ wait_for_deployments() {
     if [[ "$TARGET_ENV" = "operator-observatorium-test" ]] && $DEPLOY_LOKI_OPERATOR; then
         $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QR" --timeout=600s
     else
-        $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_QR" --timeout=600s
+        $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QR" --timeout=600s
     fi
 }
 
