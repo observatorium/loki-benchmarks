@@ -3,6 +3,7 @@ package logger
 import (
 	"context"
 	"fmt"
+
 	"github.com/observatorium/loki-benchmarks/internal/config"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -53,6 +54,7 @@ func Deploy(c client.Client, cfg *config.Logger, scenarioCfg *config.Writers, pu
 							Args:  args,
 						},
 					},
+					ServiceAccountName: "lokistack-dev-benchmarks-logger",
 				},
 			},
 		},

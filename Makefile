@@ -124,7 +124,8 @@ ocp-loki-cleanup: obs-loki-cleanup ## Cleanup loki deployment
 operator-run-benchmarks: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR) ## Run benchmarks
 	@TARGET_ENV=operator-observatorium-test \
 	DEPLOY_LOKI_OPERATOR=true \
-	OBS_NS="default" \
+	DEPLOY_OCP_PROMETHEUS=true \
+	OBS_NS="openshift-logging" \
 	OBS_LOKI_QF="lokistack-dev-query-frontend" \
 	OBS_LOKI_QR="lokistack-dev-querier" \
 	OBS_LOKI_DST="lokistack-dev-distributor" \

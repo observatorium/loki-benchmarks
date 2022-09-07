@@ -6,7 +6,7 @@ TARGET_ENV="${TARGET_ENV:-development}"
 DEPLOY_KIND_OBSERVATORIUM="${DEPLOY_KIND_OBSERVATORIUM:-true}"
 DEPLOY_OCP_PROMETHEUS="${DEPLOY_OCP_PROMETHEUS:-false}"
 DEPLOY_LOKI_OPERATOR="${DEPLOY_LOKI_OPERATOR:-false}"
-OPERATOR_VERSION="${OPERATOR_VERSION:-latest}"
+OPERATOR_VERSION="${OPERATOR_VERSION:-v0.0.2}"
 OPERATOR_REGISTRY_ORG="${OPERATOR_REGISTRY_ORG:-openshift-logging}"
 
 OBS_NS="${OBS_NS:-observatorium}"
@@ -27,14 +27,23 @@ tear_down() {
 }
 
 deploy_loki_operator() {
-    undeploy_observatorium
-    deploy_observatorium
-    pushd ~/grafana_loki/loki/operator || exit 1
+    pushd ../loki/operator || exit 1
     go mod tidy
     go mod vendor
-    echo "make oci-build oci-push deploy REGISTRY_ORG=$OPERATOR_REGISTRY_ORG VERSION=$OPERATOR_VERSION"
-    make oci-build oci-push deploy REGISTRY_ORG="$OPERATOR_REGISTRY_ORG" VERSION="$OPERATOR_VERSION"
-    $KUBECTL -n "$OBS_NS" apply -f hack/lokistack_dev.yaml
+    kubectl delete ns openshift-operators-redhat
+    kubectl delete ns openshift-logging
+    kubectl create ns openshift-operators-redhat
+    kubectl create ns openshift-logging
+    make olm-deploy REGISTRY_ORG="$OPERATOR_REGISTRY_ORG" VERSION="$OPERATOR_VERSION"
+    ./hack/deploy-aws-storage-secret.sh bucket
+
+    kubectl -n openshift-logging apply -f hack/lokistack_gateway_ocp.yaml
+    kubectl apply -f hack/role.yaml
+    kubectl apply -f hack/cluster_role.yaml
+    kubectl apply -f hack/role_binding.yaml
+    kubectl apply -f hack/cluster_role_binding.yaml
+    kubectl apply -f hack/service_account.yaml
+    oc label ns/openshift-logging openshift.io/cluster-monitoring=true --overwrite
     popd
 }
 
@@ -74,16 +83,16 @@ setup_ports() {
 
 wait_for_deployments() {
     echo -e "\nWaiting for available loki query frontend deployment"
-    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QF" --timeout=600s
+    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QF" --timeout=5000s
     echo -e "\nWaiting for available loki distributor deployment"
-    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_DST" --timeout=600s
+    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_DST" --timeout=5000s
     echo -e "\nWaiting for available loki ingester deployment"
-    $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_ING" --timeout=600s
+    $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_ING" --timeout=5000s
     echo -e "\nWaiting for available querier deployment"
     if [[ "$TARGET_ENV" = "operator-observatorium-test" ]] && $DEPLOY_LOKI_OPERATOR; then
-        $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QR" --timeout=600s
+        $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QR" --timeout=5000s
     else
-        $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_QR" --timeout=600s
+        $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QR" --timeout=5000s
     fi
 }
 
@@ -130,8 +139,8 @@ bench() {
     if [[ "$TARGET_ENV" = "operator-observatorium-test" ]] && $DEPLOY_LOKI_OPERATOR; then
         echo "Deploying loki operator"
         deploy_loki_operator
-        $KUBECTL -n "$OBS_NS" rollout status "deploy/controller-manager" --timeout=600s
-        $KUBECTL -n "$OBS_NS" rollout status "deploy/minio" --timeout=600s
+        $KUBECTL -n openshift-operators-redhat rollout status "deploy/loki-operator-controller-manager" --timeout=5000s
+        $KUBECTL -n openshift-logging apply -f config/operator_ingestion_boost.yaml
     elif [[ "$TARGET_ENV" = "development" ]] && $DEPLOY_KIND_OBSERVATORIUM; then
         echo "Deploying observatorium dev manifests"
         deploy_observatorium
@@ -139,7 +148,7 @@ bench() {
 
     wait_for_deployments
 
-    if $DEPLOY_OCP_PROMETHEUS; then
+    if $DEPLOY_OCP_PROMETHEUS || $DEPLOY_LOKI_OPERATOR; then
         secret=$($KUBECTL -n openshift-user-workload-monitoring get secret | grep prometheus-user-workload-token | head -n 1 | awk '{print $1 }')
         export PROMETHEUS_URL="https://$($KUBECTL -n openshift-monitoring get route thanos-querier -o json | jq -r '.spec.host')"
         export PROMETHEUS_TOKEN=$($KUBECTL -n openshift-user-workload-monitoring get secret $secret -o json | jq -r '.data.token' | base64 -d)
@@ -161,7 +170,7 @@ bench() {
     $GINKGO -v --noisySkippings=false ./benchmarks ||:
 
     echo -e "\nGenerate benchmark report"
-    generate_report
+    #generate_report
 }
 
 bench
