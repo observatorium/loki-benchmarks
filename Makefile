@@ -15,6 +15,8 @@ export USERNAME=$(USER)
 CADVISOR_NAMESPACE := cadvisor
 LOKI_NAMESPACE := observatorium-logs-test
 
+OPERATOR_VERSION ?= latest
+OPERATOR_REGISTRY_ORG ?= openshift-logging
 LOKI_STORAGE_BUCKET ?= loki-benchmark-$(USERNAME)
 LOKI_TEMPLATE_FILE ?= /tmp/observatorium-logs-template.yaml
 LOKI_CONFIG_FILE ?= config/loki-parameters.yaml
@@ -118,6 +120,20 @@ deploy-ocp-loki: deploy-obs-loki ## Deploy loki
 
 ocp-loki-cleanup: obs-loki-cleanup ## Cleanup loki deployment
 .PHONY: ocp-loki-cleanup
+
+operator-run-benchmarks: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR) ## Run benchmarks
+	@TARGET_ENV=operator-observatorium-test \
+	DEPLOY_LOKI_OPERATOR=true \
+	DEPLOY_OCP_PROMETHEUS=true \
+	OBS_NS="openshift-logging" \
+	OBS_LOKI_QF="lokistack-dev-query-frontend" \
+	OBS_LOKI_QR="lokistack-dev-querier" \
+	OBS_LOKI_DST="lokistack-dev-distributor" \
+	OBS_LOKI_ING="lokistack-dev-ingester" \
+	OPERATOR_REGISTRY_ORG=$(OPERATOR_REGISTRY_ORG) \
+	OPERATOR_VERSION=$(OPERATOR_VERSION) \
+	./run.sh
+.PHONY: operator-run-benchmarks
 
 ocp-run-benchmarks: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR) ## Run benchmarks
 	@TARGET_ENV=ocp-observatorium-test \

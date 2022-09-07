@@ -1,0 +1,59 @@
+logger:
+  name: logger
+  namespace:  openshift-logging
+  image: quay.io/jacobsakran/logging-client:latest
+  tenantId: observatorium
+
+querier:
+  name: querier
+  namespace: openshift-logging
+  image: quay.io/jacobsakran/logging-client:latest
+  tenantId: observatorium
+
+metrics:
+  url: http://127.0.0.1:9090
+  enableCadvisorMetrics: true
+  # Align these with ./prometheus/config.yaml
+  jobs:
+    distributor:
+        job: lokistack-dev-distributor
+        queryLabel: job
+    ingester:
+        job: lokistack-dev-ingester
+        queryLabel: job
+    querier:
+        job: lokistack-dev-querier
+        queryLabel: job
+    queryFrontend:
+        job: lokistack-dev-query-frontend
+        queryLabel: job
+  cadvisorJobs:
+    ingester:
+        job: lokistack-dev-ingester
+        queryLabel: pod
+    querier:
+        job: lokistack-dev-querier
+        queryLabel: pod
+
+loki:
+  distributor: https://lokistack-dev-gateway-http.openshift-logging.svc.cluster.local:8080/api/logs/v1/application
+  queryFrontend: http://lokistack-dev-query-frontend-http.openshift-logging.svc.cluster.local:3100
+
+scenarios:
+  highVolumeWrites:
+    enabled: true
+    configurations:
+      - description: "Write 30000 GB per day"
+        samples:
+          interval: "60s"
+          range: "1m"
+          total: 1
+        writers:
+          replicas: 300
+          command: generate
+          args:
+            source: synthetic
+            destination: loki
+            loki-labels: host
+            log-lines-rate: 1200
+            synthetic-payload-size: 1000

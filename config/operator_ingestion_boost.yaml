@@ -1,0 +1,6 @@
+spec:
+  limits:
+    global:
+      ingestion:
+        ingestionBurstSize: 100000
+        ingestionRate: 200000

@@ -3,19 +3,19 @@ global:
   scrape_timeout: 10s
   evaluation_interval: 10s
 scrape_configs:
-  - job_name: 'loki-query-frontend'
+  - job_name: 'lokistack-dev-query-frontend'
     scrape_interval: 10s
     static_configs:
     - targets: [{{LOKI_QUERY_FRONTEND_TARGETS}}]
-  - job_name: 'loki-distributor'
+  - job_name: 'lokistack-dev-distributor'
     scrape_interval: 10s
     static_configs:
     - targets: [{{LOKI_DISTRIBUTOR_TARGETS}}]
-  - job_name: 'loki-ingester'
+  - job_name: 'lokistack-dev-ingester'
     scrape_interval: 10s
     static_configs:
     - targets: [{{LOKI_INGESTER_TARGETS}}]
-  - job_name: 'loki-querier'
+  - job_name: 'lokistack-dev-querier'
     scrape_interval: 10s
     static_configs:
     - targets: [{{LOKI_QUERIER_TARGETS}}]
