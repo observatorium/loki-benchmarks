@@ -85,7 +85,7 @@ func NewClient(url, token string, timeout time.Duration) (Client, error) {
 		},
 	}
 
-	rt, rtErr := config.NewRoundTripperFromConfig(httpConfig, "benchmarks-metrics", false)
+	rt, rtErr := config.NewRoundTripperFromConfig(httpConfig, "benchmarks-metrics")
 
 	if rtErr != nil {
 		fmt.Print(rtErr)
