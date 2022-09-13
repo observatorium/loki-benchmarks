@@ -134,7 +134,7 @@ bench() {
     source .bingo/variables.env
 
     echo -e "\nRun benchmarks"
-    $GINKGO -mod=mod -output-dir=reports -keep-separate-reports --json-report=out.json ./benchmarks ||:
+    $GINKGO -mod=mod -output-dir=$REPORT_DIR -keep-separate-reports --json-report=out.json ./benchmarks ||:
 
     echo -e "\nGenerate benchmark report"
     generate_report
