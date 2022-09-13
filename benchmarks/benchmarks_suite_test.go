@@ -7,8 +7,7 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
 
@@ -19,7 +18,6 @@ import (
 
 	"github.com/observatorium/loki-benchmarks/internal/config"
 	"github.com/observatorium/loki-benchmarks/internal/metrics"
-	internalreporters "github.com/observatorium/loki-benchmarks/internal/reporters"
 )
 
 var (
@@ -100,10 +98,5 @@ func init() {
 func TestBenchmarks(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	jr := reporters.NewJUnitReporter(fmt.Sprintf("%s/junit.xml", reportDir))
-	csv := internalreporters.NewCsvReporter(reportDir)
-	gp := internalreporters.NewGnuplotReporter(reportDir)
-	rm := internalreporters.NewReadmeReporter(reportDir)
-
-	RunSpecsWithDefaultAndCustomReporters(t, "Benchmarks Suite", []Reporter{jr, csv, gp, rm})
+	RunSpecs(t, "Benchmarks Suite")
 }
