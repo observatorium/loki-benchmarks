@@ -2,7 +2,7 @@ version: 2
 jobs:
   lint:
     machine:
-      image: ubuntu-1604:202007-01
+      image: ubuntu-2204:2022.07.1
       working_directory: ~/loki-benchmarks
     steps:
       - checkout
@@ -11,15 +11,14 @@ jobs:
           command: make lint
   build:
     machine:
-      image: ubuntu-1604:202007-01
+      image: ubuntu-2204:2022.07.1
     working_directory: ~/loki-benchmarks
     steps:
+      - checkout
       - run:
           name: install dependencies
           command: |
             sudo apt-get update
-            sudo apt-get install -y gnuplot
-      - checkout
       - run:
           name: benchmarks
           command: |

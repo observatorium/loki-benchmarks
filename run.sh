@@ -58,14 +58,14 @@ setup_ports() {
 }
 
 wait_for_deployments() {
+    echo -e "\nWaiting for available querier deployment"
+    $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QR" --timeout=600s
     echo -e "\nWaiting for available loki query frontend deployment"
     $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_QF" --timeout=600s
     echo -e "\nWaiting for available loki distributor deployment"
     $KUBECTL -n "$OBS_NS" rollout status "deploy/$OBS_LOKI_DST" --timeout=600s
     echo -e "\nWaiting for available loki ingester deployment"
     $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_ING" --timeout=600s
-    echo -e "\nWaiting for available querier deployment"
-    $KUBECTL -n "$OBS_NS" rollout status "statefulsets/$OBS_LOKI_QR" --timeout=600s
 }
 
 forward_ports() {
@@ -95,7 +95,7 @@ scrape_loki_metrics() {
 
 generate_report() {
     source .bingo/variables.env
-    
+
     sed -i "s/{{TARGET_ENV}}/$TARGET_ENV/i" $REPORT_DIR/README.md
     $EMBEDMD -w $REPORT_DIR/README.md
 
@@ -134,7 +134,7 @@ bench() {
     source .bingo/variables.env
 
     echo -e "\nRun benchmarks"
-    $GINKGO -v --noisySkippings=false ./benchmarks ||:
+    $GINKGO -mod=mod -v --noisySkippings=false ./benchmarks ||:
 
     echo -e "\nGenerate benchmark report"
     generate_report
