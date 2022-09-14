@@ -72,9 +72,9 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 					// Network Load
-					err = metricsClient.Measure(e, metricsClient.LoadNetworkTotal, "Load Total (MB/s)", job.QueryLabel, "network", defaultRange)
+					err = metricsClient.Measure(e, metricsClient.LoadNetworkTotal, "Load Total (MB/s)", job.QueryLabel, job.Job, defaultRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.LoadNetworkGiPDTotal, "Load Total (Gi/Day)", job.QueryLabel, "network", defaultRange)
+					err = metricsClient.Measure(e, metricsClient.LoadNetworkGiPDTotal, "Load Total (Gi/Day)", job.QueryLabel, job.Job, defaultRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 					// Ingesters

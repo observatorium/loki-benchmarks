@@ -2,7 +2,6 @@ package benchmarks_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -41,18 +40,13 @@ func init() {
 		panic("Missing TARGET_ENV env variable")
 	}
 
-	reportDir = os.Getenv("REPORT_DIR")
-	if reportDir == "" {
-		panic("Missing REPORT_DIR env variable")
-	}
-
 	promURL := os.Getenv("PROMETHEUS_URL")
 	promToken := os.Getenv("PROMETHEUS_TOKEN")
 
 	// Read config for benchmark tests
 	filename := fmt.Sprintf("../config/%s.yaml", env)
 
-	yamlFile, err := ioutil.ReadFile(filename)
+	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		panic(fmt.Sprintf("Failed reading benchmark configuration file: %s", filename))
 	}
