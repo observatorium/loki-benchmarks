@@ -11,10 +11,10 @@ import (
 	"strings"
 )
 
-const startingGB = 30000
-const startingLogs = 1200
+const startingGB = 25000
+const startingLogs = 1000
 const endingGB = 120000
-const gbJumpsGlobal = 10000
+const gbJumpsGlobal = 5000
 const numOfRunsPerTest = 3
 
 const defaultStyle = "\x1b[0m"

@@ -27,7 +27,7 @@ tear_down() {
 }
 
 deploy_loki_operator() {
-    pushd ../loki/operator || exit 1
+    pushd ~/grafana_loki/loki/operator || exit 1
     go mod tidy
     go mod vendor
     kubectl delete ns openshift-operators-redhat
@@ -140,7 +140,6 @@ bench() {
         echo "Deploying loki operator"
         deploy_loki_operator
         $KUBECTL -n openshift-operators-redhat rollout status "deploy/loki-operator-controller-manager" --timeout=5000s
-        $KUBECTL -n openshift-logging apply -f config/operator_ingestion_boost.yaml
     elif [[ "$TARGET_ENV" = "development" ]] && $DEPLOY_KIND_OBSERVATORIUM; then
         echo "Deploying observatorium dev manifests"
         deploy_observatorium

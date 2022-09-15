@@ -43,7 +43,7 @@ scenarios:
   highVolumeWrites:
     enabled: true
     configurations:
-      - description: "Write 30000 GB per day"
+      - description: "Write 25000 GB per day"
         samples:
           interval: "60s"
           range: "1m"
@@ -55,5 +55,5 @@ scenarios:
             source: synthetic
             destination: loki
             loki-labels: host
-            log-lines-rate: 1200
+            log-lines-rate: 1000
             synthetic-payload-size: 1000
