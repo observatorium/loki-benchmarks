@@ -24,17 +24,20 @@ tear_down() {
 }
 
 deploy_observatorium() {
+    source .bingo/variables.env
+
+    $KIND create cluster
+
     pushd ../observatorium || exit 1
-    ./configuration/tests/e2e.sh kind
     ./configuration/tests/e2e.sh deploy
     popd
 }
 
 undeploy_observatorium() {
-    pushd ../observatorium || exit 1
+    source .bingo/variables.env
+
     echo -e "\nUndeploying observatorium dev manifests"
-    ./kind delete cluster
-    popd
+    $KIND delete cluster
 }
 
 setup_ports() {
