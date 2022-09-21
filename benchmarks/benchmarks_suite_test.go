@@ -2,13 +2,11 @@ package benchmarks_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v2"
 
@@ -19,7 +17,6 @@ import (
 
 	"github.com/observatorium/loki-benchmarks/internal/config"
 	"github.com/observatorium/loki-benchmarks/internal/metrics"
-	internalreporters "github.com/observatorium/loki-benchmarks/internal/reporters"
 )
 
 var (
@@ -43,18 +40,13 @@ func init() {
 		panic("Missing TARGET_ENV env variable")
 	}
 
-	reportDir = os.Getenv("REPORT_DIR")
-	if reportDir == "" {
-		panic("Missing REPORT_DIR env variable")
-	}
-
 	promURL := os.Getenv("PROMETHEUS_URL")
 	promToken := os.Getenv("PROMETHEUS_TOKEN")
 
 	// Read config for benchmark tests
 	filename := fmt.Sprintf("../config/%s.yaml", env)
 
-	yamlFile, err := ioutil.ReadFile(filename)
+	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		panic(fmt.Sprintf("Failed reading benchmark configuration file: %s", filename))
 	}
@@ -100,10 +92,5 @@ func init() {
 func TestBenchmarks(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	jr := reporters.NewJUnitReporter(fmt.Sprintf("%s/junit.xml", reportDir))
-	csv := internalreporters.NewCsvReporter(reportDir)
-	gp := internalreporters.NewGnuplotReporter(reportDir)
-	rm := internalreporters.NewReadmeReporter(reportDir)
-
-	RunSpecsWithDefaultAndCustomReporters(t, "Benchmarks Suite", []Reporter{jr, csv, gp, rm})
+	RunSpecs(t, "Benchmarks Suite")
 }

@@ -2,118 +2,111 @@ package benchmarks_test
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gmeasure"
 
-	"github.com/observatorium/loki-benchmarks/internal/config"
 	"github.com/observatorium/loki-benchmarks/internal/k8s"
 	"github.com/observatorium/loki-benchmarks/internal/logger"
 )
 
 var _ = Describe("Scenario: High Volume Writes", func() {
 
-	var (
-		scenarioCfg        config.HighVolumeWrites
-		configurationCount int
-		mu                 sync.Mutex // Guard
-		totalSamples       int
-	)
+	loggerCfg := benchCfg.Logger
+	scenarioCfgs := benchCfg.Scenarios.HighVolumeWrites
 
 	BeforeEach(func() {
-		scenarioCfg = benchCfg.Scenarios.HighVolumeWrites
-		if !scenarioCfg.Enabled {
+		if !scenarioCfgs.Enabled {
 			Skip("High Volumes Writes Benchmark not enabled!")
-			return
-		}
-
-		if totalSamples == 0 {
-			totalSamples = scenarioCfg.Configurations[configurationCount].Samples.Total
-			writerCfg := scenarioCfg.Configurations[configurationCount].Writers
-
-			// delete previous logger deployment from earlier. executions (if exist)
-			_ = logger.Undeploy(k8sClient, benchCfg.Logger)
-
-			// deploy loggers
-			err := logger.Deploy(k8sClient, benchCfg.Logger, writerCfg, benchCfg.Loki.PushURL())
-			Expect(err).Should(Succeed(), "Failed to deploy logger")
-
-			// wait for loggers to be ready
-			err = k8s.WaitForReadyDeployment(k8sClient, benchCfg.Logger.Namespace, benchCfg.Logger.Name, writerCfg.Replicas, defaultRetry, defaultTimeout)
-			Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
-		}
-
-		time.Sleep(scenarioCfg.Configurations[configurationCount].Samples.Interval)
-	})
-
-	AfterEach(func() {
-		mu.Lock()
-		defer mu.Unlock()
-
-		if totalSamples == 0 {
-			Expect(logger.Undeploy(k8sClient, benchCfg.Logger)).Should(Succeed(), "Failed to delete logger deployment")
-			configurationCount++
 		}
 	})
 
-	for _, configuration := range benchCfg.Scenarios.HighVolumeWrites.Configurations {
-		c := configuration // Make a local copy to avoid the "Using the variable on range scope `verb` in function literal"
-		Measure("should result in measurements - configuration: "+c.Description, func(b Benchmarker) {
-			defaultRange := scenarioCfg.Configurations[configurationCount].Samples.Range
+	for _, scenarioCfg := range scenarioCfgs.Configurations {
+		scenarioCfg := scenarioCfg
 
-			// Collect measurements for distributors
-			job := benchCfg.Metrics.DistributorJob()
-			err := metricsClient.Measure(b, metricsClient.RequestWritesQPS, "2xx push (Req/s)", job.QueryLabel, job.Job, c.Description, defaultRange)
-			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushP99, "2xx push p99", job.QueryLabel, job.Job, c.Description, defaultRange)
-			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushP50, "2xx push p50", job.QueryLabel, job.Job, c.Description, defaultRange)
-			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushAvg, "2xx push avg", job.QueryLabel, job.Job, c.Description, defaultRange)
-			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkPushAvg, "2xx push avg", job.QueryLabel, job.Job, c.Description, defaultRange)
-			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.DistributorGiPDReceivedTotal, "Received Total (Gi/Day)", job.QueryLabel, job.Job, c.Description, defaultRange)
-			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.DistributorGiPDDiscardedTotal, "Discarded Total (Gi/Day)", job.QueryLabel, job.Job, c.Description, defaultRange)
-			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+		writerCfg := scenarioCfg.Writers
+		sampleCfg := scenarioCfg.Samples
 
-			// Collect measurements for load
-			err = metricsClient.Measure(b, metricsClient.LoadNetworkTotal, "Load Total (MB/s)", job.QueryLabel, job.Job, c.Description, defaultRange)
-			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.LoadNetworkGiPDTotal, "Load Total (Gi/Day)", job.QueryLabel, job.Job, c.Description, defaultRange)
-			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+		defaultRange := sampleCfg.Range
+		samplingCfg := gmeasure.SamplingConfig {
+			N: sampleCfg.Total,
+			Duration: sampleCfg.Interval * time.Duration(sampleCfg.Total + 1),
+			MinSamplingInterval: sampleCfg.Interval,
+		}
 
-			// Collect measurements for Ingesters
-			job = benchCfg.Metrics.IngesterJob()
-			cadvisorJob := benchCfg.Metrics.CadvisorIngesterJob()
-			err = metricsClient.Measure(b, metricsClient.ProcessCPU, "Processes CPU (Mi/Core)", job.QueryLabel, job.Job, c.Description, defaultRange)
-			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			if benchCfg.Metrics.EnableCadvisorMetrics {
-				err = metricsClient.Measure(b, metricsClient.ContainerUserCPU, "Containers User CPU (Mi/Core)", cadvisorJob.QueryLabel, cadvisorJob.Job, c.Description, defaultRange)
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-				err = metricsClient.Measure(b, metricsClient.ContainerWorkingSetMEM, "Containers WorkingSet memory (MB)", cadvisorJob.QueryLabel, cadvisorJob.Job, c.Description, defaultRange)
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			}
-			if c.Samples.Interval > 15*time.Minute {
-				err = metricsClient.Measure(b, metricsClient.RequestBoltDBShipperWritesQPS, "Boltdb shipper successful writes QPS", job.QueryLabel, job.Job, c.Description, defaultRange)
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			}
-			err = metricsClient.Measure(b, metricsClient.RequestWritesGrpcQPS, "successful GRPC push QPS", job.QueryLabel, job.Job, c.Description, defaultRange)
-			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcPushP99, "successful GRPC push p99", job.QueryLabel, job.Job, c.Description, defaultRange)
-			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcPushP50, "successful GRPC push p50", job.QueryLabel, job.Job, c.Description, defaultRange)
-			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			err = metricsClient.Measure(b, metricsClient.RequestDurationOkGrpcPushAvg, "successful GRPC push avg", job.QueryLabel, job.Job, c.Description, defaultRange)
-			Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+		Describe("should measure metrics for configuration", func() {
+			BeforeEach(func() {
+				err := logger.Deploy(k8sClient, loggerCfg, writerCfg, benchCfg.Loki.PushURL())
+				Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-			mu.Lock()
-			defer mu.Unlock()
-			totalSamples -= 1
+				err = k8s.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, writerCfg.Replicas, defaultRetry, defaultTimeout)
+				Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
-		}, c.Samples.Total)
+				DeferCleanup(func(){
+					err := logger.Undeploy(k8sClient, benchCfg.Logger)
+					Expect(err).Should(Succeed(), "Failed to delete logger deployment")
+				})
+			})
+
+			It("should measure metrics", func() {
+				e := gmeasure.NewExperiment(scenarioCfg.Description)
+				AddReportEntry(e.Name, e)
+
+				e.Sample(func(idx int) {
+					// Distributor
+					job := benchCfg.Metrics.DistributorJob()
+
+					err := metricsClient.Measure(e, metricsClient.RequestWritesQPS, "2xx push (Req/s)", job.QueryLabel, job.Job, defaultRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					err = metricsClient.Measure(e, metricsClient.RequestDurationOkPushP99, "2xx push p99", job.QueryLabel, job.Job, defaultRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					err = metricsClient.Measure(e, metricsClient.RequestDurationOkPushP50, "2xx push p50", job.QueryLabel, job.Job, defaultRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					err = metricsClient.Measure(e, metricsClient.RequestDurationOkPushAvg, "2xx push avg", job.QueryLabel, job.Job, defaultRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					err = metricsClient.Measure(e, metricsClient.DistributorGiPDReceivedTotal, "Received Total (Gi/Day)", job.QueryLabel, job.Job, defaultRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					err = metricsClient.Measure(e, metricsClient.DistributorGiPDDiscardedTotal, "Discarded Total (Gi/Day)", job.QueryLabel, job.Job, defaultRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+
+					// Network Load
+					err = metricsClient.Measure(e, metricsClient.LoadNetworkTotal, "Load Total (MB/s)", job.QueryLabel, job.Job, defaultRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					err = metricsClient.Measure(e, metricsClient.LoadNetworkGiPDTotal, "Load Total (Gi/Day)", job.QueryLabel, job.Job, defaultRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+
+					// Ingesters
+					if benchCfg.Metrics.EnableCadvisorMetrics {
+						job = benchCfg.Metrics.CadvisorIngesterJob()
+
+						err = metricsClient.Measure(e, metricsClient.ContainerUserCPU, "Containers User CPU (Mi/Core)", job.QueryLabel, job.Job, defaultRange)
+						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+						err = metricsClient.Measure(e, metricsClient.ContainerWorkingSetMEM, "Containers WorkingSet memory (MB)", job.QueryLabel, job.Job, defaultRange)
+						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					}
+
+					job = benchCfg.Metrics.IngesterJob()
+
+					err = metricsClient.Measure(e, metricsClient.ProcessCPU, "Processes CPU (Mi/Core)", job.QueryLabel, job.Job, defaultRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+
+					if sampleCfg.Interval > 15*time.Minute {
+						err = metricsClient.Measure(e, metricsClient.RequestBoltDBShipperWritesQPS, "Boltdb shipper successful writes QPS", job.QueryLabel, job.Job, defaultRange)
+						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					}
+
+					err = metricsClient.Measure(e, metricsClient.RequestWritesGrpcQPS, "successful GRPC push QPS", job.QueryLabel, job.Job, defaultRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					err = metricsClient.Measure(e, metricsClient.RequestDurationOkGrpcPushP99, "successful GRPC push p99", job.QueryLabel, job.Job, defaultRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					err = metricsClient.Measure(e, metricsClient.RequestDurationOkGrpcPushP50, "successful GRPC push p50", job.QueryLabel, job.Job, defaultRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					err = metricsClient.Measure(e, metricsClient.RequestDurationOkGrpcPushAvg, "successful GRPC push avg", job.QueryLabel, job.Job, defaultRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+				}, samplingCfg)
+			})
+		})
 	}
 })
