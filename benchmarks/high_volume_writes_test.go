@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
 
-	"github.com/observatorium/loki-benchmarks/internal/k8s"
+	"github.com/observatorium/loki-benchmarks/internal/utils"
 	"github.com/observatorium/loki-benchmarks/internal/logger"
 )
 
@@ -41,7 +41,7 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 				err := logger.Deploy(k8sClient, loggerCfg, writerCfg, benchCfg.Loki.PushURL())
 				Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-				err = k8s.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, writerCfg.Replicas, defaultRetry, defaultTimeout)
+				err = utils.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, writerCfg.Replicas, defaultRetry, defaultTimeout)
 				Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
 				DeferCleanup(func() {

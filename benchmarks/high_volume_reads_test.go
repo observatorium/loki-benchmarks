@@ -8,10 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
 
-	"github.com/observatorium/loki-benchmarks/internal/k8s"
-	"github.com/observatorium/loki-benchmarks/internal/latch"
+	"github.com/observatorium/loki-benchmarks/internal/utils"
 	"github.com/observatorium/loki-benchmarks/internal/logger"
-	"github.com/observatorium/loki-benchmarks/internal/metrics"
 	"github.com/observatorium/loki-benchmarks/internal/querier"
 )
 
@@ -47,11 +45,11 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 				err := logger.Deploy(k8sClient, loggerCfg, writerCfg, benchCfg.Loki.PushURL())
 				Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-				err = k8s.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, writerCfg.Replicas, defaultRetry, defaultTimeout)
+				err = utils.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, writerCfg.Replicas, defaultRetry, defaultTimeout)
 				Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
 				// Wait until we ingested enough logs based on startThreshold
-				err = latch.WaitUntilGreaterOrEqual(metricsClient, metrics.DistributorBytesReceivedTotal, readerCfg.StartThreshold, defaultLatchRange, defaultLatchTimeout)
+				err = utils.WaitUntilReceivedBytes(metricsClient, readerCfg.StartThreshold, defaultLatchRange, defaultRetry, defaultLatchTimeout)
 				Expect(err).Should(Succeed(), "Failed to wait until latch activated")
 
 				// Undeploy logger to assert only read traffic
@@ -65,7 +63,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
 					name := querier.DeploymentName(querierCfg, id)
 
-					err = k8s.WaitForReadyDeployment(k8sClient, querierCfg.Namespace, name, readerCfg.Replicas, defaultRetry, defaultTimeout)
+					err = utils.WaitForReadyDeployment(k8sClient, querierCfg.Namespace, name, readerCfg.Replicas, defaultRetry, defaultTimeout)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed to wait for ready querier deployment: %s", name))
 				}
 
