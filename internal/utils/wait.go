@@ -33,14 +33,9 @@ func WaitForReadyDeployment(c client.Client, ns, name string, replicas int32, re
 	})
 }
 
-func WaitUntilReceivedBytes(m metrics.Client, threshold float64, duration string, retry, timeout time.Duration) error {
-	dur, err := model.ParseDuration(duration)
-	if err != nil {
-		return err
-	}
-
+func WaitUntilReceivedBytes(m metrics.Client, threshold float64, duration, retry, timeout time.Duration) error {
 	return wait.Poll(retry, timeout, func() (done bool, err error) {
-		sample, err := m.DistributorBytesReceivedTotal(dur)
+		sample, err := m.DistributorBytesReceivedTotal(model.Duration(duration))
 		if err != nil {
 			return false, err
 		}

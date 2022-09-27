@@ -8,9 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
 
+	"github.com/observatorium/loki-benchmarks/internal/loadclient"
 	"github.com/observatorium/loki-benchmarks/internal/utils"
-	"github.com/observatorium/loki-benchmarks/internal/logger"
-	"github.com/observatorium/loki-benchmarks/internal/querier"
 )
 
 var _ = Describe("Scenario: High Volume Reads", func() {
@@ -27,49 +26,52 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
 	for _, scenarioCfg := range scenarioCfgs.Configurations {
 		scenarioCfg := scenarioCfg
-
-		readerCfg := scenarioCfg.Readers
-		writerCfg := scenarioCfg.Writers
 		sampleCfg := scenarioCfg.Samples
 
 		defaultRange := sampleCfg.Range
-
 		samplingCfg := gmeasure.SamplingConfig{
 			N:                   sampleCfg.Total,
 			Duration:            sampleCfg.Interval * time.Duration(sampleCfg.Total+1),
 			MinSamplingInterval: sampleCfg.Interval,
 		}
 
+		byteThreshold := scenarioCfg.Readers.StartThreshold
+
+		generatorCfg := loadclient.GeneratorConfig(scenarioCfg.Writers, loggerCfg, benchCfg.Loki.PushURL())
+
+		var querierCfgs []loadclient.DeploymentConfig
+		for id, query := range scenarioCfg.Readers.Queries {
+			querierCfgs = append(querierCfgs, loadclient.QuerierConfig(scenarioCfg.Readers, querierCfg, benchCfg.Loki.QueryFrontend, query, id))
+		}
+
 		Describe("should measure metrics for configuration", func() {
 			BeforeEach(func() {
-				err := logger.Deploy(k8sClient, loggerCfg, writerCfg, benchCfg.Loki.PushURL())
+				err := loadclient.CreateDeployment(k8sClient, generatorCfg)
 				Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-				err = utils.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, writerCfg.Replicas, defaultRetry, defaultTimeout)
+				err = utils.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, generatorCfg.Replicas, defaultRetry, defaultTimeout)
 				Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
 				// Wait until we ingested enough logs based on startThreshold
-				err = utils.WaitUntilReceivedBytes(metricsClient, readerCfg.StartThreshold, defaultLatchRange, defaultRetry, defaultLatchTimeout)
+				err = utils.WaitUntilReceivedBytes(metricsClient, byteThreshold, defaultLatchRange, defaultRetry, defaultLatchTimeout)
 				Expect(err).Should(Succeed(), "Failed to wait until latch activated")
 
 				// Undeploy logger to assert only read traffic
-				err = logger.Undeploy(k8sClient, loggerCfg)
+				err = loadclient.DeleteDeployment(k8sClient, generatorCfg.Name, generatorCfg.Namespace)
 				Expect(err).Should(Succeed(), "Failed to delete logger deployment")
 
 				// Deploy the query clients
-				for id, query := range readerCfg.Queries {
-					err = querier.Deploy(k8sClient, querierCfg, readerCfg, benchCfg.Loki.QueryFrontend, id, query, samplingCfg.Duration)
+				for _, cfg := range querierCfgs {
+					err = loadclient.CreateDeployment(k8sClient, cfg)
 					Expect(err).Should(Succeed(), "Failed to deploy querier")
 
-					name := querier.DeploymentName(querierCfg, id)
-
-					err = utils.WaitForReadyDeployment(k8sClient, querierCfg.Namespace, name, readerCfg.Replicas, defaultRetry, defaultTimeout)
-					Expect(err).Should(Succeed(), fmt.Sprintf("Failed to wait for ready querier deployment: %s", name))
+					err = utils.WaitForReadyDeployment(k8sClient, cfg.Namespace, cfg.Name, cfg.Replicas, defaultRetry, defaultTimeout)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed to wait for ready querier deployment: %s", cfg.Name))
 				}
 
 				DeferCleanup(func() {
-					for id := range readerCfg.Queries {
-						err := querier.Undeploy(k8sClient, querierCfg, id)
+					for _, cfg := range querierCfgs {
+						err := loadclient.DeleteDeployment(k8sClient, cfg.Name, cfg.Namespace)
 						Expect(err).Should(Succeed(), "Failed to delete querier deployment")
 					}
 				})

@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
 
+	"github.com/observatorium/loki-benchmarks/internal/loadclient"
 	"github.com/observatorium/loki-benchmarks/internal/utils"
-	"github.com/observatorium/loki-benchmarks/internal/logger"
 )
 
 var _ = Describe("Scenario: High Volume Writes", func() {
@@ -25,8 +25,6 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 
 	for _, scenarioCfg := range scenarioCfgs.Configurations {
 		scenarioCfg := scenarioCfg
-
-		writerCfg := scenarioCfg.Writers
 		sampleCfg := scenarioCfg.Samples
 
 		defaultRange := sampleCfg.Range
@@ -36,16 +34,18 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 			MinSamplingInterval: sampleCfg.Interval,
 		}
 
+		generatorCfg := loadclient.GeneratorConfig(scenarioCfg.Writers, loggerCfg, benchCfg.Loki.PushURL())
+
 		Describe("should measure metrics for configuration", func() {
 			BeforeEach(func() {
-				err := logger.Deploy(k8sClient, loggerCfg, writerCfg, benchCfg.Loki.PushURL())
+				err := loadclient.CreateDeployment(k8sClient, generatorCfg)
 				Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-				err = utils.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, writerCfg.Replicas, defaultRetry, defaultTimeout)
+				err = utils.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, generatorCfg.Replicas, defaultRetry, defaultTimeout)
 				Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
 				DeferCleanup(func() {
-					err := logger.Undeploy(k8sClient, benchCfg.Logger)
+					err := loadclient.DeleteDeployment(k8sClient, generatorCfg.Name, generatorCfg.Namespace)
 					Expect(err).Should(Succeed(), "Failed to delete logger deployment")
 				})
 			})
