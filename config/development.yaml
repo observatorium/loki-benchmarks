@@ -15,18 +15,10 @@ metrics:
   enableCadvisorMetrics: false
   # Align these with ./prometheus/config.yaml
   jobs:
-    distributor:
-        job: loki-distributor
-        queryLabel: job
-    ingester:
-        job: loki-ingester
-        queryLabel: job
-    querier:
-        job: loki-querier
-        queryLabel: job
-    queryFrontend:
-        job: loki-query-frontend
-        queryLabel: job
+    distributor: loki-distributor
+    ingester: loki-ingester
+    querier: loki-querier
+    queryFrontend: loki-query-frontend
 
 loki:
   distributor: http://observatorium-xyz-loki-distributor-http.observatorium.svc.cluster.local:3100

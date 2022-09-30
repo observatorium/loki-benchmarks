@@ -13,27 +13,14 @@ querier:
 metrics:
   url: http://127.0.0.1:9090
   enableCadvisorMetrics: true
-  # Align these with ./prometheus/config.yaml
   jobs:
-    distributor:
-        job: loki-distributor
-        queryLabel: job
-    ingester:
-        job: loki-ingester
-        queryLabel: job
-    querier:
-        job: loki-querier
-        queryLabel: job
-    queryFrontend:
-        job: loki-query-frontend
-        queryLabel: job
+    distributor: loki-distributor
+    ingester: loki-ingester
+    querier: loki-querier
+    queryFrontend: loki-query-frontend
   cadvisorJobs:
-    ingester:
-        job: loki-ingester
-        queryLabel: pod
-    querier:
-        job: loki-querier
-        queryLabel: pod
+    ingester: loki-ingester
+    querier: loki-querier
 
 loki:
   distributor: http://observatorium-loki-distributor-http.observatorium-logs-test.svc.cluster.local:3100
