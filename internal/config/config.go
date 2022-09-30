@@ -103,11 +103,10 @@ type Writers struct {
 }
 
 type Readers struct {
-	Replicas       int32             `yaml:"replicas"`
-	Args           map[string]string `yaml:"args"`
-	Command        string            `yaml:"command"`
-	StartThreshold float64           `yaml:"startThreshold"`
-	Queries        map[string]string `yaml:"queries"`
+	Replicas int32             `yaml:"replicas"`
+	Args     map[string]string `yaml:"args"`
+	Command  string            `yaml:"command"`
+	Queries  map[string]string `yaml:"queries"`
 }
 
 type Samples struct {
@@ -123,6 +122,8 @@ type HighVolumeWrites struct {
 
 type HighVolumeReads struct {
 	Enabled        bool            `yaml:"enabled"`
+	StartThreshold float64         `yaml:"startThreshold"`
+	Generator      *Writers        `yaml:"writers"`
 	Configurations []Configuration `yaml:"configurations"`
 }
 

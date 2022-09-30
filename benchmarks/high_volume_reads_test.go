@@ -22,6 +22,20 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 		if !scenarioCfgs.Enabled {
 			Skip("High Volumes Reads Benchmark not enabled!")
 		}
+
+		generatorCfg := loadclient.GeneratorConfig(scenarioCfg.Generator, loggerCfg, benchCfg.Loki.PushURL())
+
+		err := loadclient.CreateDeployment(k8sClient, generatorCfg)
+		Expect(err).Should(Succeed(), "Failed to deploy logger")
+
+		err = utils.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, generatorCfg.Replicas, defaultRetry, defaultTimeout)
+		Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
+
+		err = utils.WaitUntilReceivedBytes(metricsClient, scenarioCfgs.StartThreshold, defaultLatchRange, defaultRetry, defaultLatchTimeout)
+		Expect(err).Should(Succeed(), "Failed to wait until latch activated")
+
+		err = loadclient.DeleteDeployment(k8sClient, generatorCfg.Name, generatorCfg.Namespace)
+		Expect(err).Should(Succeed(), "Failed to delete logger deployment")
 	})
 
 	for _, scenarioCfg := range scenarioCfgs.Configurations {
@@ -35,32 +49,13 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 			MinSamplingInterval: sampleCfg.Interval,
 		}
 
-		byteThreshold := scenarioCfg.Readers.StartThreshold
-
-		generatorCfg := loadclient.GeneratorConfig(scenarioCfg.Writers, loggerCfg, benchCfg.Loki.PushURL())
-
 		var querierCfgs []loadclient.DeploymentConfig
 		for id, query := range scenarioCfg.Readers.Queries {
 			querierCfgs = append(querierCfgs, loadclient.QuerierConfig(scenarioCfg.Readers, querierCfg, benchCfg.Loki.QueryFrontend, query, id))
 		}
 
-		Describe("should measure metrics for configuration", func() {
+		Describe(fmt.Sprintf("Configuration: %s", scenarioCfg.Description), func() {
 			BeforeEach(func() {
-				err := loadclient.CreateDeployment(k8sClient, generatorCfg)
-				Expect(err).Should(Succeed(), "Failed to deploy logger")
-
-				err = utils.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, generatorCfg.Replicas, defaultRetry, defaultTimeout)
-				Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
-
-				// Wait until we ingested enough logs based on startThreshold
-				err = utils.WaitUntilReceivedBytes(metricsClient, byteThreshold, defaultLatchRange, defaultRetry, defaultLatchTimeout)
-				Expect(err).Should(Succeed(), "Failed to wait until latch activated")
-
-				// Undeploy logger to assert only read traffic
-				err = loadclient.DeleteDeployment(k8sClient, generatorCfg.Name, generatorCfg.Namespace)
-				Expect(err).Should(Succeed(), "Failed to delete logger deployment")
-
-				// Deploy the query clients
 				for _, cfg := range querierCfgs {
 					err = loadclient.CreateDeployment(k8sClient, cfg)
 					Expect(err).Should(Succeed(), "Failed to deploy querier")

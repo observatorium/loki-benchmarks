@@ -42,21 +42,21 @@ loki:
 scenarios:
   highVolumeReads:
     enabled: true
+    startThreshold: 500000000
+    generator:
+      replicas: 10
+      command: generate
+      args:
+        source: application
+        destination: loki
+        log-lines-rate: 1000
     configurations:
       - description: "Query range 1 second"
         samples:
           interval: "60s"
           range: "1m"
           total: 10
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
-        readers:
-          startThreshold: 500000000
+        readers: 
           replicas: 1
           command: query
           queries:
@@ -71,15 +71,7 @@ scenarios:
           interval: "60s"
           range: "1m"
           total: 10
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
         readers:
-          startThreshold: 500000000
           replicas: 1
           command: query
           queries:
@@ -94,15 +86,7 @@ scenarios:
           interval: "60s"
           range: "1m"
           total: 10
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
         readers:
-          startThreshold: 500000000
           replicas: 1
           command: query
           queries:
@@ -117,15 +101,7 @@ scenarios:
           interval: "60s"
           range: "1m"
           total: 10
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
         readers:
-          startThreshold: 500000000
           replicas: 1
           command: query
           queries:
@@ -140,15 +116,7 @@ scenarios:
           interval: "60s"
           range: "1m"
           total: 10
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
         readers:
-          startThreshold: 500000000
           replicas: 1
           command: query
           queries:
@@ -163,15 +131,7 @@ scenarios:
           interval: "60s"
           range: "1m"
           total: 10
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
         readers:
-          startThreshold: 500000000
           replicas: 1
           command: query
           queries:
@@ -186,15 +146,7 @@ scenarios:
           interval: "60s"
           range: "1m"
           total: 10
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
         readers:
-          startThreshold: 500000000
           replicas: 1
           command: query
           queries:

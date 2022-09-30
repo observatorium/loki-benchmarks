@@ -52,21 +52,21 @@ scenarios:
             synthetic-payload-size: 100
   highVolumeReads:
     enabled: true
+    startThreshold: 25000000
+    generator:
+      replicas: 10
+      command: generate
+      args:
+        source: application
+        destination: loki
+        log-lines-rate: 1000
     configurations:
       - description: "Read 10 queries-per-second"
         samples:
           interval: "60s"
           range: "60s"
           total: 2
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
         readers:
-          startThreshold: 25000000
           replicas: 1
           command: query
           queries:
