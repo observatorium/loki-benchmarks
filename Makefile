@@ -41,7 +41,7 @@ help: ## Display this help.
 
 ##@ Ingredients
 lint: $(GOLANGCI_LINT) ## Lint the code
-	@$(GOLANGCI_LINT) run
+	@$(GOLANGCI_LINT) run --timeout=4m
 
 $(REPORT_DIR):
 	@mkdir -p $(REPORT_DIR)
