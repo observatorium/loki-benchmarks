@@ -17,6 +17,15 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 	loggerCfg := benchCfg.Logger
 	scenarioCfgs := benchCfg.Scenarios.HighVolumeWrites
 
+	samplingRange := scenarioCfgs.Samples.Range
+	samplingCfg := gmeasure.SamplingConfig{
+		N:                   scenarioCfgs.Samples.Total,
+		Duration:            scenarioCfgs.Samples.Interval * time.Duration(scenarioCfgs.Samples.Total+1),
+		MinSamplingInterval: scenarioCfgs.Samples.Interval,
+	}
+
+	willQueryForBoltDBShipperMetrics := samplingCfg.Duration >= (15 * time.Minute)
+
 	BeforeEach(func() {
 		if !scenarioCfgs.Enabled {
 			Skip("High Volumes Writes Benchmark not enabled!")
@@ -25,15 +34,6 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 
 	for _, scenarioCfg := range scenarioCfgs.Configurations {
 		scenarioCfg := scenarioCfg
-		sampleCfg := scenarioCfg.Samples
-
-		defaultRange := sampleCfg.Range
-		samplingCfg := gmeasure.SamplingConfig{
-			N:                   sampleCfg.Total,
-			Duration:            sampleCfg.Interval * time.Duration(sampleCfg.Total+1),
-			MinSamplingInterval: sampleCfg.Interval,
-		}
-
 		generatorCfg := loadclient.GeneratorConfig(scenarioCfg.Writers, loggerCfg, benchCfg.Loki.PushURL())
 
 		Describe(fmt.Sprintf("Configuration: %s", scenarioCfg.Description), func() {
@@ -58,52 +58,52 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 					// Distributor
 					job := benchCfg.Metrics.DistributorJob()
 
-					err := metricsClient.Measure(e, metricsClient.RequestWritesQPS, "2xx push (Req/s)", job, defaultRange)
+					err := metricsClient.Measure(e, metricsClient.RequestWritesQPS, "2xx push (Req/s)", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestDurationOkPushP99, "2xx push p99", job, defaultRange)
+					err = metricsClient.Measure(e, metricsClient.RequestDurationOkPushP99, "2xx push p99", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestDurationOkPushP50, "2xx push p50", job, defaultRange)
+					err = metricsClient.Measure(e, metricsClient.RequestDurationOkPushP50, "2xx push p50", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestDurationOkPushAvg, "2xx push avg", job, defaultRange)
+					err = metricsClient.Measure(e, metricsClient.RequestDurationOkPushAvg, "2xx push avg", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.DistributorGiPDReceivedTotal, "Received Total (Gi/Day)", job, defaultRange)
+					err = metricsClient.Measure(e, metricsClient.DistributorGiPDReceivedTotal, "Received Total (Gi/Day)", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.DistributorGiPDDiscardedTotal, "Discarded Total (Gi/Day)", job, defaultRange)
+					err = metricsClient.Measure(e, metricsClient.DistributorGiPDDiscardedTotal, "Discarded Total (Gi/Day)", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 					// Logger
 					job = "logger"
 
-					err = metricsClient.Measure(e, metricsClient.LoadNetworkTotal, "Load Total (MB/s)", job, defaultRange)
+					err = metricsClient.Measure(e, metricsClient.LoadNetworkTotal, "Load Total (MB/s)", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.LoadNetworkGiPDTotal, "Load Total (Gi/Day)", job, defaultRange)
+					err = metricsClient.Measure(e, metricsClient.LoadNetworkGiPDTotal, "Load Total (Gi/Day)", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 					// Ingesters
 					job = benchCfg.Metrics.IngesterJob()
 
-					err = metricsClient.Measure(e, metricsClient.ProcessCPU, "Processes CPU (Mi/Core)", job, defaultRange)
+					err = metricsClient.Measure(e, metricsClient.ProcessCPU, "Processes CPU (Mi/Core)", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestWritesGrpcQPS, "successful GRPC push QPS", job, defaultRange)
+					err = metricsClient.Measure(e, metricsClient.RequestWritesGrpcQPS, "successful GRPC push QPS", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestDurationOkGrpcPushP99, "successful GRPC push p99", job, defaultRange)
+					err = metricsClient.Measure(e, metricsClient.RequestDurationOkGrpcPushP99, "successful GRPC push p99", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestDurationOkGrpcPushP50, "successful GRPC push p50", job, defaultRange)
+					err = metricsClient.Measure(e, metricsClient.RequestDurationOkGrpcPushP50, "successful GRPC push p50", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestDurationOkGrpcPushAvg, "successful GRPC push avg", job, defaultRange)
+					err = metricsClient.Measure(e, metricsClient.RequestDurationOkGrpcPushAvg, "successful GRPC push avg", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-
-					if sampleCfg.Interval > 15*time.Minute {
-						err = metricsClient.Measure(e, metricsClient.RequestBoltDBShipperWritesQPS, "Boltdb shipper successful writes QPS", job, defaultRange)
-						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					}
 
 					if benchCfg.Metrics.EnableCadvisorMetrics {
 						job = benchCfg.Metrics.CadvisorIngesterJob()
 
-						err = metricsClient.Measure(e, metricsClient.ContainerUserCPU, "Containers User CPU (Mi/Core)", job, defaultRange)
+						err = metricsClient.Measure(e, metricsClient.ContainerUserCPU, "Containers User CPU (Mi/Core)", job, samplingRange)
 						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-						err = metricsClient.Measure(e, metricsClient.ContainerWorkingSetMEM, "Containers WorkingSet memory (MB)", job, defaultRange)
+						err = metricsClient.Measure(e, metricsClient.ContainerWorkingSetMEM, "Containers WorkingSet memory (MB)", job, samplingRange)
+						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					}
+
+					if willQueryForBoltDBShipperMetrics {
+						err = metricsClient.Measure(e, metricsClient.RequestBoltDBShipperWritesQPS, "Boltdb shipper successful writes QPS", job, samplingRange)
 						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 					}
 				}, samplingCfg)

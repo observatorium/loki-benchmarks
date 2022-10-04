@@ -88,13 +88,11 @@ func (lc *Loki) PushURL() string {
 type Writers struct {
 	Replicas int32             `yaml:"replicas"`
 	Args     map[string]string `yaml:"args"`
-	Command  string            `yaml:"command"`
 }
 
 type Readers struct {
 	Replicas int32             `yaml:"replicas"`
 	Args     map[string]string `yaml:"args"`
-	Command  string            `yaml:"command"`
 	Queries  map[string]string `yaml:"queries"`
 }
 
@@ -106,19 +104,20 @@ type Samples struct {
 
 type HighVolumeWrites struct {
 	Enabled        bool            `yaml:"enabled"`
+	Samples        Samples         `yaml:"samples"`
 	Configurations []Configuration `yaml:"configurations"`
 }
 
 type HighVolumeReads struct {
 	Enabled        bool            `yaml:"enabled"`
-	StartThreshold float64         `yaml:"startThreshold"`
 	Generator      *Writers        `yaml:"generator"`
+	StartThreshold float64         `yaml:"startThreshold"`
+	Samples        Samples         `yaml:"samples"`
 	Configurations []Configuration `yaml:"configurations"`
 }
 
 type Configuration struct {
 	Description string   `yaml:"description"`
-	Samples     Samples  `yaml:"samples"`
 	Readers     *Readers `yaml:"readers,omitempty"`
 	Writers     *Writers `yaml:"writers,omitempty"`
 }

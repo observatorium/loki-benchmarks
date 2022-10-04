@@ -30,7 +30,7 @@ func GeneratorConfig(scenarioCfg *config.Writers, cfg *config.Logger, pushURL st
 	}
 
 	args := []string{
-		scenarioCfg.Command,
+		"generate",
 	}
 
 	args = append(args, fmt.Sprintf("--%s=%s", "url", pushURL))
@@ -54,7 +54,7 @@ func QuerierConfig(scenarioCfg *config.Readers, cfg *config.Querier, url, query,
 	}
 
 	args := []string{
-		scenarioCfg.Command,
+		"query",
 	}
 
 	args = append(args, fmt.Sprintf("--%s=%s", "url", url))

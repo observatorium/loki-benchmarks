@@ -16,9 +16,9 @@ type MetricType string
 type queryFunc func(job string, duration model.Duration) (float64, error)
 
 const (
-	SecondsPerDay                 int        = 60 * 60 * 24
-	BytesToGigabytesMultiplier    string     = "1000000000"
-	BytesToMegabytesMultiplier    string     = "1000000"
+	SecondsPerDay              int    = 60 * 60 * 24
+	BytesToGigabytesMultiplier string = "1000000000"
+	BytesToMegabytesMultiplier string = "1000000"
 )
 
 type Client interface {
