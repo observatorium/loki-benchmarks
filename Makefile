@@ -83,9 +83,8 @@ cadvisor-cleanup: ## Cleanup cadvisor
 	oc --ignore-not-found=true delete namespace $(CADVISOR_NAMESPACE)
 .PHONY: cadvisor-cleanup
 
-bench-dev: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR) ## Execute benchmark
+bench-dev: $(GINKGO) $(KIND) $(PROMETHEUS) $(EMBEDMD) $(REPORT_DIR) ## Execute benchmark
 	@TARGET_ENV=development \
-	KUBECTL=../observatorium/kubectl \
 	OBS_NS=observatorium \
 	OBS_LOKI_QF="observatorium-xyz-loki-query-frontend" \
 	OBS_LOKI_QR="observatorium-xyz-loki-querier" \

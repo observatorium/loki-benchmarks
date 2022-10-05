@@ -14,30 +14,21 @@ OBS_LOKI_DST="${OBS_LOKI_DST:-observatorium-xyz-loki-distributor}"
 OBS_LOKI_ING="${OBS_LOKI_ING:-observatorium-xyz-loki-ingester}"
 port_counter=0
 
+source .bingo/variables.env
+
 trap 'kill $(jobs -p); tear_down; exit 0' EXIT
 
 tear_down() {
     if [[ "$TARGET_ENV" = "development" ]] && $DEPLOY_KIND_OBSERVATORIUM; then
         echo -e "\nUndeploying observatorium dev manifests"
-        undeploy_observatorium
+        $KIND delete cluster
     fi
 }
 
 deploy_observatorium() {
-    source .bingo/variables.env
-
-    $KIND create cluster
-
     pushd ../observatorium || exit 1
     ./configuration/tests/e2e.sh deploy
     popd
-}
-
-undeploy_observatorium() {
-    source .bingo/variables.env
-
-    echo -e "\nUndeploying observatorium dev manifests"
-    $KIND delete cluster
 }
 
 setup_ports() {
@@ -90,7 +81,6 @@ set_prometheus_relabel_regex() {
 }
 
 scrape_loki_metrics() {
-    source .bingo/variables.env
     (
         $PROMETHEUS --log.level=warn --config.file=./config/prometheus/config.yaml --storage.tsdb.path="$(mktemp -d)";
     ) &
@@ -113,6 +103,8 @@ generate_report() {
 bench() {
     if [[ "$TARGET_ENV" = "development" ]] && $DEPLOY_KIND_OBSERVATORIUM; then
         echo "Deploying observatorium dev manifests"
+        
+        $KIND create cluster
         deploy_observatorium
     fi
 
@@ -132,9 +124,6 @@ bench() {
         echo -e "\nScrape metrics from Loki deployments"
         scrape_loki_metrics
     fi
-
-    export DEPLOY_OCP_PROMETHEUS
-    source .bingo/variables.env
 
     echo -e "\nRun benchmarks"
     $GINKGO -mod=mod --json-report=report.json -output-dir=$REPORT_DIR -keep-separate-reports  ./benchmarks ||:
