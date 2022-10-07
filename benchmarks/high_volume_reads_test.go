@@ -36,9 +36,9 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
 		defaultRange := sampleCfg.Range
 
-		samplingCfg := gmeasure.SamplingConfig {
-			N: sampleCfg.Total,
-			Duration: sampleCfg.Interval * time.Duration(sampleCfg.Total + 1),
+		samplingCfg := gmeasure.SamplingConfig{
+			N:                   sampleCfg.Total,
+			Duration:            sampleCfg.Interval * time.Duration(sampleCfg.Total+1),
 			MinSamplingInterval: sampleCfg.Interval,
 		}
 
