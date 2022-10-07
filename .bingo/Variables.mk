@@ -41,11 +41,11 @@ $(GOLANGCI_LINT): $(BINGO_DIR)/golangci-lint.mod
 	@echo "(re)installing $(GOBIN)/golangci-lint-v1.49.0"
 	@cd $(BINGO_DIR) && $(GO) build -mod=mod -modfile=golangci-lint.mod -o=$(GOBIN)/golangci-lint-v1.49.0 "github.com/golangci/golangci-lint/cmd/golangci-lint"
 
-KUSTOMIZE := $(GOBIN)/kustomize-v3.10.0
+KUSTOMIZE := $(GOBIN)/kustomize-v4.5.7
 $(KUSTOMIZE): $(BINGO_DIR)/kustomize.mod
 	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
-	@echo "(re)installing $(GOBIN)/kustomize-v3.10.0"
-	@cd $(BINGO_DIR) && $(GO) build -mod=mod -modfile=kustomize.mod -o=$(GOBIN)/kustomize-v3.10.0 "sigs.k8s.io/kustomize/kustomize/v3"
+	@echo "(re)installing $(GOBIN)/kustomize-v4.5.7"
+	@cd $(BINGO_DIR) && $(GO) build -mod=mod -modfile=kustomize.mod -o=$(GOBIN)/kustomize-v4.5.7 "sigs.k8s.io/kustomize/kustomize/v4"
 
 PROMETHEUS := $(GOBIN)/prometheus-v0.38.0
 $(PROMETHEUS): $(BINGO_DIR)/prometheus.mod
