@@ -4,7 +4,6 @@ export PATH:=$(GOBIN):$(PATH)
 include .bingo/Variables.mk
 
 export GOROOT=$(shell go env GOROOT)
-export GOFLAGS=-mod=vendor
 export GO111MODULE=on
 
 export REPORT_DIR?=$(CURDIR)/reports/$(shell date +%Y-%m-%d-%H-%M-%S)
