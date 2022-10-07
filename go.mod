@@ -3,7 +3,7 @@ module github.com/observatorium/loki-benchmarks
 go 1.19
 
 require (
-	github.com/onsi/ginkgo/v2 v2.1.6
+	github.com/onsi/ginkgo/v2 v2.2.0
 	github.com/onsi/gomega v1.20.1
 	github.com/prometheus/client_golang v1.12.1
 	github.com/prometheus/common v0.32.1
