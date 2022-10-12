@@ -30,9 +30,9 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		sampleCfg := scenarioCfg.Samples
 
 		defaultRange := sampleCfg.Range
-		samplingCfg := gmeasure.SamplingConfig {
-			N: sampleCfg.Total,
-			Duration: sampleCfg.Interval * time.Duration(sampleCfg.Total + 1),
+		samplingCfg := gmeasure.SamplingConfig{
+			N:                   sampleCfg.Total,
+			Duration:            sampleCfg.Interval * time.Duration(sampleCfg.Total+1),
 			MinSamplingInterval: sampleCfg.Interval,
 		}
 
@@ -44,7 +44,7 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 				err = k8s.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, writerCfg.Replicas, defaultRetry, defaultTimeout)
 				Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
-				DeferCleanup(func(){
+				DeferCleanup(func() {
 					err := logger.Undeploy(k8sClient, benchCfg.Logger)
 					Expect(err).Should(Succeed(), "Failed to delete logger deployment")
 				})
