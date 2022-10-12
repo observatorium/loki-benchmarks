@@ -15,18 +15,10 @@ metrics:
   enableCadvisorMetrics: false
   # Align these with ./prometheus/config.yaml
   jobs:
-    distributor:
-        job: loki-distributor
-        queryLabel: job
-    ingester:
-        job: loki-ingester
-        queryLabel: job
-    querier:
-        job: loki-querier
-        queryLabel: job
-    queryFrontend:
-        job: loki-query-frontend
-        queryLabel: job
+    distributor: loki-distributor
+    ingester: loki-ingester
+    querier: loki-querier
+    queryFrontend: loki-query-frontend
 
 loki:
   distributor: http://observatorium-xyz-loki-distributor-http.observatorium.svc.cluster.local:3100
@@ -35,15 +27,14 @@ loki:
 scenarios:
   highVolumeWrites:
     enabled: true
+    samples:
+      interval: "60s"
+      range: "60s"
+      total: 2
     configurations:
       - description: "Write 100 logs-per-second"
-        samples:
-          interval: "60s"
-          range: "60s"
-          total: 2
         writers:
           replicas: 1
-          command: generate
           args:
             source: synthetic
             destination: loki
@@ -52,23 +43,21 @@ scenarios:
             synthetic-payload-size: 100
   highVolumeReads:
     enabled: true
+    generator:
+      replicas: 10
+      args:
+        source: application
+        destination: loki
+        log-lines-rate: 1000
+    startThreshold: 25000000
+    samples:
+      interval: "60s"
+      range: "60s"
+      total: 2
     configurations:
       - description: "Read 10 queries-per-second"
-        samples:
-          interval: "60s"
-          range: "60s"
-          total: 2
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
         readers:
-          startThreshold: 25000000
           replicas: 1
-          command: query
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
           args:

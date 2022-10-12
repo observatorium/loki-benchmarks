@@ -13,27 +13,14 @@ querier:
 metrics:
   url: http://127.0.0.1:9090
   enableCadvisorMetrics: true
-  # Align these with ./prometheus/config.yaml
   jobs:
-    distributor:
-        job: loki-distributor
-        queryLabel: job
-    ingester:
-        job: loki-ingester
-        queryLabel: job
-    querier:
-        job: loki-querier
-        queryLabel: job
-    queryFrontend:
-        job: loki-query-frontend
-        queryLabel: job
+    distributor: loki-distributor
+    ingester: loki-ingester
+    querier: loki-querier
+    queryFrontend: loki-query-frontend
   cadvisorJobs:
-    ingester:
-        job: loki-ingester
-        queryLabel: pod
-    querier:
-        job: loki-querier
-        queryLabel: pod
+    ingester: loki-ingester
+    querier: loki-querier
 
 loki:
   distributor: http://observatorium-loki-distributor-http.observatorium-logs-test.svc.cluster.local:3100
@@ -42,23 +29,21 @@ loki:
 scenarios:
   highVolumeReads:
     enabled: true
+    generator:
+      replicas: 10
+      args:
+        source: application
+        destination: loki
+        log-lines-rate: 1000
+    startThreshold: 500000000
+    samples:
+      interval: "60s"
+      range: "1m"
+      total: 10
     configurations:
       - description: "Query range 1 second"
-        samples:
-          interval: "60s"
-          range: "1m"
-          total: 10
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
-        readers:
-          startThreshold: 500000000
+        readers: 
           replicas: 1
-          command: query
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
@@ -67,21 +52,8 @@ scenarios:
             log-lines-rate: 10
             query-duration: "1s"
       - description: "Query range 1 minute"
-        samples:
-          interval: "60s"
-          range: "1m"
-          total: 10
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
         readers:
-          startThreshold: 500000000
           replicas: 1
-          command: query
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
@@ -90,21 +62,8 @@ scenarios:
             log-lines-rate: 10
             query-duration: "1m"
       - description: "Query range 1 hour"
-        samples:
-          interval: "60s"
-          range: "1m"
-          total: 10
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
         readers:
-          startThreshold: 500000000
           replicas: 1
-          command: query
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
@@ -113,21 +72,8 @@ scenarios:
             log-lines-rate: 10
             query-duration: "1h"
       - description: "Query range 1 day"
-        samples:
-          interval: "60s"
-          range: "1m"
-          total: 10
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
         readers:
-          startThreshold: 500000000
           replicas: 1
-          command: query
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
@@ -136,21 +82,8 @@ scenarios:
             log-lines-rate: 10
             query-duration: "24h"
       - description: "Query range 1 week"
-        samples:
-          interval: "60s"
-          range: "1m"
-          total: 10
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
         readers:
-          startThreshold: 500000000
           replicas: 1
-          command: query
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
@@ -159,21 +92,8 @@ scenarios:
             log-lines-rate: 10
             query-duration: "168h"
       - description: "Query range 2 weeks"
-        samples:
-          interval: "60s"
-          range: "1m"
-          total: 10
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
         readers:
-          startThreshold: 500000000
           replicas: 1
-          command: query
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
@@ -182,21 +102,8 @@ scenarios:
             log-lines-rate: 10
             query-duration: "336h"
       - description: "Query range 1 month"
-        samples:
-          interval: "60s"
-          range: "1m"
-          total: 10
-        writers:
-          replicas: 10
-          command: generate
-          args:
-            source: application
-            destination: loki
-            log-lines-rate: 1000
         readers:
-          startThreshold: 500000000
           replicas: 1
-          command: query
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
@@ -206,15 +113,14 @@ scenarios:
             query-duration: "744h"
   highVolumeWrites:
     enabled: true
+    samples:
+      interval: "60s"
+      range: "1m"
+      total: 10
     configurations:
       - description: "Write 250 GB per day"
-        samples:
-          interval: "60s"
-          range: "1m"
-          total: 10
         writers:
           replicas: 50
-          command: generate
           args:
             source: synthetic
             destination: loki
@@ -222,13 +128,8 @@ scenarios:
             log-lines-rate: 58
             synthetic-payload-size: 1000
       - description: "Write 500 GB per day"
-        samples:
-          interval: "60s"
-          range: "1m"
-          total: 10
         writers:
           replicas: 50
-          command: generate
           args:
             source: synthetic
             destination: loki
@@ -236,13 +137,8 @@ scenarios:
             log-lines-rate: 116
             synthetic-payload-size: 1000
       - description: "Write 1 TB per day"
-        samples:
-          interval: "60s"
-          range: "1m"
-          total: 10
         writers:
           replicas: 50
-          command: generate
           args:
             source: synthetic
             destination: loki
@@ -250,13 +146,8 @@ scenarios:
             log-lines-rate: 240
             synthetic-payload-size: 1000
       - description: "Write 2 TB per day"
-        samples:
-          interval: "60s"
-          range: "1m"
-          total: 10
         writers:
           replicas: 50
-          command: generate
           args:
             source: synthetic
             destination: loki
@@ -264,13 +155,8 @@ scenarios:
             log-lines-rate: 480
             synthetic-payload-size: 1000
       - description: "Write 4 TB per day"
-        samples:
-          interval: "60s"
-          range: "1m"
-          total: 10
         writers:
           replicas: 50
-          command: generate
           args:
             source: synthetic
             destination: loki
@@ -278,13 +164,8 @@ scenarios:
             log-lines-rate: 940
             synthetic-payload-size: 1000
       - description: "Write 8 TB per day"
-        samples:
-          interval: "60s"
-          range: "1m"
-          total: 10
         writers:
           replicas: 50
-          command: generate
           args:
             source: synthetic
             destination: loki
@@ -292,13 +173,8 @@ scenarios:
             log-lines-rate: 1860
             synthetic-payload-size: 1000
       - description: "Write 16 TB per day"
-        samples:
-          interval: "60s"
-          range: "1m"
-          total: 10
         writers:
           replicas: 50
-          command: generate
           args:
             source: synthetic
             destination: loki
@@ -306,13 +182,8 @@ scenarios:
             log-lines-rate: 3800
             synthetic-payload-size: 1000
       - description: "Write 32 TB per day"
-        samples:
-          interval: "60s"
-          range: "1m"
-          total: 10
         writers:
           replicas: 50
-          command: generate
           args:
             source: synthetic
             destination: loki
