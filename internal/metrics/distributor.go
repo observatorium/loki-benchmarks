@@ -15,19 +15,19 @@ func (c *client) DistributorBytesReceivedTotal(duration model.Duration) (float64
 	return c.executeScalarQuery(query)
 }
 
-func (c *client) DistributorGiPDReceivedTotal(label, job string, duration model.Duration) (float64, error) {
+func (c *client) DistributorGiPDReceivedTotal(job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(rate(loki_distributor_bytes_received_total{%s=~".*%s.*"}[%s])) / %s * 86400`, // in Gi per day
-		label, job, duration, BytesToGigabytesMultiplier,
+		`sum(rate(loki_distributor_bytes_received_total{job=~".*%s.*"}[%s])) / %s * %d`,
+		job, duration, BytesToGigabytesMultiplier, SecondsPerDay,
 	)
 
 	return c.executeScalarQuery(query)
 }
 
-func (c *client) DistributorGiPDDiscardedTotal(label, job string, duration model.Duration) (float64, error) {
+func (c *client) DistributorGiPDDiscardedTotal(job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(rate(loki_distributor_discarded_bytes_total{%s=~".*%s.*"}[%s])) / %s * 86400`, // in Gi per day
-		label, job, duration, BytesToGigabytesMultiplier,
+		`sum(rate(loki_distributor_discarded_bytes_total{job=~".*%s.*"}[%s])) / %s * %d`,
+		job, duration, BytesToGigabytesMultiplier, SecondsPerDay,
 	)
 
 	return c.executeScalarQuery(query)

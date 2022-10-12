@@ -4,7 +4,6 @@ export PATH:=$(GOBIN):$(PATH)
 include .bingo/Variables.mk
 
 export GOROOT=$(shell go env GOROOT)
-export GOFLAGS=-mod=vendor
 export GO111MODULE=on
 
 export REPORT_DIR?=$(CURDIR)/reports/$(shell date +%Y-%m-%d-%H-%M-%S)
@@ -41,7 +40,7 @@ help: ## Display this help.
 
 ##@ Ingredients
 lint: $(GOLANGCI_LINT) ## Lint the code
-	@$(GOLANGCI_LINT) run
+	@$(GOLANGCI_LINT) run --timeout=4m
 
 $(REPORT_DIR):
 	@mkdir -p $(REPORT_DIR)

@@ -24,13 +24,10 @@ var (
 	k8sClient     client.Client
 	metricsClient metrics.Client
 
-	reportDir string
-
-	defaultLatchRange = "5m"
-
 	defaultRetry        = 5 * time.Second
 	defaultTimeout      = 60 * time.Second
 	defaultLatchTimeout = 5 * time.Minute
+	defaultLatchRange   = 5 * time.Minute
 )
 
 func init() {

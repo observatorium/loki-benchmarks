@@ -22,68 +22,57 @@ type Querier struct {
 }
 
 type Metrics struct {
-	URL                   string                `yaml:"url"`
-	Jobs                  map[string]MetricsJob `yaml:"jobs"`
-	CadvisorJobs          map[string]MetricsJob `yaml:"cadvisorJobs"`
-	EnableCadvisorMetrics bool                  `yaml:"enableCadvisorMetrics"`
+	URL                   string            `yaml:"url"`
+	Jobs                  map[string]string `yaml:"jobs"`
+	CadvisorJobs          map[string]string `yaml:"cadvisorJobs"`
+	EnableCadvisorMetrics bool              `yaml:"enableCadvisorMetrics"`
 }
 
-type MetricsJob struct {
-	Job        string `yaml:"job"`
-	QueryLabel string `yaml:"queryLabel"`
-}
-
-func (m *Metrics) DistributorJob() MetricsJob {
+func (m *Metrics) DistributorJob() string {
 	job, ok := m.Jobs["distributor"]
 	if !ok {
-		return MetricsJob{Job: "", QueryLabel: "job"}
+		return ""
 	}
-
 	return job
 }
 
-func (m *Metrics) CadvisorIngesterJob() MetricsJob {
-	job, ok := m.CadvisorJobs["ingester"]
-	if !ok {
-		return MetricsJob{Job: "cadvisor_ingesters", QueryLabel: "job"}
-	}
-
-	return job
-}
-
-func (m *Metrics) CadvisorQuerierJob() MetricsJob {
-	job, ok := m.CadvisorJobs["querier"]
-	if !ok {
-		return MetricsJob{Job: "cadvisor_querier", QueryLabel: "job"}
-	}
-
-	return job
-}
-
-func (m *Metrics) IngesterJob() MetricsJob {
+func (m *Metrics) IngesterJob() string {
 	job, ok := m.Jobs["ingester"]
 	if !ok {
-		return MetricsJob{Job: "", QueryLabel: "job"}
+		return ""
 	}
-
 	return job
 }
 
-func (m *Metrics) QuerierJob() MetricsJob {
+func (m *Metrics) QuerierJob() string {
 	job, ok := m.Jobs["querier"]
 	if !ok {
-		return MetricsJob{Job: "", QueryLabel: "job"}
+		return ""
 	}
-
 	return job
 }
 
-func (m *Metrics) QueryFrontendJob() MetricsJob {
+func (m *Metrics) QueryFrontendJob() string {
 	job, ok := m.Jobs["queryFrontend"]
 	if !ok {
-		return MetricsJob{Job: "", QueryLabel: "job"}
+		return ""
 	}
+	return job
+}
 
+func (m *Metrics) CadvisorIngesterJob() string {
+	job, ok := m.CadvisorJobs["ingester"]
+	if !ok {
+		return ""
+	}
+	return job
+}
+
+func (m *Metrics) CadvisorQuerierJob() string {
+	job, ok := m.CadvisorJobs["querier"]
+	if !ok {
+		return ""
+	}
 	return job
 }
 
@@ -99,15 +88,12 @@ func (lc *Loki) PushURL() string {
 type Writers struct {
 	Replicas int32             `yaml:"replicas"`
 	Args     map[string]string `yaml:"args"`
-	Command  string            `yaml:"command"`
 }
 
 type Readers struct {
-	Replicas       int32             `yaml:"replicas"`
-	Args           map[string]string `yaml:"args"`
-	Command        string            `yaml:"command"`
-	StartThreshold float64           `yaml:"startThreshold"`
-	Queries        map[string]string `yaml:"queries"`
+	Replicas int32             `yaml:"replicas"`
+	Args     map[string]string `yaml:"args"`
+	Queries  map[string]string `yaml:"queries"`
 }
 
 type Samples struct {
@@ -118,17 +104,20 @@ type Samples struct {
 
 type HighVolumeWrites struct {
 	Enabled        bool            `yaml:"enabled"`
+	Samples        Samples         `yaml:"samples"`
 	Configurations []Configuration `yaml:"configurations"`
 }
 
 type HighVolumeReads struct {
 	Enabled        bool            `yaml:"enabled"`
+	Generator      *Writers        `yaml:"generator"`
+	StartThreshold float64         `yaml:"startThreshold"`
+	Samples        Samples         `yaml:"samples"`
 	Configurations []Configuration `yaml:"configurations"`
 }
 
 type Configuration struct {
 	Description string   `yaml:"description"`
-	Samples     Samples  `yaml:"samples"`
 	Readers     *Readers `yaml:"readers,omitempty"`
 	Writers     *Writers `yaml:"writers,omitempty"`
 }

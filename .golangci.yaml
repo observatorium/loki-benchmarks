@@ -2,7 +2,6 @@
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
     - depguard
     - dogsled
     - errcheck
@@ -15,15 +14,11 @@
     - ineffassign
     - nakedret
     - nolintlint
-    - scopelint
     - staticcheck
-    - structcheck
     - typecheck
     - unconvert
-    - varcheck
     - gocritic
     - unused
     - misspell
     - stylecheck
     - whitespace
-    - wsl
