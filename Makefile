@@ -11,7 +11,7 @@ LOKI_NAMESPACE := observatorium-logs-test
 LOKI_OPERATOR_REGISTRY ?= openshift-logging
 LOKI_STORAGE_BUCKET ?= loki-benchmark-storage
 
-LOKI_CONFIG_FILE ?= config/loki-parameters.yaml
+LOKI_CONFIG_FILE ?= hack/loki-parameters.yaml
 LOKI_TEMPLATE_FILE ?= /tmp/observatorium-logs-template.yaml
 RHOBS_DEPLOYMENT_FILE ?= /tmp/rhobs-loki-deployment.yaml
 
@@ -32,6 +32,8 @@ REPORT_DIR ?= $(CURDIR)/reports/$(shell date +%Y-%m-%d-%H-%M-%S)
 
 $(REPORT_DIR):
 	@mkdir -p $(REPORT_DIR)
+	@cp reports/README.template $(REPORT_DIR)
+	@mv $(REPORT_DIR)/README.template $(REPORT_DIR)/README.md
 
 help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)

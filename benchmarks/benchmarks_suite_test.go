@@ -37,37 +37,19 @@ func init() {
 		panic("Missing TARGET_ENV env variable")
 	}
 
-	promURL := os.Getenv("PROMETHEUS_URL")
-	promToken := os.Getenv("PROMETHEUS_TOKEN")
-
-	// Read config for benchmark tests
 	filename := fmt.Sprintf("../config/%s", configFile)
-
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		panic(fmt.Sprintf("Failed reading benchmark configuration file: %s", filename))
 	}
 
 	benchCfg = &config.Benchmark{}
-
 	err = yaml.Unmarshal(yamlFile, benchCfg)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to marshal benchmark configuration file %s with errors %v", filename, err))
 	}
 
-	fmt.Printf("\nUsing benchmark configuration:\n===============================\n%s\n", yamlFile)
-
-	if promURL == "" {
-		promURL = benchCfg.Metrics.URL
-	}
-
-	// Create a client to collect metrics
-	metricsClient, err = metrics.NewClient(promURL, promToken, 10*time.Second)
-	if err != nil {
-		panic("Failed to create metrics client")
-	}
-
-	// Create kubernetes client for deployments
+	// Create K8s Client
 	cfg, err := k8sconfig.GetConfig()
 	if err != nil {
 		panic("Failed to read kubeconfig")
@@ -84,6 +66,21 @@ func init() {
 	if err != nil {
 		panic("Failed to create new k8s client")
 	}
+
+	// Create Metrics Client
+	promURL := os.Getenv("PROMETHEUS_URL")
+	if promURL == "" {
+		promURL = benchCfg.Metrics.URL
+	}
+
+	promToken := os.Getenv("PROMETHEUS_TOKEN")
+
+	metricsClient, err = metrics.NewClient(promURL, promToken, 10*time.Second)
+	if err != nil {
+		panic("Failed to create metrics client")
+	}
+
+	fmt.Printf("\nUsing benchmark configuration:\n===============================\n%s\n", yamlFile)
 }
 
 func TestBenchmarks(t *testing.T) {
