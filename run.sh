@@ -9,7 +9,9 @@ IS_OPENSHIFT="${IS_OPENSHIFT:-false}"
 
 CADVISOR_NAMESPACE="${CADVISOR_NAMESPACE:-cadvisor}"
 BENCHMARK_NAMESPACE="${BENCHMARK_NAMESPACE:-observatorium}"
-LOKI_COMPONENT_PREFIX="${$LOKI_COMPONENT_PREFIX:-observatorium-xyz-loki}"
+LOKI_COMPONENT_PREFIX="${LOKI_COMPONENT_PREFIX:-observatorium-xyz-loki}"
+
+BENCHMARKING_CONFIGURATION_FILE="${BENCHMARKING_CONFIGURATION_FILE:-deployment.yaml}"
 
 ocp_prometheus_config_directory=config/ocp-monitoring
 
@@ -17,21 +19,18 @@ port_counter=0
 
 # Deploy Loki with the Observatorium configuration
 # Intended to work on a Kind cluster for quick development
-deploy_loki_with_observatorium_configuration() {
-    REPORT_DIR=$1
+observatorium() {
+    report_dir=$1
 
     create_benchmarking_environment
 
     pushd ../observatorium || exit 1
-    ./configuration/tests/e2e.sh deploy
+    KUBECTL=$(which kubectl) ./configuration/tests/e2e.sh deploy
     popd
 
     wait_for_ready_components
-
     configure_prometheus
-
-    # Run benchmarks
-    $GINKGO --json-report=report.json -output-dir=$REPORT_DIR ./benchmarks
+    run_benchmark_suite
     
     # Clean up
     destroy_benchmarking_environment
@@ -39,36 +38,33 @@ deploy_loki_with_observatorium_configuration() {
 
 # Deploy Loki with the Red Hat Observability Service configuration
 # Intended to work on a OpenShift cluster for benchmarking
-deploy_loki_with_rhobs_configuration() {
-    REPORT_DIR=$1
-    RHOBS_LOKI_FILE=$2
-    LOKI_STORAGE_BUCKET=$3
+rhobs() {
+    report_dir=$1
+    rhobs_loki_deployment_file=$2
+    storage_bucket=$3
 
     create_benchmarking_environment
 
-    kubectl -n $BENCHMARK_NAMESPACE apply -f $RHOBS_LOKI_FILE
-    ./hack/deploy-example-secret.sh $BENCHMARK_NAMESPACE $LOKI_STORAGE_BUCKET
+    kubectl -n $BENCHMARK_NAMESPACE apply -f $rhobs_loki_deployment_file
+    ./hack/deploy-example-secret.sh $BENCHMARK_NAMESPACE $storage_bucket
 
     wait_for_ready_components
-
     configure_prometheus
-
-    # Run benchmarks
-    $GINKGO --json-report=report.json -output-dir=$REPORT_DIR ./benchmarks
+    run_benchmark_suite
 
     # Clean Up
     destroy_benchmarking_environment
 
     echo -e "\nRemoving RHOBS configuration file"
-    rm $RHOBS_LOKI_FILE
+    rm $rhobs_loki_deployment_file
 }
 
 # Deploy Loki with the Red Hat Loki Operator
 # Intended to work on a OpenShift cluster for benchmarking
-deploy_loki_with_red_hat_operator() {
-    REPORT_DIR=$1
-    LOKI_OPERATOR_REGISTRY=$2
-    LOKI_STORAGE_BUCKET=$3
+loki_operator() {
+    report_dir=$1
+    operator_registry=$2
+    storage_bucket=$3
 
     # Create namespaces
     create_benchmarking_environment
@@ -77,17 +73,14 @@ deploy_loki_with_red_hat_operator() {
 
     # Deploy operator and Lokistack
     pushd ../loki/operator || exit 1
-    make olm-deploy REGISTRY_ORG=$LOKI_OPERATOR_REGISTRY VERSION=v0.0.1
-    ./hack/deploy-aws-storage-secret.sh $LOKI_STORAGE_BUCKET
+    make olm-deploy REGISTRY_ORG=$operator_registry VERSION=v0.0.1
+    ./hack/deploy-aws-storage-secret.sh $storage_bucket
     kubectl -n $BENCHMARK_NAMESPACE apply -f hack/lokistack_gateway_ocp.yaml
     popd
 
     wait_for_ready_components
-
     configure_prometheus
-
-    # Run benchmarks
-    $GINKGO --json-report=report.json -output-dir=$REPORT_DIR ./benchmarks
+    run_benchmark_suite
 
     # Clean Up
     kubectl delete namespace openshift-operators-redhat --ignore-not-found=true
@@ -138,22 +131,27 @@ configure_prometheus() {
 
 wait_for_ready_components() {
     echo -e "\nWaiting for available querier deployment"
-    $KUBECTL -n "$BENCHMARK_NAMESPACE" rollout status "deploy/$LOKI_COMPONENT_PREFIX-querier" --timeout=600s
+    kubectl -n "$BENCHMARK_NAMESPACE" rollout status "deploy/$LOKI_COMPONENT_PREFIX-querier" --timeout=600s
 
     echo -e "\nWaiting for available loki query frontend deployment"
-    $KUBECTL -n "$BENCHMARK_NAMESPACE" rollout status "deploy/$LOKI_COMPONENT_PREFIX-query-frontend" --timeout=600s
+    kubectl -n "$BENCHMARK_NAMESPACE" rollout status "deploy/$LOKI_COMPONENT_PREFIX-query-frontend" --timeout=600s
 
     echo -e "\nWaiting for available loki distributor deployment"
-    $KUBECTL -n "$BENCHMARK_NAMESPACE" rollout status "deploy/$LOKI_COMPONENT_PREFIX-distributor" --timeout=600s
+    kubectl -n "$BENCHMARK_NAMESPACE" rollout status "deploy/$LOKI_COMPONENT_PREFIX-distributor" --timeout=600s
 
     echo -e "\nWaiting for available loki ingester statefulset"
-    $KUBECTL -n "$BENCHMARK_NAMESPACE" rollout status "statefulsets/$LOKI_COMPONENT_PREFIX-ingester" --timeout=600s
+    kubectl -n "$BENCHMARK_NAMESPACE" rollout status "statefulsets/$LOKI_COMPONENT_PREFIX-ingester" --timeout=600s
 
     echo -e "\nWaiting for available loki index gateway statefulset"
-    $KUBECTL -n "$BENCHMARK_NAMESPACE" rollout status "statefulsets/$LOKI_COMPONENT_PREFIX-index-gateway" --timeout=600s
+    kubectl -n "$BENCHMARK_NAMESPACE" rollout status "statefulsets/$LOKI_COMPONENT_PREFIX-index-gateway" --timeout=600s
 
     echo -e "\nWaiting for available loki compactor statefulset"
-    $KUBECTL -n "$BENCHMARK_NAMESPACE" rollout status "statefulsets/$LOKI_COMPONENT_PREFIX-compactor" --timeout=600s
+    kubectl -n "$BENCHMARK_NAMESPACE" rollout status "statefulsets/$LOKI_COMPONENT_PREFIX-compactor" --timeout=600s
+}
+
+run_benchmark_suite() {
+    export BENCHMARKING_CONFIGURATION_FILE
+    $GINKGO --json-report=report.json -output-dir=$report_dir ./benchmarks
 }
 
 enable_ocp_prometheus_monitoring() {
@@ -215,7 +213,7 @@ setup_ports() {
 }
 
 set_prometheus_relabel_regex() {
-    INGESTERS_REGEX=$($KUBECTL get pods -l "app.kubernetes.io/component=ingester" -n "$BENCHMARK_NAMESPACE" -o jsonpath='{range .items[*]}{".*crio-"}{.status.containerStatuses[?(@.name=="observatorium-loki-ingester")].containerID}{".*|"}{end}' | sed -s 's|cri-o://||g')
+    INGESTERS_REGEX=$(kubectl get pods -l "app.kubernetes.io/component=ingester" -n "$BENCHMARK_NAMESPACE" -o jsonpath='{range .items[*]}{".*crio-"}{.status.containerStatuses[?(@.name=="observatorium-loki-ingester")].containerID}{".*|"}{end}' | sed -s 's|cri-o://||g')
     INGESTERS_REGEX=${INGESTERS_REGEX%%+(\|)}
     sed -i "s/{{CADVISOR_INGESTERS_TARGETS_PODS}}/$INGESTERS_REGEX/i" config/prometheus/config.yaml
 }
@@ -225,3 +223,27 @@ scrape_loki_metrics() {
         $PROMETHEUS --log.level=warn --config.file=./config/prometheus/config.yaml --storage.tsdb.path="$(mktemp -d)";
     ) &
 }
+
+case $1 in
+observatorium)
+    observatorium "$@"
+    ;;
+
+rhobs)
+    rhobs "$@"
+    ;;
+
+loki_operator)
+    loki_operator "$@"
+    ;;
+
+help)
+    echo "usage: $(basename "$0") { observatorium | rhobs | loki_operator }"
+    ;;
+
+*)
+    observatorium
+    rhobs
+    loki_operator
+    ;;
+esac

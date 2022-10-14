@@ -32,8 +32,8 @@ var (
 
 func init() {
 	// Read target environment
-	env := os.Getenv("TARGET_ENV")
-	if env == "" {
+	configFile := os.Getenv("BENCHMARKING_CONFIGURATION_FILE")
+	if configFile == "" {
 		panic("Missing TARGET_ENV env variable")
 	}
 
@@ -41,7 +41,7 @@ func init() {
 	promToken := os.Getenv("PROMETHEUS_TOKEN")
 
 	// Read config for benchmark tests
-	filename := fmt.Sprintf("../config/%s.yaml", env)
+	filename := fmt.Sprintf("../config/%s", configFile)
 
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {

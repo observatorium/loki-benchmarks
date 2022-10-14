@@ -1,3 +1,6 @@
+export GOBIN=$(CURDIR)/bin
+export PATH:=$(GOBIN):$(PATH)
+
 include .bingo/Variables.mk
 
 .DEFAULT_GOAL := help
@@ -12,11 +15,7 @@ LOKI_CONFIG_FILE ?= config/loki-parameters.yaml
 LOKI_TEMPLATE_FILE ?= /tmp/observatorium-logs-template.yaml
 RHOBS_DEPLOYMENT_FILE ?= /tmp/rhobs-loki-deployment.yaml
 
-ifeq (,$(shell go env GOBIN))
-GOBIN=$(shell go env GOPATH)/bin
-else
-GOBIN=$(shell go env GOBIN)
-endif
+REPORT_DIR ?= $(CURDIR)/reports/$(shell date +%Y-%m-%d-%H-%M-%S)
 
 ##@ General
 
@@ -32,7 +31,7 @@ endif
 # http://linuxcommand.org/lc3_adv_awk.php
 
 $(REPORT_DIR):
-	@mkdir -p $(CURDIR)/reports/$(shell date +%Y-%m-%d-%H-%M-%S)
+	@mkdir -p $(REPORT_DIR)
 
 help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
@@ -69,7 +68,7 @@ cadvisor-cleanup: ## Cleanup cadvisor
 
 test-benchmarks: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(KIND) ## Run benchmark on a Kind cluster
 	@IS_TESTING=true \
-	./run.sh deploy_loki_with_observatorium_configuration $(REPORT_DIR)
+	./run.sh observatorium $(REPORT_DIR)
 .PHONY: test-benchmarks
 
 ##@ Deployment
@@ -78,12 +77,14 @@ run-rhobs-benchmarks: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) ## Run benchmark on an 
 	@IS_OPENSHIFT=true \
 	BENCHMARK_NAMESPACE=$(LOKI_NAMESPACE) \
 	LOKI_COMPONENT_PREFIX="observatorium-loki" \
-	./run.sh deploy_loki_with_rhobs_configuration $(REPORT_DIR) $(RHOBS_DEPLOYMENT_FILE) $(LOKI_STORAGE_BUCKET)
+	BENCHMARKING_CONFIGURATION_FILE="ocp-observatorium-test.yaml" \
+	./run.sh rhobs $(REPORT_DIR) $(RHOBS_DEPLOYMENT_FILE) $(LOKI_STORAGE_BUCKET)
 .PHONY: run-benchmarks
 
-run-operator-benchmarks: $(GINKGO) $(PROMETHEUS) $(EMBEDMD)  ## Run benchmark on an OpenShift cluster with Loki Operator
+run-operator-benchmarks: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) ## Run benchmark on an OpenShift cluster with Loki Operator
 	@IS_OPENSHIFT=true \
 	BENCHMARK_NAMESPACE="openshift-logging" \
 	LOKI_COMPONENT_PREFIX="lokistack-dev" \
-	./run.sh deploy_loki_with_rhobs_configuration $(REPORT_DIR) $(LOKI_OPERATOR_REGISTRY) $(LOKI_STORAGE_BUCKET)
+	BENCHMARKING_CONFIGURATION_FILE="ocp-observatorium-test.yaml" \
+	./run.sh loki_operator $(REPORT_DIR) $(LOKI_OPERATOR_REGISTRY) $(LOKI_STORAGE_BUCKET)
 .PHONY: run-benchmarks
