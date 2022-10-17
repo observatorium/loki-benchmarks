@@ -1,14 +1,14 @@
-logger:
-  name: logger
+generator:
   namespace: observatorium-logs-test
   image: quay.io/openshift-logging/cluster-logging-load-client:latest
-  tenantId: observatorium
+  tenant: observatorium
+  pushURL: http://observatorium-loki-distributor-http.observatorium-logs-test.svc.cluster.local:3100/loki/api/v1/push
 
 querier:
-  name: querier
   namespace: observatorium-logs-test
   image: docker.io/grafana/logcli:2.6.1-amd64
-  tenantId: observatorium
+  tenant: observatorium
+  pullURL: http://observatorium-loki-query-frontend-http.observatorium-logs-test.svc.cluster.local:3100
 
 metrics:
   url: http://127.0.0.1:9090
@@ -18,10 +18,6 @@ metrics:
     ingester: loki-ingester
     querier: loki-querier
     queryFrontend: loki-query-frontend
-
-loki:
-  distributor: http://observatorium-loki-distributor-http.observatorium-logs-test.svc.cluster.local:3100
-  queryFrontend: http://observatorium-loki-query-frontend-http.observatorium-logs-test.svc.cluster.local:3100
 
 scenarios:
   highVolumeReads:
@@ -124,66 +120,66 @@ scenarios:
             loki-labels: host
             log-lines-rate: 58
             synthetic-payload-size: 1000
-      # - description: "Write 500 GB per day"
-      #   writers:
-      #     replicas: 50
-      #     args:
-      #       source: synthetic
-      #       destination: loki
-      #       loki-labels: host
-      #       log-lines-rate: 116
-      #       synthetic-payload-size: 1000
-      # - description: "Write 1 TB per day"
-      #   writers:
-      #     replicas: 50
-      #     args:
-      #       source: synthetic
-      #       destination: loki
-      #       loki-labels: host
-      #       log-lines-rate: 240
-      #       synthetic-payload-size: 1000
-      # - description: "Write 2 TB per day"
-      #   writers:
-      #     replicas: 50
-      #     args:
-      #       source: synthetic
-      #       destination: loki
-      #       loki-labels: host
-      #       log-lines-rate: 480
-      #       synthetic-payload-size: 1000
-      # - description: "Write 4 TB per day"
-      #   writers:
-      #     replicas: 50
-      #     args:
-      #       source: synthetic
-      #       destination: loki
-      #       loki-labels: host
-      #       log-lines-rate: 940
-      #       synthetic-payload-size: 1000
-      # - description: "Write 8 TB per day"
-      #   writers:
-      #     replicas: 50
-      #     args:
-      #       source: synthetic
-      #       destination: loki
-      #       loki-labels: host
-      #       log-lines-rate: 1860
-      #       synthetic-payload-size: 1000
-      # - description: "Write 16 TB per day"
-      #   writers:
-      #     replicas: 50
-      #     args:
-      #       source: synthetic
-      #       destination: loki
-      #       loki-labels: host
-      #       log-lines-rate: 3800
-      #       synthetic-payload-size: 1000
-      # - description: "Write 32 TB per day"
-      #   writers:
-      #     replicas: 50
-      #     args:
-      #       source: synthetic
-      #       destination: loki
-      #       loki-labels: host
-      #       log-lines-rate: 7600
-      #       synthetic-payload-size: 1000
+      - description: "Write 500 GB per day"
+        writers:
+          replicas: 50
+          args:
+            source: synthetic
+            destination: loki
+            loki-labels: host
+            log-lines-rate: 116
+            synthetic-payload-size: 1000
+      - description: "Write 1 TB per day"
+        writers:
+          replicas: 50
+          args:
+            source: synthetic
+            destination: loki
+            loki-labels: host
+            log-lines-rate: 240
+            synthetic-payload-size: 1000
+      - description: "Write 2 TB per day"
+        writers:
+          replicas: 50
+          args:
+            source: synthetic
+            destination: loki
+            loki-labels: host
+            log-lines-rate: 480
+            synthetic-payload-size: 1000
+      - description: "Write 4 TB per day"
+        writers:
+          replicas: 50
+          args:
+            source: synthetic
+            destination: loki
+            loki-labels: host
+            log-lines-rate: 940
+            synthetic-payload-size: 1000
+      - description: "Write 8 TB per day"
+        writers:
+          replicas: 50
+          args:
+            source: synthetic
+            destination: loki
+            loki-labels: host
+            log-lines-rate: 1860
+            synthetic-payload-size: 1000
+      - description: "Write 16 TB per day"
+        writers:
+          replicas: 50
+          args:
+            source: synthetic
+            destination: loki
+            loki-labels: host
+            log-lines-rate: 3800
+            synthetic-payload-size: 1000
+      - description: "Write 32 TB per day"
+        writers:
+          replicas: 50
+          args:
+            source: synthetic
+            destination: loki
+            loki-labels: host
+            log-lines-rate: 7600
+            synthetic-payload-size: 1000

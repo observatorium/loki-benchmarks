@@ -17,9 +17,6 @@ import (
 
 var _ = Describe("Scenario: High Volume Reads", func() {
 
-	loggerCfg := benchCfg.Logger
-	querierCfg := benchCfg.Querier
-
 	scenarioCfgs := benchCfg.Scenarios.HighVolumeReads
 
 	samplingRange := scenarioCfgs.Samples.Range
@@ -36,12 +33,12 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 			Skip("High Volumes Reads Benchmark not enabled!")
 		}
 
-		generatorCfg := loadclient.GeneratorConfig(scenarioCfgs.Generator, loggerCfg, benchCfg.Loki.PushURL())
+		generatorCfg := loadclient.GeneratorConfig(scenarioCfgs.Generator, benchCfg.Generator)
 
 		err := loadclient.CreateDeployment(k8sClient, generatorCfg)
 		Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-		err = utils.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, defaultRetry, defaultTimeout)
+		err = utils.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, generatorCfg.Replicas, defaultRetry, defaultTimeout)
 		Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
 		err = utils.WaitUntilReceivedBytes(metricsClient, scenarioCfgs.StartThreshold, defaultLatchRange, defaultRetry, defaultLatchTimeout)
@@ -79,7 +76,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
 				e.Sample(func(idx int) {
 					// Query Frontend
-					job := benchCfg.Metrics.QueryFrontendJob()
+					job := benchCfg.Metrics.Jobs.QueryFrontend
 
 					err := metricsClient.Measure(e, metricsClient.RequestReadsQPS, "2xx reads QPS", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
@@ -93,7 +90,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 					// Querier
-					job = benchCfg.Metrics.QuerierJob()
+					job = benchCfg.Metrics.Jobs.Querier
 
 					err = metricsClient.Measure(e, metricsClient.ProcessCPU, "Processes CPU", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
@@ -116,7 +113,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 					}
 
 					// Ingesters
-					job = benchCfg.Metrics.IngesterJob()
+					job = benchCfg.Metrics.Jobs.Ingester
 
 					err = metricsClient.Measure(e, metricsClient.ProcessCPU, "Processes CPU", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))

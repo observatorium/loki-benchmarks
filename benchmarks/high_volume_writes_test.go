@@ -14,7 +14,6 @@ import (
 
 var _ = Describe("Scenario: High Volume Writes", func() {
 
-	loggerCfg := benchCfg.Logger
 	scenarioCfgs := benchCfg.Scenarios.HighVolumeWrites
 
 	samplingRange := scenarioCfgs.Samples.Range
@@ -34,14 +33,14 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 
 	for _, scenarioCfg := range scenarioCfgs.Configurations {
 		scenarioCfg := scenarioCfg
-		generatorCfg := loadclient.GeneratorConfig(scenarioCfg.Writers, loggerCfg, benchCfg.Loki.PushURL())
+		generatorCfg := loadclient.GeneratorConfig(scenarioCfg.Writers, benchCfg.Generator)
 
 		Describe(fmt.Sprintf("Configuration: %s", scenarioCfg.Description), func() {
 			BeforeEach(func() {
 				err := loadclient.CreateDeployment(k8sClient, generatorCfg)
 				Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-				err = utils.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, defaultRetry, defaultTimeout)
+				err = utils.WaitForReadyDeployment(k8sClient, generatorCfg.Namespace, generatorCfg.Name, generatorCfg.Replicas, defaultRetry, defaultTimeout)
 				Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
 				DeferCleanup(func() {
@@ -56,7 +55,7 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 
 				e.Sample(func(idx int) {
 					// Distributor
-					job := benchCfg.Metrics.DistributorJob()
+					job := benchCfg.Metrics.Jobs.Distributor
 
 					err := metricsClient.Measure(e, metricsClient.RequestWritesQPS, "2xx push (Req/s)", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
@@ -80,7 +79,7 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 					// Ingesters
-					job = benchCfg.Metrics.IngesterJob()
+					job = benchCfg.Metrics.Jobs.Ingester
 
 					err = metricsClient.Measure(e, metricsClient.ProcessCPU, "Processes CPU (Mi/Core)", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))

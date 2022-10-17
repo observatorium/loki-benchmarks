@@ -22,8 +22,8 @@ type DeploymentConfig struct {
 	Replicas  int32
 }
 
-func GeneratorConfig(scenarioCfg *config.Writers, cfg *config.Logger, pushURL string) DeploymentConfig {
-	config := defaultConfig(cfg.Name, cfg.Namespace, cfg.Image, scenarioCfg.Replicas)
+func GeneratorConfig(scenarioCfg *config.Writers, cfg *config.Generator) DeploymentConfig {
+	config := defaultConfig("generator", cfg.Namespace, cfg.Image, scenarioCfg.Replicas)
 	config.Labels = map[string]string{
 		"app": "loki-benchmarks-logger",
 	}
@@ -32,8 +32,33 @@ func GeneratorConfig(scenarioCfg *config.Writers, cfg *config.Logger, pushURL st
 		"generate",
 	}
 
-	args = append(args, fmt.Sprintf("--%s=%s", "url", pushURL))
+	args = append(args, fmt.Sprintf("--%s=%s", "url", cfg.PushURL))
+	args = append(args, fmt.Sprintf("--%s=%s", "tenant", cfg.Tenant))
+
+	for k, v := range scenarioCfg.Args {
+		args = append(args, fmt.Sprintf("--%s=%s", k, v))
+	}
+
+	config.Args = args
+
+	return config
+}
+
+func QuerierConfig(scenarioCfg *config.Readers, cfg *config.Querier, url, query, id string) DeploymentConfig {
+	querierName := fmt.Sprintf("%s-%s", cfg.Name, strings.ToLower(id))
+
+	config := defaultConfig(querierName, cfg.Namespace, cfg.Image, scenarioCfg.Replicas)
+	config.Labels = map[string]string{
+		"app": "loki-benchmarks-querier",
+	}
+
+	args := []string{
+		"query",
+	}
+
+	args = append(args, fmt.Sprintf("--%s=%s", "url", url))
 	args = append(args, fmt.Sprintf("--%s=%s", "tenant", cfg.TenantID))
+	args = append(args, fmt.Sprintf("--%s=%s", "queries", query))
 
 	for k, v := range scenarioCfg.Args {
 		args = append(args, fmt.Sprintf("--%s=%s", k, v))
