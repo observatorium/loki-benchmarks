@@ -109,8 +109,6 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 					if benchCfg.Metrics.EnableCadvisorMetrics {
-						job = benchCfg.Metrics.CadvisorQuerierJob()
-
 						err = metricsClient.Measure(e, metricsClient.ContainerUserCPU, "Containers User CPU (Mi/Core)", job, samplingRange)
 						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 						err = metricsClient.Measure(e, metricsClient.ContainerWorkingSetMEM, "Containers WorkingSet memory (MB)", job, samplingRange)
@@ -132,8 +130,6 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 					if benchCfg.Metrics.EnableCadvisorMetrics {
-						job = benchCfg.Metrics.CadvisorIngesterJob()
-
 						err = metricsClient.Measure(e, metricsClient.ContainerUserCPU, "Containers User CPU (Mi/Core)", job, samplingRange)
 						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 						err = metricsClient.Measure(e, metricsClient.ContainerWorkingSetMEM, "Containers WorkingSet memory (MB)", job, samplingRange)

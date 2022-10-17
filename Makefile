@@ -5,7 +5,6 @@ include .bingo/Variables.mk
 
 .DEFAULT_GOAL := help
 
-CADVISOR_NAMESPACE := cadvisor
 LOKI_NAMESPACE := observatorium-logs-test
 
 LOKI_OPERATOR_REGISTRY ?= openshift-logging
@@ -49,33 +48,16 @@ create-rhobs-loki-file: ## Create a yaml file with deployment details for Loki u
 	rm $(LOKI_TEMPLATE_FILE)
 .PHONY:create-rhobs-loki-file
 
-deploy-s3-bucket: ## Deploy s3 bucket
-	hack/create-s3-bucket.sh $(LOKI_STORAGE_BUCKET)
-.PHONY: deploy-s3-bucket
-
-s3-bucket-cleanup: ## Destroy s3 bucket
-	hack/delete-s3-bucket.sh $(LOKI_STORAGE_BUCKET)
-.PHONY: s3-bucket-cleanup
-
-deploy-cadvisor: $(KUSTOMIZE) ## Deploy cadvisor
-	kubectl create namespace $(CADVISOR_NAMESPACE)
-	$(KUSTOMIZE) build ../cadvisor/deploy/kubernetes/base | kubectl -n $(CADVISOR_NAMESPACE) apply -f -
-.PHONY: deploy-cadvisor
-
-cadvisor-cleanup: ## Cleanup cadvisor
-	kubectl --ignore-not-found=true delete namespace $(CADVISOR_NAMESPACE)
-.PHONY: cadvisor-cleanup
-
 ##@ Testing
 
-test-benchmarks: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) $(KIND) ## Run benchmark on a Kind cluster
+test-benchmarks: $(EMBEDMD) $(GINKGO) $(KIND) $(KUSTOMIZE) $(PROMETHEUS) ## Run benchmark on a Kind cluster
 	@IS_TESTING=true \
 	./run.sh observatorium $(REPORT_DIR)
 .PHONY: test-benchmarks
 
 ##@ Deployment
 
-run-rhobs-benchmarks: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) ## Run benchmark on an OpenShift cluster with RHOBS settings
+run-rhobs-benchmarks: $(EMBEDMD) $(GINKGO) $(PROMETHEUS) ## Run benchmark on an OpenShift cluster with RHOBS settings
 	@IS_OPENSHIFT=true \
 	BENCHMARK_NAMESPACE=$(LOKI_NAMESPACE) \
 	LOKI_COMPONENT_PREFIX="observatorium-loki" \
@@ -83,9 +65,9 @@ run-rhobs-benchmarks: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) ## Run benchmark on an 
 	./run.sh rhobs $(REPORT_DIR) $(RHOBS_DEPLOYMENT_FILE) $(LOKI_STORAGE_BUCKET)
 .PHONY: run-benchmarks
 
-run-operator-benchmarks: $(GINKGO) $(PROMETHEUS) $(EMBEDMD) ## Run benchmark on an OpenShift cluster with Loki Operator
+run-operator-benchmarks: $(EMBEDMD) $(GINKGO) $(PROMETHEUS) ## Run benchmark on an OpenShift cluster with Loki Operator
 	@IS_OPENSHIFT=true \
-	BENCHMARK_NAMESPACE="openshift-logging" \
+	BENCHMARK_NAMESPACE=$(LOKI_NAMESPACE) \
 	LOKI_COMPONENT_PREFIX="lokistack-dev" \
 	BENCHMARKING_CONFIGURATION_FILE="ocp-observatorium-test.yaml" \
 	./run.sh loki_operator $(REPORT_DIR) $(LOKI_OPERATOR_REGISTRY) $(LOKI_STORAGE_BUCKET)

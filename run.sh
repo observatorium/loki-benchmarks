@@ -6,15 +6,13 @@ source .bingo/variables.env
 
 IS_TESTING="${IS_TESTING:-false}"
 IS_OPENSHIFT="${IS_OPENSHIFT:-false}"
+USE_CADVISOR="${USE_CADVISOR:-false}"
 
-CADVISOR_NAMESPACE="${CADVISOR_NAMESPACE:-cadvisor}"
 BENCHMARK_NAMESPACE="${BENCHMARK_NAMESPACE:-observatorium}"
 LOKI_COMPONENT_PREFIX="${LOKI_COMPONENT_PREFIX:-observatorium-xyz-loki}"
-
 BENCHMARKING_CONFIGURATION_FILE="${BENCHMARKING_CONFIGURATION_FILE:-development.yaml}"
 
-ocp_prometheus_config_directory=config/ocp-monitoring
-
+ocp_prometheus_config_directory=config/openshift
 port_counter=0
 
 # Deploy Loki with the Observatorium configuration
@@ -44,6 +42,7 @@ rhobs() {
     storage_bucket=$3
 
     create_benchmarking_environment
+    create_s3_storage $storage_bucket
 
     kubectl -n $BENCHMARK_NAMESPACE apply -f $rhobs_loki_deployment_file
     ./hack/deploy-example-secret.sh $BENCHMARK_NAMESPACE $storage_bucket
@@ -53,6 +52,7 @@ rhobs() {
     run_benchmark_suite
 
     # Clean Up
+    destory_s3_storage $storage_bucket
     destroy_benchmarking_environment
 
     echo -e "\nRemoving RHOBS configuration file"
@@ -66,16 +66,28 @@ loki_operator() {
     operator_registry=$2
     storage_bucket=$3
 
-    # Create namespaces
-    create_benchmarking_environment
-    kubectl create namespace openshift-operators-redhat
-    kubectl ns/$BENCHMARK_NAMESPACE openshift.io/cluster-monitoring=true --overwrite
+    if $IS_OPENSHIFT; then
+        echo -e "\nOverwriting BENCHMARK_NAMESPACE"
+        BENCHMARK_NAMESPACE="openshift-logging"
+    fi
 
+    # Create namespaces and storage
+    create_benchmarking_environment
+    create_s3_storage $storage_bucket
+    
     # Deploy operator and Lokistack
     pushd ../loki/operator || exit 1
-    make olm-deploy REGISTRY_ORG=$operator_registry VERSION=v0.0.1
-    ./hack/deploy-aws-storage-secret.sh $storage_bucket
-    kubectl -n $BENCHMARK_NAMESPACE apply -f hack/lokistack_gateway_ocp.yaml
+    if $IS_OPENSHIFT; then
+        kubectl create namespace openshift-operators-redhat
+        kubectl label ns/$BENCHMARK_NAMESPACE openshift.io/cluster-monitoring=true --overwrite
+
+        make olm-deploy REGISTRY_ORG=$operator_registry VERSION=v0.0.1
+        ./hack/deploy-aws-storage-secret.sh $storage_bucket
+        kubectl -n $BENCHMARK_NAMESPACE apply -f hack/lokistack_gateway_ocp.yaml
+    else
+        make deploy REGISTRY_ORG=$operator_registry VERSION=v0.0.1
+        kubectl -n $BENCHMARK_NAMESPACE apply -f hack/lokistack_gateway_dev.yaml
+    fi
     popd
 
     wait_for_ready_components
@@ -83,7 +95,11 @@ loki_operator() {
     run_benchmark_suite
 
     # Clean Up
-    kubectl delete namespace openshift-operators-redhat --ignore-not-found=true
+    if $IS_OPENSHIFT; then
+        kubectl delete namespace openshift-operators-redhat --ignore-not-found=true
+    fi
+
+    destory_s3_storage $storage_bucket
     destroy_benchmarking_environment
 }
 
@@ -95,19 +111,49 @@ create_benchmarking_environment() {
     fi
 
     kubectl create namespace $BENCHMARK_NAMESPACE
+
+    if $USE_CADVISOR; then
+         pushd ../cadvisor || exit 1
+         kubectl $KUSTOMIZE deploy/kubernetes/base | kubectl apply -f -
+         popd
+    fi
 }
 
 destroy_benchmarking_environment() {
     echo -e "\nDestroying benchmarking environment"
+
+    if $USE_CADVISOR; then
+         pushd ../cadvisor || exit 1
+         kubectl $KUSTOMIZE deploy/kubernetes/base | kubectl delete -f -
+         popd
+    fi
+
+    if $IS_OPENSHIFT; then
+        disable_ocp_prometheus_monitoring
+    fi
 
     if $IS_TESTING; then
         $KIND delete cluster
     else
         kubectl delete namespace $BENCHMARK_NAMESPACE --ignore-not-found=true
     fi
+}
+
+create_s3_storage() {
+    bucket_names=$1
 
     if $IS_OPENSHIFT; then
-        disable_ocp_prometheus_monitoring
+        echo -e "\nCreating AWS S3 storage"
+        ./hack/create-s3-bucket.sh $bucket_names
+    fi
+}
+
+destory_s3_storage() {
+    bucket_names=$1
+
+    if $IS_OPENSHIFT; then
+        echo -e "\nDestroying AWS S3 storage"
+        ./hack/delete-s3-bucket.sh $bucket_names
     fi
 }
 
@@ -226,15 +272,15 @@ scrape_loki_metrics() {
 
 case $1 in
 observatorium)
-    observatorium "$@"
+    observatorium $2
     ;;
 
 rhobs)
-    rhobs "$@"
+    rhobs $2 $3 $4
     ;;
 
 loki_operator)
-    loki_operator "$@"
+    loki_operator $2 $3 $4
     ;;
 
 help)

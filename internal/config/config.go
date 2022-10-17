@@ -60,22 +60,6 @@ func (m *Metrics) QueryFrontendJob() string {
 	return job
 }
 
-func (m *Metrics) CadvisorIngesterJob() string {
-	job, ok := m.CadvisorJobs["ingester"]
-	if !ok {
-		return ""
-	}
-	return job
-}
-
-func (m *Metrics) CadvisorQuerierJob() string {
-	job, ok := m.CadvisorJobs["querier"]
-	if !ok {
-		return ""
-	}
-	return job
-}
-
 type Loki struct {
 	Distributor   string `yaml:"distributor"`
 	QueryFrontend string `yaml:"queryFrontend"`
