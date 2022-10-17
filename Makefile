@@ -10,7 +10,7 @@ LOKI_NAMESPACE := observatorium-logs-test
 LOKI_OPERATOR_REGISTRY ?= openshift-logging
 LOKI_STORAGE_BUCKET ?= loki-benchmark-storage
 
-LOKI_CONFIG_FILE ?= hack/loki-parameters.yaml
+LOKI_CONFIG_FILE ?= hack/rhobs-loki-parameters.yaml
 LOKI_TEMPLATE_FILE ?= /tmp/observatorium-logs-template.yaml
 RHOBS_DEPLOYMENT_FILE ?= /tmp/rhobs-loki-deployment.yaml
 

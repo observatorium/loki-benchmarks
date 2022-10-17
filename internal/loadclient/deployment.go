@@ -14,18 +14,19 @@ import (
 )
 
 type DeploymentConfig struct {
-	Name      string
-	Namespace string
-	Labels    map[string]string
-	Args      []string
-	Image     string
-	Replicas  int32
+	Name           string
+	Namespace      string
+	ServiceAccount string
+	Labels         map[string]string
+	Args           []string
+	Image          string
+	Replicas       int32
 }
 
 func GeneratorConfig(scenarioCfg *config.Writers, cfg *config.Generator) DeploymentConfig {
 	config := defaultConfig("generator", cfg.Namespace, cfg.Image, scenarioCfg.Replicas)
 	config.Labels = map[string]string{
-		"app": "loki-benchmarks-logger",
+		"app": "loki-benchmarks-generator",
 	}
 
 	args := []string{
@@ -93,6 +94,7 @@ func CreateDeployment(c client.Client, cfg DeploymentConfig) error {
 							Args:  cfg.Args,
 						},
 					},
+					ServiceAccountName: cfg.ServiceAccount,
 				},
 			},
 		},
@@ -114,9 +116,10 @@ func DeleteDeployment(c client.Client, name, namespace string) error {
 
 func defaultConfig(name, namespace, image string, replicas int32) DeploymentConfig {
 	return DeploymentConfig{
-		Name:      name,
-		Namespace: namespace,
-		Image:     image,
-		Replicas:  replicas,
+		Name:           name,
+		Namespace:      namespace,
+		Image:          image,
+		Replicas:       replicas,
+		ServiceAccount: fmt.Sprintf("loki-benchmarks-%s-sa", name),
 	}
 }

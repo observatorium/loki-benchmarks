@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func WaitForReadyDeployment(c client.Client, ns, name string, retry, timeout time.Duration) error {
+func WaitForReadyDeployment(c client.Client, name, ns string, retry, timeout time.Duration) error {
 	return wait.Poll(retry, timeout, func() (done bool, err error) {
 		dpl := &appsv1.Deployment{}
 		key := client.ObjectKey{Name: name, Namespace: ns}

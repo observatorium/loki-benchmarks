@@ -79,7 +79,7 @@ loki_operator() {
     pushd ../loki/operator || exit 1
     if $IS_OPENSHIFT; then
         kubectl create namespace openshift-operators-redhat
-        kubectl label ns/$BENCHMARK_NAMESPACE openshift.io/cluster-monitoring=true --overwrite
+        kubectl label ns/$BENCHMARK_NAMESPACE openshift.io/cluster-monitoring=true --overwrite 
 
         make olm-deploy REGISTRY_ORG=$operator_registry VERSION=v0.0.1
         ./hack/deploy-aws-storage-secret.sh $storage_bucket
@@ -111,6 +111,7 @@ create_benchmarking_environment() {
     fi
 
     kubectl create namespace $BENCHMARK_NAMESPACE
+    kubectl -n $BENCHMARK_NAMESPACE apply -f hack/loadclient-rbac.yaml
 
     if $USE_CADVISOR; then
          pushd ../cadvisor || exit 1
@@ -231,7 +232,7 @@ forward_ports() {
     setup_ports "loki distributor" app.kubernetes.io/component=distributor LOKI_DISTRIBUTOR_TARGETS 3100 "$BENCHMARK_NAMESPACE"
     setup_ports "loki ingester" app.kubernetes.io/component=ingester LOKI_INGESTER_TARGETS 3100 "$BENCHMARK_NAMESPACE"
     setup_ports "loki querier" app.kubernetes.io/component=querier LOKI_QUERIER_TARGETS 3100 "$BENCHMARK_NAMESPACE"
-    setup_ports "cadvisor ingesters" "" CADVISOR_INGESTERS_TARGETS 8080 "$CADVISOR_NAMESPACE"
+    setup_ports "cadvisor ingesters" "" CADVISOR_INGESTERS_TARGETS 8080 "$BENCHMARK_NAMESPACE"
 }
 
 setup_ports() {
