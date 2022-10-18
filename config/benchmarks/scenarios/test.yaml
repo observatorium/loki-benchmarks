@@ -18,12 +18,12 @@ scenarios:
   highVolumeReads:
     enabled: true
     generator:
-      replicas: 10
+      replicas: 1
       args:
         source: application
         destination: loki
-        log-lines-rate: 1000
-    startThreshold: 25000000
+        log-lines-rate: 100
+    startThreshold: 5000
     samples:
       interval: "60s"
       range: "60s"

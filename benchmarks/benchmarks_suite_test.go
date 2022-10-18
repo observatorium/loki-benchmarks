@@ -24,10 +24,9 @@ var (
 	k8sClient     client.Client
 	metricsClient metrics.Client
 
-	defaultRetry        = 5 * time.Second
-	defaultTimeout      = 60 * time.Second
-	defaultLatchTimeout = 5 * time.Minute
-	defaultLatchRange   = 5 * time.Minute
+	defaultRetry   = 5 * time.Second
+	defaultRange   = 5 * time.Minute
+	defaultTimeout = 5 * time.Minute
 )
 
 func init() {

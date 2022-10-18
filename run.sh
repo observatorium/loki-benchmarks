@@ -93,11 +93,15 @@ loki_operator() {
     fi
     popd
 
+    kubectl -n $BENCHMARK_NAMESPACE apply -f hack/loadclient-rbac.yaml
+
     wait_for_ready_components
     configure_prometheus
     run_benchmark_suite $output_directory
 
     # Clean Up
+    kubectl -n $BENCHMARK_NAMESPACE apply -f hack/loadclient-rbac.yaml
+
     if $IS_OPENSHIFT; then
         kubectl delete namespace openshift-operators-redhat --ignore-not-found=true
     fi
@@ -123,7 +127,6 @@ create_benchmarking_environment() {
     fi
 
     kubectl create namespace $BENCHMARK_NAMESPACE
-    kubectl -n $BENCHMARK_NAMESPACE apply -f hack/loadclient-rbac.yaml
 
     if $USE_CADVISOR; then
          pushd ../cadvisor || exit 1
@@ -236,8 +239,8 @@ export_ocp_prometheus_settings() {
     echo -e "\nRetrieving Prometheus URL and bearer token"
 
     secret=$(kubectl -n openshift-user-workload-monitoring get secret | grep prometheus-user-workload-token | head -n 1 | awk '{print $1 }')
-    export PROMETHEUS_URL="https://$(kubectl -n openshift-monitoring get route thanos-querier -o json | jq -r '.spec.host')"
-    export PROMETHEUS_TOKEN=$(kubectl -n openshift-user-workload-monitoring get secret $secret -o json | jq -r '.data.token' | base64 -d)
+    export PROMETHEUS_URL="https://$(kubectl -n openshift-monitoring get route thanos-querier -o json | python3 -c 'import json,sys;obj=json.load(sys.stdin);print(obj["spec"]["host"])')"
+    export PROMETHEUS_TOKEN=$(kubectl -n openshift-user-workload-monitoring get secret $secret -o json | python3 -c 'import json,sys;obj=json.load(sys.stdin);print(obj["data"]["token"])' | base64 -d)
 }
 
 forward_ports() {

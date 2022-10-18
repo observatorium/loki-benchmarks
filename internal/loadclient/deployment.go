@@ -24,7 +24,7 @@ type DeploymentConfig struct {
 }
 
 func GeneratorConfig(scenarioCfg *config.Writers, cfg *config.Generator) DeploymentConfig {
-	config := defaultConfig("generator", cfg.Namespace, cfg.Image, scenarioCfg.Replicas)
+	config := defaultConfig("generator", cfg.Namespace, cfg.Image, cfg.ServiceAccount, scenarioCfg.Replicas)
 	config.Labels = map[string]string{
 		"app": "loki-benchmarks-generator",
 	}
@@ -48,7 +48,7 @@ func GeneratorConfig(scenarioCfg *config.Writers, cfg *config.Generator) Deploym
 func QuerierConfig(scenarioCfg *config.Readers, cfg *config.Querier, url, query, id string) DeploymentConfig {
 	querierName := fmt.Sprintf("%s-%s", cfg.Name, strings.ToLower(id))
 
-	config := defaultConfig(querierName, cfg.Namespace, cfg.Image, scenarioCfg.Replicas)
+	config := defaultConfig(querierName, cfg.Namespace, cfg.Image, cfg.ServiceAccount, scenarioCfg.Replicas)
 	config.Labels = map[string]string{
 		"app": "loki-benchmarks-querier",
 	}
@@ -94,10 +94,13 @@ func CreateDeployment(c client.Client, cfg DeploymentConfig) error {
 							Args:  cfg.Args,
 						},
 					},
-					ServiceAccountName: cfg.ServiceAccount,
 				},
 			},
 		},
+	}
+
+	if cfg.ServiceAccount != "" {
+		dpl.Spec.Template.Spec.ServiceAccountName = cfg.ServiceAccount
 	}
 
 	return c.Create(context.TODO(), dpl, &client.CreateOptions{})
@@ -114,12 +117,12 @@ func DeleteDeployment(c client.Client, name, namespace string) error {
 	return c.Delete(context.TODO(), dpl, &client.DeleteOptions{})
 }
 
-func defaultConfig(name, namespace, image string, replicas int32) DeploymentConfig {
+func defaultConfig(name, namespace, image, serviceAccount string, replicas int32) DeploymentConfig {
 	return DeploymentConfig{
 		Name:           name,
 		Namespace:      namespace,
 		Image:          image,
 		Replicas:       replicas,
-		ServiceAccount: fmt.Sprintf("loki-benchmarks-%s-sa", name),
+		ServiceAccount: serviceAccount,
 	}
 }

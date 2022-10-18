@@ -41,7 +41,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 		err = utils.WaitForReadyDeployment(k8sClient, generatorCfg.Name, generatorCfg.Namespace, generatorCfg.Replicas, defaultRetry, defaultTimeout)
 		Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
-		err = utils.WaitUntilReceivedBytes(metricsClient, scenarioCfgs.StartThreshold, defaultLatchRange, defaultRetry, defaultLatchTimeout)
+		err = utils.WaitUntilReceivedBytes(metricsClient, scenarioCfgs.StartThreshold, defaultRange, defaultRetry, defaultTimeout)
 		Expect(err).Should(Succeed(), "Failed to wait until latch activated")
 
 		err = loadclient.DeleteDeployment(k8sClient, generatorCfg.Name, generatorCfg.Namespace)

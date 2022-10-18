@@ -14,17 +14,19 @@ type Benchmark struct {
 }
 
 type Generator struct {
-	Namespace string `yaml:"namespace"`
-	Image     string `yaml:"image"`
-	Tenant    string `yaml:"tenant"`
-	PushURL   string `yaml:"pushURL"`
+	Namespace      string `yaml:"namespace"`
+	ServiceAccount string `yaml:"serviceAccount,omitempty"`
+	Image          string `yaml:"image"`
+	Tenant         string `yaml:"tenant"`
+	PushURL        string `yaml:"pushURL"`
 }
 
 type Querier struct {
-	Namespace string `yaml:"namespace"`
-	Image     string `yaml:"image"`
-	Tenant    string `yaml:"tenant"`
-	PullURL   string `yaml:"pullURL"`
+	Namespace      string `yaml:"namespace"`
+	ServiceAccount string `yaml:"serviceAccount,omitempty"`
+	Image          string `yaml:"image"`
+	Tenant         string `yaml:"tenant"`
+	PullURL        string `yaml:"pullURL"`
 }
 
 type Metrics struct {

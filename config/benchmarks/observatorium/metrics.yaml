@@ -1,6 +1,6 @@
 metrics:
   url: http://127.0.0.1:9090
-  enableCadvisorMetrics: true
+  enableCadvisorMetrics: false
   jobs:
     distributor: loki-distributor
     ingester: loki-ingester
