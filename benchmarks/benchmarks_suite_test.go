@@ -32,12 +32,12 @@ var (
 
 func init() {
 	// Read target environment
-	configFile := os.Getenv("BENCHMARKING_CONFIGURATION_FILE")
-	if configFile == "" {
-		panic("Missing TARGET_ENV env variable")
+	configDir := os.Getenv("BENCHMARKING_CONFIGURATION_DIRECTORY")
+	if configDir == "" {
+		panic("Missing BENCHMARKING_CONFIGURATION_DIRECTORY env variable")
 	}
 
-	filename := fmt.Sprintf("../config/%s", configFile)
+	filename := fmt.Sprintf("../config/benchmarks/%s/benchmark.yaml", configDir)
 	yamlFile, err := os.ReadFile(filename)
 	if err != nil {
 		panic(fmt.Sprintf("Failed reading benchmark configuration file: %s", filename))

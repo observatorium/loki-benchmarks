@@ -10,25 +10,28 @@ USE_CADVISOR="${USE_CADVISOR:-false}"
 
 BENCHMARK_NAMESPACE="${BENCHMARK_NAMESPACE:-observatorium}"
 LOKI_COMPONENT_PREFIX="${LOKI_COMPONENT_PREFIX:-observatorium-xyz-loki}"
-BENCHMARKING_CONFIGURATION_FILE="${BENCHMARKING_CONFIGURATION_FILE:-development.yaml}"
 
-ocp_prometheus_config_directory=config/openshift
+SCENARIO_CONFIGURATION_FILE="${SCENARIO_CONFIGURATION_FILE:-benchmarks.yaml}"
+BENCHMARKING_CONFIGURATION_DIRECTORY="${BENCHMARKING_CONFIGURATION_DIRECTORY:-observatorium}"
+
+benchmarking_config_path="config/benchmarks/$BENCHMARKING_CONFIGURATION_DIRECTORY"
+ocp_prometheus_config_path="config/openshift"
 port_counter=0
 
 # Deploy Loki with the Observatorium configuration
 # Intended to work on a Kind cluster for quick development
 observatorium() {
-    report_dir=$1
-
+    output_directory=$1
+    
     create_benchmarking_environment
-
+    
     pushd ../observatorium || exit 1
     KUBECTL=$(which kubectl) ./configuration/tests/e2e.sh deploy
     popd
-
+    
     wait_for_ready_components
     configure_prometheus
-    run_benchmark_suite
+    run_benchmark_suite $output_directory
     
     # Clean up
     destroy_benchmarking_environment
@@ -37,7 +40,7 @@ observatorium() {
 # Deploy Loki with the Red Hat Observability Service configuration
 # Intended to work on a OpenShift cluster for benchmarking
 rhobs() {
-    report_dir=$1
+    output_directory=$1
     rhobs_loki_deployment_file=$2
     storage_bucket=$3
 
@@ -45,11 +48,11 @@ rhobs() {
     create_s3_storage $storage_bucket
 
     kubectl -n $BENCHMARK_NAMESPACE apply -f $rhobs_loki_deployment_file
-    ./hack/deploy-example-secret.sh $BENCHMARK_NAMESPACE $storage_bucket
+    ./hack/scripts/deploy-example-secret.sh $BENCHMARK_NAMESPACE $storage_bucket
 
     wait_for_ready_components
     configure_prometheus
-    run_benchmark_suite
+    run_benchmark_suite $output_directory
 
     # Clean Up
     destory_s3_storage $storage_bucket
@@ -62,7 +65,7 @@ rhobs() {
 # Deploy Loki with the Red Hat Loki Operator
 # Intended to work on a OpenShift cluster for benchmarking
 loki_operator() {
-    report_dir=$1
+    output_directory=$1
     operator_registry=$2
     storage_bucket=$3
 
@@ -92,7 +95,7 @@ loki_operator() {
 
     wait_for_ready_components
     configure_prometheus
-    run_benchmark_suite
+    run_benchmark_suite $output_directory
 
     # Clean Up
     if $IS_OPENSHIFT; then
@@ -104,6 +107,15 @@ loki_operator() {
 }
 
 create_benchmarking_environment() {
+    echo -e "\nCreating benchmarking file"
+
+    export BENCHMARKING_CONFIGURATION_DIRECTORY
+
+    cat $benchmarking_config_path/generator.yaml > $benchmarking_config_path/benchmark.yaml
+    cat $benchmarking_config_path/querier.yaml >> $benchmarking_config_path/benchmark.yaml
+    cat $benchmarking_config_path/metrics.yaml >> $benchmarking_config_path/benchmark.yaml
+    cat config/benchmarks/scenarios/$SCENARIO_CONFIGURATION_FILE >> $benchmarking_config_path/benchmark.yaml
+
     echo -e "\nCreating benchmarking environment"
 
     if $IS_TESTING; then
@@ -121,6 +133,10 @@ create_benchmarking_environment() {
 }
 
 destroy_benchmarking_environment() {
+    echo -e "\nRemoving benchmarking file"
+
+    rm $benchmarking_config_path/benchmark.yaml
+
     echo -e "\nDestroying benchmarking environment"
 
     if $USE_CADVISOR; then
@@ -145,7 +161,7 @@ create_s3_storage() {
 
     if $IS_OPENSHIFT; then
         echo -e "\nCreating AWS S3 storage"
-        ./hack/create-s3-bucket.sh $bucket_names
+        ./hack/scripts/create-s3-bucket.sh $bucket_names
     fi
 }
 
@@ -154,7 +170,7 @@ destory_s3_storage() {
 
     if $IS_OPENSHIFT; then
         echo -e "\nDestroying AWS S3 storage"
-        ./hack/delete-s3-bucket.sh $bucket_names
+        ./hack/scripts/delete-s3-bucket.sh $bucket_names
     fi
 }
 
@@ -197,22 +213,23 @@ wait_for_ready_components() {
 }
 
 run_benchmark_suite() {
-    export BENCHMARKING_CONFIGURATION_FILE
-    $GINKGO --json-report=report.json -output-dir=$report_dir ./benchmarks
+    output_directory=$1
+    
+    $GINKGO --json-report=report.json -output-dir=$output_directory ./benchmarks
 }
 
 enable_ocp_prometheus_monitoring() {
     echo -e "\nAdding user workload monitoring configuration"
 
-    kubectl -n openshift-monitoring apply -f $ocp_prometheus_config_directory/cluster-monitoring-config.yaml
-	kubectl -n openshift-user-workload-monitoring apply -f $ocp_prometheus_config_directory/user-workload-monitoring-config.yaml
+    kubectl -n openshift-monitoring apply -f $ocp_prometheus_config_path/cluster-monitoring-config.yaml
+	kubectl -n openshift-user-workload-monitoring apply -f $ocp_prometheus_config_path/user-workload-monitoring-config.yaml
 }
 
 disable_ocp_prometheus_monitoring() {
     echo -e "\nRemoving user workload monitoring configuration"
 
-    kubectl -n openshift-monitoring delete -f $ocp_prometheus_config_directory/cluster-monitoring-config.yaml --ignore-not-found=true
-	kubectl -n openshift-user-workload-monitoring delete  -f $ocp_prometheus_config_directory/user-workload-monitoring-config.yaml --ignore-not-found=true
+    kubectl -n openshift-monitoring delete -f $ocp_prometheus_config_path/cluster-monitoring-config.yaml --ignore-not-found=true
+	kubectl -n openshift-user-workload-monitoring delete  -f $ocp_prometheus_config_path/user-workload-monitoring-config.yaml --ignore-not-found=true
 }
 
 export_ocp_prometheus_settings() {

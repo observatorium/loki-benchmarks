@@ -1,0 +1,5 @@
+querier:
+  namespace: default
+  image: docker.io/grafana/logcli:2.6.1-amd64
+  tenant: observatorium
+  pullURL: http://observatorium-xyz-loki-query-frontend-http.observatorium.svc.cluster.local:3100

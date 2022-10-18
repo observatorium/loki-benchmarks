@@ -190,9 +190,8 @@ func (c *client) requestThroughput(job, endpoint, code, queryRange, metricType, 
 		code, endpoint, queryRange, metricType, job, latencyType, le, duration,
 		code, endpoint, queryRange, metricType, job, duration,
 	)
-	res, _ := c.executeScalarQuery(query)
 
-	return res, nil
+	return c.executeScalarQuery(query)
 }
 
 func (c *client) requestBoltDBShipperQPS(job, operation, code string, duration model.Duration) (float64, error) {
@@ -213,19 +212,17 @@ func (c *client) executeScalarQuery(query string) (float64, error) {
 		return 0.0, fmt.Errorf("failed executing query %q: %w", query, err)
 	}
 
-	if res.Type() == model.ValScalar {
+	switch res.Type() {
+	case model.ValScalar:
 		value := res.(*model.Scalar)
 		return float64(value.Value), nil
-	}
-
-	if res.Type() == model.ValVector {
+	case model.ValVector:
 		vec := res.(model.Vector)
 		if vec.Len() == 0 {
 			return 0.0, nil
 		}
-
 		return float64(vec[0].Value), nil
+	default:
+		return 0.0, fmt.Errorf("failed to parse result for query: %s", query)
 	}
-
-	return 0.0, fmt.Errorf("failed to parse result for query: %s", query)
 }

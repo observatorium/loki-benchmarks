@@ -52,6 +52,7 @@ create-rhobs-loki-file: ## Create a yaml file with deployment details for Loki u
 
 test-benchmarks: $(EMBEDMD) $(GINKGO) $(KIND) $(KUSTOMIZE) $(PROMETHEUS) ## Run benchmark on a Kind cluster
 	@IS_TESTING=true \
+	SCENARIO_CONFIGURATION_FILE="test.yaml" \
 	./run.sh observatorium $(REPORT_DIR)
 .PHONY: test-benchmarks
 
@@ -61,7 +62,7 @@ run-rhobs-benchmarks: $(EMBEDMD) $(GINKGO) $(PROMETHEUS) ## Run benchmark on an 
 	@IS_OPENSHIFT=true \
 	BENCHMARK_NAMESPACE=$(LOKI_NAMESPACE) \
 	LOKI_COMPONENT_PREFIX="observatorium-loki" \
-	BENCHMARKING_CONFIGURATION_FILE="ocp-observatorium-test.yaml" \
+	BENCHMARKING_CONFIGURATION_DIRECTORY="rhobs" \
 	./run.sh rhobs $(REPORT_DIR) $(RHOBS_DEPLOYMENT_FILE) $(LOKI_STORAGE_BUCKET)
 .PHONY: run-benchmarks
 
@@ -69,6 +70,6 @@ run-operator-benchmarks: $(EMBEDMD) $(GINKGO) $(PROMETHEUS) ## Run benchmark on 
 	@IS_OPENSHIFT=true \
 	BENCHMARK_NAMESPACE=$(LOKI_NAMESPACE) \
 	LOKI_COMPONENT_PREFIX="lokistack-dev" \
-	BENCHMARKING_CONFIGURATION_FILE="ocp-observatorium-test.yaml" \
+	BENCHMARKING_CONFIGURATION_DIRECTORY="operator" \
 	./run.sh loki_operator $(REPORT_DIR) $(LOKI_OPERATOR_REGISTRY) $(LOKI_STORAGE_BUCKET)
 .PHONY: run-benchmarks

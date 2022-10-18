@@ -1,0 +1,5 @@
+generator:
+  namespace: default
+  image: quay.io/openshift-logging/cluster-logging-load-client:latest
+  tenant: observatorium
+  pushURL: http://observatorium-xyz-loki-distributor-http.observatorium.svc.cluster.local:3100/loki/api/v1/push

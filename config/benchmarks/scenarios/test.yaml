@@ -1,25 +1,3 @@
-logger:
-  namespace: default
-  image: quay.io/openshift-logging/cluster-logging-load-client:latest
-  tenant: observatorium
-  pushURL: http://observatorium-xyz-loki-distributor-http.observatorium.svc.cluster.local:3100/loki/api/v1/push
-
-querier:
-  namespace: default
-  image: docker.io/grafana/logcli:2.6.1-amd64
-  tenant: observatorium
-  pullURL: http://observatorium-xyz-loki-query-frontend-http.observatorium.svc.cluster.local:3100
-
-metrics:
-  url: http://127.0.0.1:9090
-  enableCadvisorMetrics: false
-  # Align these with ./prometheus/config.yaml
-  jobs:
-    distributor: loki-distributor
-    ingester: loki-ingester
-    querier: loki-querier
-    queryFrontend: loki-query-frontend
-
 scenarios:
   highVolumeWrites:
     enabled: true
