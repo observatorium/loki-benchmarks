@@ -14,8 +14,10 @@ LOKI_COMPONENT_PREFIX="${LOKI_COMPONENT_PREFIX:-observatorium-xyz-loki}"
 SCENARIO_CONFIGURATION_FILE="${SCENARIO_CONFIGURATION_FILE:-benchmarks.yaml}"
 BENCHMARKING_CONFIGURATION_DIRECTORY="${BENCHMARKING_CONFIGURATION_DIRECTORY:-observatorium}"
 
-benchmarking_config_path="config/benchmarks/$BENCHMARKING_CONFIGURATION_DIRECTORY"
+benchmarking_configuration_path="config/benchmarks/$BENCHMARKING_CONFIGURATION_DIRECTORY"
+benchmarking_configuration_file="config/benchmarks/$BENCHMARKING_CONFIGURATION_DIRECTORY/benchmark.yaml"
 ocp_prometheus_config_path="config/openshift"
+
 port_counter=0
 
 # Deploy Loki with the Observatorium configuration
@@ -64,7 +66,7 @@ rhobs() {
 
 # Deploy Loki with the Red Hat Loki Operator
 # Intended to work on a OpenShift cluster for benchmarking
-loki_operator() {
+operator() {
     output_directory=$1
     operator_registry=$2
     storage_bucket=$3
@@ -100,7 +102,7 @@ loki_operator() {
     run_benchmark_suite $output_directory
 
     # Clean Up
-    kubectl -n $BENCHMARK_NAMESPACE apply -f hack/loadclient-rbac.yaml
+    kubectl -n $BENCHMARK_NAMESPACE delete -f hack/loadclient-rbac.yaml
 
     if $IS_OPENSHIFT; then
         kubectl delete namespace openshift-operators-redhat --ignore-not-found=true
@@ -115,10 +117,10 @@ create_benchmarking_environment() {
 
     export BENCHMARKING_CONFIGURATION_DIRECTORY
 
-    cat $benchmarking_config_path/generator.yaml > $benchmarking_config_path/benchmark.yaml
-    cat $benchmarking_config_path/querier.yaml >> $benchmarking_config_path/benchmark.yaml
-    cat $benchmarking_config_path/metrics.yaml >> $benchmarking_config_path/benchmark.yaml
-    cat config/benchmarks/scenarios/$SCENARIO_CONFIGURATION_FILE >> $benchmarking_config_path/benchmark.yaml
+    cat $benchmarking_configuration_path/generator.yaml > $benchmarking_configuration_file
+    cat $benchmarking_configuration_path/querier.yaml >> $benchmarking_configuration_file
+    cat $benchmarking_configuration_path/metrics.yaml >> $benchmarking_configuration_file
+    cat config/benchmarks/scenarios/$SCENARIO_CONFIGURATION_FILE >> $benchmarking_configuration_file
 
     echo -e "\nCreating benchmarking environment"
 
@@ -138,7 +140,7 @@ create_benchmarking_environment() {
 destroy_benchmarking_environment() {
     echo -e "\nRemoving benchmarking file"
 
-    rm $benchmarking_config_path/benchmark.yaml
+    rm $benchmarking_configuration_file
 
     echo -e "\nDestroying benchmarking environment"
 
@@ -300,12 +302,12 @@ rhobs)
     rhobs $2 $3 $4
     ;;
 
-loki_operator)
-    loki_operator $2 $3 $4
+operator)
+    operator $2 $3 $4
     ;;
 
 help)
-    echo "usage: $(basename "$0") { observatorium | rhobs | loki_operator }"
+    echo "usage: $(basename "$0") { observatorium | rhobs | operator }"
     ;;
 
 *)

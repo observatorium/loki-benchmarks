@@ -71,5 +71,5 @@ run-operator-benchmarks: $(EMBEDMD) $(GINKGO) $(PROMETHEUS) ## Run benchmark on 
 	BENCHMARK_NAMESPACE=$(LOKI_NAMESPACE) \
 	LOKI_COMPONENT_PREFIX="lokistack-dev" \
 	BENCHMARKING_CONFIGURATION_DIRECTORY="operator" \
-	./run.sh loki_operator $(REPORT_DIR) $(LOKI_OPERATOR_REGISTRY) $(LOKI_STORAGE_BUCKET)
+	./run.sh operator $(REPORT_DIR) $(LOKI_OPERATOR_REGISTRY) $(LOKI_STORAGE_BUCKET)
 .PHONY: run-benchmarks

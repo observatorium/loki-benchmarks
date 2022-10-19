@@ -6,15 +6,14 @@ scenarios:
       range: "60s"
       total: 2
     configurations:
-      - description: "Write 100 logs-per-second"
+      - description: "Write 500 MB per day"
         writers:
           replicas: 1
           args:
             source: synthetic
             destination: loki
-            loki-labels: host
-            log-lines-rate: 100
-            synthetic-payload-size: 100
+            log-lines-rate: 60
+            synthetic-payload-size: 150
   highVolumeReads:
     enabled: true
     generator:
@@ -22,14 +21,14 @@ scenarios:
       args:
         source: application
         destination: loki
-        log-lines-rate: 100
+        log-lines-rate: 200
     startThreshold: 5000
     samples:
       interval: "60s"
       range: "60s"
       total: 2
     configurations:
-      - description: "Read 10 queries-per-second"
+      - description: "Query range 1 second"
         readers:
           replicas: 1
           queries:
@@ -37,3 +36,4 @@ scenarios:
           args:
             destination: loki
             log-lines-rate: 10
+            query-duration: "1s"
