@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
+	"github.com/prometheus/common/model"
 
 	"github.com/observatorium/loki-benchmarks/internal/loadclient"
 	"github.com/observatorium/loki-benchmarks/internal/utils"
@@ -16,7 +17,7 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 
 	scenarioCfgs := benchCfg.Scenarios.HighVolumeWrites
 
-	samplingRange := scenarioCfgs.Samples.Range
+	samplingRange := model.Duration(scenarioCfgs.Samples.Interval)
 	samplingCfg := gmeasure.SamplingConfig{
 		N:                   scenarioCfgs.Samples.Total,
 		Duration:            scenarioCfgs.Samples.Interval * time.Duration(scenarioCfgs.Samples.Total+1),

@@ -9,9 +9,8 @@ scenarios:
         log-lines-rate: 1000
     startThreshold: 500000000
     samples:
-      interval: "60s"
-      range: "1m"
       total: 10
+      interval: "1m"
     configurations:
       - description: "Query range 1 second"
         readers: 
@@ -22,7 +21,7 @@ scenarios:
           args:
             destination: loki
             log-lines-rate: 10
-            query-duration: "1s"
+            query-range: "1s"
       - description: "Query range 1 minute"
         readers:
           replicas: 1
@@ -32,7 +31,7 @@ scenarios:
           args:
             destination: loki
             log-lines-rate: 10
-            query-duration: "1m"
+            query-range: "1m"
       - description: "Query range 1 hour"
         readers:
           replicas: 1
@@ -42,7 +41,7 @@ scenarios:
           args:
             destination: loki
             log-lines-rate: 10
-            query-duration: "1h"
+            query-range: "1h"
       - description: "Query range 1 day"
         readers:
           replicas: 1
@@ -52,7 +51,7 @@ scenarios:
           args:
             destination: loki
             log-lines-rate: 10
-            query-duration: "24h"
+            query-range: "24h"
       - description: "Query range 1 week"
         readers:
           replicas: 1
@@ -62,7 +61,7 @@ scenarios:
           args:
             destination: loki
             log-lines-rate: 10
-            query-duration: "168h"
+            query-range: "168h"
       - description: "Query range 2 weeks"
         readers:
           replicas: 1
@@ -72,7 +71,7 @@ scenarios:
           args:
             destination: loki
             log-lines-rate: 10
-            query-duration: "336h"
+            query-range: "336h"
       - description: "Query range 1 month"
         readers:
           replicas: 1
@@ -82,13 +81,12 @@ scenarios:
           args:
             destination: loki
             log-lines-rate: 10
-            query-duration: "744h"
+            query-range: "744h"
   highVolumeWrites:
     enabled: true
     samples:
-      interval: "60s"
-      range: "1m"
       total: 10
+      interval: "1m"
     configurations:
       - description: "Write 250 GB per day"
         writers:

@@ -2,8 +2,6 @@ package config
 
 import (
 	"time"
-
-	"github.com/prometheus/common/model"
 )
 
 type Benchmark struct {
@@ -62,9 +60,8 @@ type HighVolumeReads struct {
 }
 
 type Samples struct {
-	Interval time.Duration  `yaml:"interval"`
-	Range    model.Duration `yaml:"range"`
-	Total    int            `yaml:"total"`
+	Total    int           `yaml:"total"`
+	Interval time.Duration `yaml:"interval"`
 }
 
 type Configuration struct {

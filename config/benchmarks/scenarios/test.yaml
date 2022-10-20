@@ -2,9 +2,8 @@ scenarios:
   highVolumeWrites:
     enabled: true
     samples:
-      interval: "60s"
-      range: "60s"
       total: 2
+      interval: "1m"
     configurations:
       - description: "Write 500 MB per day"
         writers:
@@ -22,11 +21,10 @@ scenarios:
         source: application
         destination: loki
         log-lines-rate: 200
-    startThreshold: 5000
+    startThreshold: 50000
     samples:
-      interval: "60s"
-      range: "60s"
       total: 2
+      interval: "1m"
     configurations:
       - description: "Query range 1 second"
         readers:
@@ -36,4 +34,4 @@ scenarios:
           args:
             destination: loki
             log-lines-rate: 10
-            query-duration: "1s"
+            query-range: "1s"
