@@ -33,5 +33,4 @@ scenarios:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
           args:
             destination: loki
-            log-lines-rate: 10
             query-range: "1s"

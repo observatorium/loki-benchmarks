@@ -27,8 +27,6 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 		MinSamplingInterval: scenarioCfgs.Samples.Interval,
 	}
 
-	willQueryForBoltDBShipperMetrics := samplingCfg.Duration >= (15 * time.Minute)
-
 	BeforeEach(func() {
 		if !scenarioCfgs.Enabled {
 			Skip("High Volumes Reads Benchmark not enabled!")
@@ -63,6 +61,9 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed to wait for ready querier deployment: %s", dpl.GetName()))
 				}
 
+				// Sleeping for the first interval so that the data is accurate for the new workload.
+				time.Sleep(scenarioCfgs.Samples.Interval)
+
 				DeferCleanup(func() {
 					for _, dpl := range querierDpls {
 						err := k8sClient.Delete(context.TODO(), dpl, &client.DeleteOptions{})
@@ -93,8 +94,16 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 					// Querier
 					job = benchCfg.Metrics.Jobs.Querier
 
-					err = metricsClient.Measure(e, metricsClient.ProcessCPU, "Processes CPU", job, samplingRange)
+					err = metricsClient.Measure(e, metricsClient.ContainerCPU, "Container CPU Usage (Core)", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					err = metricsClient.Measure(e, metricsClient.ProcessCPUSeconds, "Processes CPU Time (Seconds)", job, samplingRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+
+					if benchCfg.Metrics.EnableCadvisorMetrics {
+						err = metricsClient.Measure(e, metricsClient.ContainerMemoryWorkingSetBytes, "Containers WorkingSet memory (GB)", job, samplingRange)
+						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					}
+
 					err = metricsClient.Measure(e, metricsClient.RequestReadsQPS, "2xx reads QPS", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 					err = metricsClient.Measure(e, metricsClient.RequestDurationOkQueryRangeP99, "2xx reads p99", job, samplingRange)
@@ -106,18 +115,19 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 					err = metricsClient.Measure(e, metricsClient.RequestQueryRangeThroughput, "2xx reads throughput", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
-					if benchCfg.Metrics.EnableCadvisorMetrics {
-						err = metricsClient.Measure(e, metricsClient.ContainerUserCPU, "Containers User CPU (Mi/Core)", job, samplingRange)
-						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-						err = metricsClient.Measure(e, metricsClient.ContainerWorkingSetMEM, "Containers WorkingSet memory (MB)", job, samplingRange)
-						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					}
-
 					// Ingesters
 					job = benchCfg.Metrics.Jobs.Ingester
 
-					err = metricsClient.Measure(e, metricsClient.ProcessCPU, "Processes CPU", job, samplingRange)
+					err = metricsClient.Measure(e, metricsClient.ContainerCPU, "Container CPU Usage (Core)", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					err = metricsClient.Measure(e, metricsClient.ProcessCPUSeconds, "Processes CPU Time (Seconds)", job, samplingRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+
+					if benchCfg.Metrics.EnableCadvisorMetrics {
+						err = metricsClient.Measure(e, metricsClient.ContainerMemoryWorkingSetBytes, "Containers WorkingSet memory (GB)", job, samplingRange)
+						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					}
+
 					err = metricsClient.Measure(e, metricsClient.RequestReadsGrpcQPS, "successful GRPC reads QPS", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 					err = metricsClient.Measure(e, metricsClient.RequestDurationOkGrpcQuerySampleP99, "successful GRPC query p99", job, samplingRange)
@@ -127,17 +137,8 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 					err = metricsClient.Measure(e, metricsClient.RequestDurationOkGrpcQuerySampleAvg, "successful GRPC query avg", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
-					if benchCfg.Metrics.EnableCadvisorMetrics {
-						err = metricsClient.Measure(e, metricsClient.ContainerUserCPU, "Containers User CPU (Mi/Core)", job, samplingRange)
-						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-						err = metricsClient.Measure(e, metricsClient.ContainerWorkingSetMEM, "Containers WorkingSet memory (MB)", job, samplingRange)
-						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					}
-
-					if willQueryForBoltDBShipperMetrics {
-						err = metricsClient.Measure(e, metricsClient.RequestBoltDBShipperReadsQPS, "Boltdb shipper reads QPS", job, samplingRange)
-						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					}
+					err = metricsClient.Measure(e, metricsClient.RequestBoltDBShipperReadsQPS, "Boltdb shipper reads QPS", job, samplingRange)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 				}, samplingCfg)
 			})
 		})

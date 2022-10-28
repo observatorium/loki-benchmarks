@@ -34,12 +34,12 @@ func (c *client) RequestDurationOkPushP99(job string, duration model.Duration) (
 
 func (c *client) RequestReadsQPS(job string, duration model.Duration) (float64, error) {
 	route := "loki_api_v1_series|api_prom_series|api_prom_query|api_prom_label|api_prom_label_name_values|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_name_values"
-	return c.requestQPS(job, route, "2.*", duration)
+	return c.requestRate(job, route, "2.*", duration)
 }
 
 func (c *client) RequestWritesQPS(job string, duration model.Duration) (float64, error) {
 	route := "loki_api_v1_push"
-	return c.requestQPS(job, route, "2.*", duration)
+	return c.requestRate(job, route, "2.*", duration)
 }
 
 func (c *client) RequestQueryRangeThroughput(job string, duration model.Duration) (float64, error) {

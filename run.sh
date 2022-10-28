@@ -57,11 +57,11 @@ rhobs() {
     run_benchmark_suite $output_directory
 
     # Clean Up
-    destory_s3_storage $storage_bucket
-    destroy_benchmarking_environment
-
     echo -e "\nRemoving RHOBS configuration file"
     rm $rhobs_loki_deployment_file
+
+    destroy_benchmarking_environment
+    destory_s3_storage $storage_bucket
 }
 
 # Deploy Loki with the Red Hat Loki Operator
@@ -108,8 +108,8 @@ operator() {
         kubectl delete namespace openshift-operators-redhat --ignore-not-found=true
     fi
 
-    destory_s3_storage $storage_bucket
     destroy_benchmarking_environment
+    destory_s3_storage $storage_bucket
 }
 
 create_benchmarking_environment() {

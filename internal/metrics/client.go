@@ -62,12 +62,11 @@ type Client interface {
 
 	// Container API
 	// NOTE: Container API functions requires cadvisor to be deployed and functional
-	ContainerUserCPU(job string, duration model.Duration) (float64, error)
-	ContainerWorkingSetMEM(job string, duration model.Duration) (float64, error)
+	ContainerCPU(job string, duration model.Duration) (float64, error)
+	ContainerMemoryWorkingSetBytes(job string, duration model.Duration) (float64, error)
 
 	// Process API
-	ProcessCPU(job string, duration model.Duration) (float64, error)
-	ProcessResidentMEM(job string, duration model.Duration) (float64, error)
+	ProcessCPUSeconds(job string, duration model.Duration) (float64, error)
 
 	Measure(e *gmeasure.Experiment, f queryFunc, name, job string, defaultRange model.Duration) error
 }
@@ -85,18 +84,15 @@ func NewClient(url, token string, timeout time.Duration) (Client, error) {
 		},
 	}
 
-	rt, rtErr := config.NewRoundTripperFromConfig(httpConfig, "benchmarks-metrics")
-
-	if rtErr != nil {
-		fmt.Print(rtErr)
-		return nil, fmt.Errorf("failed creating prometheus configuration: %w", rtErr)
+	rt, err := config.NewRoundTripperFromConfig(httpConfig, "benchmarks-metrics")
+	if err != nil {
+		return nil, fmt.Errorf("failed creating prometheus configuration: %w", err)
 	}
 
 	pc, err := api.NewClient(api.Config{
 		Address:      url,
 		RoundTripper: rt,
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("failed creating prometheus client: %w", err)
 	}
@@ -118,39 +114,37 @@ func (c *client) Measure(e *gmeasure.Experiment, f queryFunc, name, job string, 
 	return nil
 }
 
-func (c *client) ContainerUserCPU(job string, duration model.Duration) (float64, error) {
+func (c *client) ProcessCPUSeconds(job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(rate(container_cpu_user_seconds_total{pod=~".*%s.*"}[%s]) * 1000)`, // in m (i.e. 1000 = 1 vCore)
+		`sum(increase(process_cpu_seconds_total{pod=~".*%s.*"}[%s]))`,
 		job, duration,
 	)
 
 	return c.executeScalarQuery(query)
 }
 
-func (c *client) ContainerWorkingSetMEM(job string, duration model.Duration) (float64, error) {
+func (c *client) ContainerCPU(job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(avg_over_time(container_memory_working_set_bytes{pod=~".*%s.*"}[%s]) / %s)`,
-		job, duration, BytesToMegabytesMultiplier,
+		`sum(avg_over_time(pod:container_cpu_usage:sum{pod=~".*%s.*"}[%s]))`,
+		job, duration,
 	)
 
 	return c.executeScalarQuery(query)
 }
 
-// NOTE: Using ProcessResidentMEM is not recommended (information not representative for golang apps)
-// It is recommended to deploy cadvisor and use ContainerWorkingSetMEM
-func (c *client) ProcessResidentMEM(job string, duration model.Duration) (float64, error) {
+func (c *client) ContainerMemoryWorkingSetBytes(job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(avg_over_time(process_resident_memory_bytes{pod=~".*%s.*"}[%s]) / %s)`,
+		`sum(avg_over_time(container_memory_working_set_bytes{pod=~".*%s.*", container=""}[%s]) / %s)`,
 		job, duration, BytesToGigabytesMultiplier,
 	)
 
 	return c.executeScalarQuery(query)
 }
 
-func (c *client) ProcessCPU(job string, duration model.Duration) (float64, error) {
+func (c *client) requestRate(job, route, code string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(rate(process_cpu_seconds_total{pod=~".*%s.*"}[%s]) * 1000)`, // in m (i.e. 1000 = 1 vCore)
-		job, duration,
+		`sum(irate(loki_request_duration_seconds_count{job=~".*%s.*", route=~"%s", status_code=~"%s"}[%s]))`,
+		job, route, code, duration,
 	)
 
 	return c.executeScalarQuery(query)
@@ -158,7 +152,7 @@ func (c *client) ProcessCPU(job string, duration model.Duration) (float64, error
 
 func (c *client) requestDurationAvg(job, method, route, code string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`(sum(rate(loki_request_duration_seconds_sum{job=~".*%s.*", method="%s", route=~"%s", status_code=~"%s"}[%s])) / sum(rate(loki_request_duration_seconds_count{job=~".*%s.*", method="%s", route=~"%s", status_code=~"%s"}[%s])))`,
+		`(sum(irate(loki_request_duration_seconds_sum{job=~".*%s.*", method="%s", route=~"%s", status_code=~"%s"}[%s])) / sum(irate(loki_request_duration_seconds_count{job=~".*%s.*", method="%s", route=~"%s", status_code=~"%s"}[%s])))`,
 		job, method, route, code, duration,
 		job, method, route, code, duration,
 	)
@@ -168,17 +162,8 @@ func (c *client) requestDurationAvg(job, method, route, code string, duration mo
 
 func (c *client) requestDurationQuantile(job, method, route, code string, duration model.Duration, percentile int) (float64, error) {
 	query := fmt.Sprintf(
-		`histogram_quantile(0.%d, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job=~".*%s.*", method="%s", route=~"%s", status_code=~"%s"}[%s])))`,
+		`histogram_quantile(0.%d, sum by (job, le) (irate(loki_request_duration_seconds_bucket{job=~".*%s.*", method="%s", route=~"%s", status_code=~"%s"}[%s])))`,
 		percentile, job, method, route, code, duration,
-	)
-
-	return c.executeScalarQuery(query)
-}
-
-func (c *client) requestQPS(job, route, code string, duration model.Duration) (float64, error) {
-	query := fmt.Sprintf(
-		`sum(rate(loki_request_duration_seconds_count{job=~".*%s.*", route=~"%s", status_code=~"%s"}[%s]))`,
-		job, route, code, duration,
 	)
 
 	return c.executeScalarQuery(query)
@@ -186,7 +171,7 @@ func (c *client) requestQPS(job, route, code string, duration model.Duration) (f
 
 func (c *client) requestThroughput(job, endpoint, code, queryRange, metricType, latencyType, le string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`(sum by (namespace, job) (rate(loki_logql_querystats_bytes_processed_per_seconds_bucket{status_code=~"%s", endpoint=~"%s", range="%s", type=~"%s", job=~".*%s.*", latency_type="%s", le="%s"}[%s])) / sum by (namespace, job) (rate(loki_logql_querystats_bytes_processed_per_seconds_count{status_code=~"%s", endpoint=~"%s", range="%s", type=~"%s", job=~".*%s.*"}[%s])))`,
+		`(sum by (namespace, job) (irate(loki_logql_querystats_bytes_processed_per_seconds_bucket{status_code=~"%s", endpoint=~"%s", range="%s", type=~"%s", job=~".*%s.*", latency_type="%s", le="%s"}[%s])) / sum by (namespace, job) (irate(loki_logql_querystats_bytes_processed_per_seconds_count{status_code=~"%s", endpoint=~"%s", range="%s", type=~"%s", job=~".*%s.*"}[%s])))`,
 		code, endpoint, queryRange, metricType, job, latencyType, le, duration,
 		code, endpoint, queryRange, metricType, job, duration,
 	)
@@ -196,7 +181,7 @@ func (c *client) requestThroughput(job, endpoint, code, queryRange, metricType, 
 
 func (c *client) requestBoltDBShipperQPS(job, operation, code string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
-		`sum(rate(loki_request_duration_seconds_count{job=~".*%s.*", operation="%s", status_code=~"%s"}[%s]))`,
+		`sum(irate(loki_boltdb_shipper_request_duration_seconds_count{job=~".*%s.*", operation="%s", status_code=~"%s"}[%s]))`,
 		job, operation, code, duration,
 	)
 
