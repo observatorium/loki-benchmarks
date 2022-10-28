@@ -220,7 +220,7 @@ wait_for_ready_components() {
 run_benchmark_suite() {
     output_directory=$1
     
-    $GINKGO --json-report=report.json -output-dir=$output_directory ./benchmarks
+    $GINKGO --output-dir=$output_directory --json-report=report.json --junit-report=report.xml --timeout=4h ./benchmarks
 }
 
 enable_ocp_prometheus_monitoring() {

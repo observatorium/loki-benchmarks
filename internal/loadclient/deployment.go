@@ -31,10 +31,10 @@ func GeneratorConfig(scenarioCfg *config.Writers, cfg *config.Generator) Deploym
 
 	args := []string{
 		"generate",
+		fmt.Sprintf("--%s=%s", "url", cfg.PushURL),
+		fmt.Sprintf("--%s=%s", "tenant", cfg.Tenant),
+		"--destination=loki",
 	}
-
-	args = append(args, fmt.Sprintf("--%s=%s", "url", cfg.PushURL))
-	args = append(args, fmt.Sprintf("--%s=%s", "tenant", cfg.Tenant))
 
 	for k, v := range scenarioCfg.Args {
 		args = append(args, fmt.Sprintf("--%s=%s", k, v))
@@ -55,11 +55,11 @@ func QuerierConfig(scenarioCfg *config.Readers, cfg *config.Querier, url, query,
 
 	args := []string{
 		"query",
+		fmt.Sprintf("--%s=%s", "url", cfg.PullURL),
+		fmt.Sprintf("--%s=%s", "tenant", cfg.Tenant),
+		fmt.Sprintf("--%s=%s", "queries", query),
+		"--destination=loki",
 	}
-
-	args = append(args, fmt.Sprintf("--%s=%s", "url", url))
-	args = append(args, fmt.Sprintf("--%s=%s", "tenant", cfg.TenantID))
-	args = append(args, fmt.Sprintf("--%s=%s", "queries", query))
 
 	for k, v := range scenarioCfg.Args {
 		args = append(args, fmt.Sprintf("--%s=%s", k, v))
@@ -89,9 +89,10 @@ func CreateDeployment(c client.Client, cfg DeploymentConfig) error {
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:  cfg.Name,
-							Image: cfg.Image,
-							Args:  cfg.Args,
+							Name:            cfg.Name,
+							Image:           cfg.Image,
+							Args:            cfg.Args,
+							ImagePullPolicy: corev1.PullAlways,
 						},
 					},
 				},

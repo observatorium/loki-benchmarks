@@ -5,7 +5,6 @@ scenarios:
       replicas: 10
       args:
         source: application
-        destination: loki
         log-lines-rate: 500
     startThreshold: 1000000000
     samples:
@@ -19,7 +18,6 @@ scenarios:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
           args:
-            destination: loki
             query-range: "1s"
       - description: "Query range 1 minute"
         readers:
@@ -28,7 +26,6 @@ scenarios:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
           args:
-            destination: loki
             query-range: "1m"
       - description: "Query range 1 hour"
         readers:
@@ -37,7 +34,6 @@ scenarios:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
           args:
-            destination: loki
             query-range: "1h"
       - description: "Query range 1 day"
         readers:
@@ -46,7 +42,6 @@ scenarios:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
           args:
-            destination: loki
             query-range: "24h"
       - description: "Query range 1 week"
         readers:
@@ -55,7 +50,6 @@ scenarios:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
           args:
-            destination: loki
             query-range: "168h"
       - description: "Query range 2 weeks"
         readers:
@@ -64,7 +58,6 @@ scenarios:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
           args:
-            destination: loki
             query-range: "336h"
       - description: "Query range 1 month"
         readers:
@@ -73,7 +66,6 @@ scenarios:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
           args:
-            destination: loki
             query-range: "744h"
   highVolumeWrites:
     enabled: true
@@ -86,7 +78,6 @@ scenarios:
           replicas: 3
           args:
             source: synthetic
-            destination: loki
             loki-labels: host
             log-lines-rate: 1000
             synthetic-payload-size: 1000
@@ -95,7 +86,6 @@ scenarios:
           replicas: 6
           args:
             source: synthetic
-            destination: loki
             loki-labels: host
             log-lines-rate: 1000
             synthetic-payload-size: 1000
@@ -104,7 +94,6 @@ scenarios:
           replicas: 12
           args:
             source: synthetic
-            destination: loki
             loki-labels: host
             log-lines-rate: 1000
             synthetic-payload-size: 1000
@@ -113,7 +102,6 @@ scenarios:
           replicas: 24
           args:
             source: synthetic
-            destination: loki
             loki-labels: host
             log-lines-rate: 1000
             synthetic-payload-size: 1000
@@ -122,7 +110,6 @@ scenarios:
           replicas: 48
           args:
             source: synthetic
-            destination: loki
             loki-labels: host
             log-lines-rate: 1000
             synthetic-payload-size: 1000
@@ -131,25 +118,22 @@ scenarios:
           replicas: 96
           args:
             source: synthetic
-            destination: loki
             loki-labels: host
             log-lines-rate: 1000
             synthetic-payload-size: 1000
       - description: "Write 16 TB per day"
         writers:
+          replicas: 96
+          args:
+            source: synthetic
+            loki-labels: host
+            log-lines-rate: 1000
+            synthetic-payload-size: 2000
+      - description: "Write 32 TB per day"
+        writers:
           replicas: 192
           args:
             source: synthetic
-            destination: loki
             loki-labels: host
             log-lines-rate: 1000
-            synthetic-payload-size: 1000
-      - description: "Write 32 TB per day"
-        writers:
-          replicas: 384
-          args:
-            source: synthetic
-            destination: loki
-            loki-labels: host
-            log-lines-rate: 1000
-            synthetic-payload-size: 1000
+            synthetic-payload-size: 2000
