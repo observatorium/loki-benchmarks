@@ -63,6 +63,7 @@ type Client interface {
 	// Container API
 	// NOTE: Container API functions requires cadvisor to be deployed and functional
 	ContainerCPU(job string, duration model.Duration) (float64, error)
+	PersistentVolumeUsedBytes(job string, duration model.Duration) (float64, error)
 	ContainerMemoryWorkingSetBytes(job string, duration model.Duration) (float64, error)
 
 	// Process API
@@ -135,6 +136,15 @@ func (c *client) ContainerCPU(job string, duration model.Duration) (float64, err
 func (c *client) ContainerMemoryWorkingSetBytes(job string, duration model.Duration) (float64, error) {
 	query := fmt.Sprintf(
 		`sum(avg_over_time(container_memory_working_set_bytes{pod=~".*%s.*", container=""}[%s]) / %s)`,
+		job, duration, BytesToGigabytesMultiplier,
+	)
+
+	return c.executeScalarQuery(query)
+}
+
+func (c *client) PersistentVolumeUsedBytes(job string, duration model.Duration) (float64, error) {
+	query := fmt.Sprintf(
+		`sum(avg_over_time(kubelet_volume_stats_used_bytes{persistentvolumeclaim=~".*%s.*"}[%s]) / %s)`,
 		job, duration, BytesToGigabytesMultiplier,
 	)
 
