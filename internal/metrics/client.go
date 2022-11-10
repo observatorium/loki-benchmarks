@@ -24,7 +24,6 @@ const (
 type Client interface {
 	DistributorBytesReceivedTotal(duration model.Duration) (float64, error)
 	DistributorGiPDReceivedTotal(job string, duration model.Duration) (float64, error)
-	DistributorGiPDDiscardedTotal(job string, duration model.Duration) (float64, error)
 
 	// Load
 	LoadNetworkTotal(job string, duration model.Duration) (float64, error)

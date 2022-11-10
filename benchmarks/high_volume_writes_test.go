@@ -66,8 +66,6 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 					err = metricsClient.Measure(e, metricsClient.DistributorGiPDReceivedTotal, "Received Total (Gi/Day)", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.DistributorGiPDDiscardedTotal, "Discarded Total (Gi/Day)", job, samplingRange)
-					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 					err = metricsClient.Measure(e, metricsClient.RequestWritesQPS, "2xx push (Req/s)", job, samplingRange)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))

@@ -23,12 +23,3 @@ func (c *client) DistributorGiPDReceivedTotal(job string, duration model.Duratio
 
 	return c.executeScalarQuery(query)
 }
-
-func (c *client) DistributorGiPDDiscardedTotal(job string, duration model.Duration) (float64, error) {
-	query := fmt.Sprintf(
-		`sum(rate(loki_distributor_discarded_bytes_total{job=~".*%s.*"}[%s])) / %s * %d`,
-		job, duration, BytesToGigabytesMultiplier, SecondsPerDay,
-	)
-
-	return c.executeScalarQuery(query)
-}
