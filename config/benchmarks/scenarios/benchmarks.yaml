@@ -73,14 +73,6 @@ scenarios:
       total: 10
       interval: "1m"
     configurations:
-      - description: "Write 250 GB per day"
-        writers:
-          replicas: 3
-          args:
-            source: synthetic
-            loki-labels: host
-            log-lines-rate: 1000
-            synthetic-payload-size: 1000
       - description: "Write 500 GB per day"
         writers:
           replicas: 6
@@ -131,9 +123,9 @@ scenarios:
             synthetic-payload-size: 2000
       - description: "Write 32 TB per day"
         writers:
-          replicas: 192
+          replicas: 96
           args:
             source: synthetic
             loki-labels: host
-            log-lines-rate: 1000
+            log-lines-rate: 2000
             synthetic-payload-size: 2000
