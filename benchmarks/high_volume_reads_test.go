@@ -13,6 +13,7 @@ import (
 
 	"github.com/observatorium/loki-benchmarks/internal/loadclient"
 	"github.com/observatorium/loki-benchmarks/internal/querier"
+	"github.com/observatorium/loki-benchmarks/internal/metrics"
 	"github.com/observatorium/loki-benchmarks/internal/utils"
 )
 
@@ -79,65 +80,66 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 				e.Sample(func(idx int) {
 					// Query Frontend
 					job := benchCfg.Metrics.Jobs.QueryFrontend
+					annotation := metrics.QueryFrontendAnnotation
 
-					err := metricsClient.Measure(e, metricsClient.RequestReadsQPS, "2xx reads QPS", job, samplingRange)
+					err := metricsClient.Measure(e, metrics.RequestReadsQPS(job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestDurationOkQueryRangeP99, "2xx reads p99", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.RequestDurationOkQueryRangeAvg(job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestDurationOkQueryRangeP50, "2xx reads p50", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.RequestDurationOkQueryRangePercentile(99, job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestDurationOkQueryRangeAvg, "2xx reads avg", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.RequestDurationOkQueryRangePercentile(50, job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestQueryRangeThroughput, "2xx reads throughput", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.RequestQueryRangeThroughput(job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 					// Querier
 					job = benchCfg.Metrics.Jobs.Querier
+					annotation = metrics.QuerierAnnotation
 
-					err = metricsClient.Measure(e, metricsClient.ContainerCPU, "Container CPU Usage (Core)", job, samplingRange)
-					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.ProcessCPUSeconds, "Processes CPU Time (Seconds)", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.ContainerCPU(job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 					if benchCfg.Metrics.EnableCadvisorMetrics {
-						err = metricsClient.Measure(e, metricsClient.ContainerMemoryWorkingSetBytes, "Containers WorkingSet Memory (GB)", job, samplingRange)
+						err = metricsClient.Measure(e, metrics.ContainerMemoryWorkingSetBytes(job, samplingRange, annotation))
 						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 					}
 
-					err = metricsClient.Measure(e, metricsClient.RequestReadsQPS, "2xx reads QPS", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.RequestReadsQPS(job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestDurationOkQueryRangeP99, "2xx reads p99", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.RequestDurationOkQueryRangeAvg(job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestDurationOkQueryRangeP50, "2xx reads p50", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.RequestDurationOkQueryRangePercentile(99, job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestDurationOkQueryRangeAvg, "2xx reads avg", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.RequestDurationOkQueryRangePercentile(50, job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestQueryRangeThroughput, "2xx reads throughput", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.RequestQueryRangeThroughput(job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 					// Ingesters
 					job = benchCfg.Metrics.Jobs.Ingester
+					annotation = metrics.IngesterAnnotation
 
-					err = metricsClient.Measure(e, metricsClient.ContainerCPU, "Container CPU Usage (Core)", job, samplingRange)
-					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.ProcessCPUSeconds, "Processes CPU Time (Seconds)", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.ContainerCPU(job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 					if benchCfg.Metrics.EnableCadvisorMetrics {
-						err = metricsClient.Measure(e, metricsClient.ContainerMemoryWorkingSetBytes, "Containers WorkingSet Memory (GB)", job, samplingRange)
+						err = metricsClient.Measure(e, metrics.ContainerMemoryWorkingSetBytes(job, samplingRange, annotation))
 						Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 					}
 
-					err = metricsClient.Measure(e, metricsClient.RequestReadsGrpcQPS, "successful GRPC reads QPS", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.RequestReadsGrpcQPS(job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestDurationOkGrpcQuerySampleP99, "successful GRPC query p99", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.RequestDurationOkGrpcQuerySampleAvg(job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestDurationOkGrpcQuerySampleP50, "successful GRPC query p50", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.RequestDurationOkGrpcQuerySamplePercentile(99, job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metricsClient.RequestDurationOkGrpcQuerySampleAvg, "successful GRPC query avg", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.RequestDurationOkGrpcQuerySamplePercentile(50, job, samplingRange, annotation))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
-					err = metricsClient.Measure(e, metricsClient.RequestBoltDBShipperReadsQPS, "Boltdb shipper reads QPS", job, samplingRange)
+					err = metricsClient.Measure(e, metrics.RequestBoltDBShipperReadsQPS(job, samplingRange))
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+					err = metricsClient.Measure(e, metrics.RequestBoltDBShipperReadsAvg(job, samplingRange))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 				}, samplingCfg)
 			})

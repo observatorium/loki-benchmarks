@@ -22,7 +22,7 @@ import (
 var (
 	benchCfg      *config.Benchmark
 	k8sClient     client.Client
-	metricsClient metrics.Client
+	metricsClient *metrics.Client
 
 	defaultRetry   = 5 * time.Second
 	defaultRange   = 5 * time.Minute

@@ -1,37 +1,36 @@
 package metrics
 
-import "github.com/prometheus/common/model"
+import (
+	"github.com/onsi/gomega/gmeasure"
+	"github.com/prometheus/common/model"
+)
 
-func (c *client) RequestDurationOkGrpcQuerySampleAvg(job string, duration model.Duration) (float64, error) {
-	return c.requestDurationAvg(job, "gRPC", "/logproto.Querier/QuerySample", "success", duration)
+const (
+	GRPCPushRoute        = "/logproto.Pusher/Push"
+	GRPCQuerySampleRoute = "/logproto.Querier/QuerySample"
+)
+
+func RequestWritesGrpcQPS(job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {
+	return requestRate("successful GRPC push", job, GRPCPushRoute, "success", duration, annotation)
 }
 
-func (c *client) RequestDurationOkGrpcQuerySampleP50(job string, duration model.Duration) (float64, error) {
-	return c.requestDurationQuantile(job, "gRPC", "/logproto.Querier/QuerySample", "success", duration, 50)
+func RequestDurationOkGrpcPushAvg(job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {
+	return requestDurationAvg("successful GRPC push", job, "gRPC", GRPCPushRoute, "success", duration, annotation)
 }
 
-func (c *client) RequestDurationOkGrpcQuerySampleP99(job string, duration model.Duration) (float64, error) {
-	return c.requestDurationQuantile(job, "gRPC", "/logproto.Querier/QuerySample", "success", duration, 99)
+func RequestDurationOkGrpcPushPercentile(percentile int, job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {
+	return requestDurationQuantile("successful GRPC push", job, "gRPC", GRPCPushRoute, "success", percentile, duration, annotation)
 }
 
-func (c *client) RequestDurationOkGrpcPushAvg(job string, duration model.Duration) (float64, error) {
-	return c.requestDurationAvg(job, "gRPC", "/logproto.Pusher/Push", "success", duration)
-}
-
-func (c *client) RequestDurationOkGrpcPushP50(job string, duration model.Duration) (float64, error) {
-	return c.requestDurationQuantile(job, "gRPC", "/logproto.Pusher/Push", "success", duration, 50)
-}
-
-func (c *client) RequestDurationOkGrpcPushP99(job string, duration model.Duration) (float64, error) {
-	return c.requestDurationQuantile(job, "gRPC", "/logproto.Pusher/Push", "success", duration, 99)
-}
-
-func (c *client) RequestReadsGrpcQPS(job string, duration model.Duration) (float64, error) {
+func RequestReadsGrpcQPS(job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {
 	route := "/logproto.Querier/Query|/logproto.Querier/QuerySample|/logproto.Querier/Label|/logproto.Querier/Series|/logproto.Querier/GetChunkIDs"
-	return c.requestRate(job, route, "success", duration)
+	return requestRate("successful GRPC reads", job, route, "success", duration, annotation)
 }
 
-func (c *client) RequestWritesGrpcQPS(job string, duration model.Duration) (float64, error) {
-	route := "/logproto.Pusher/Push"
-	return c.requestRate(job, route, "success", duration)
+func RequestDurationOkGrpcQuerySampleAvg(job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {
+	return requestDurationAvg("successful GRPC reads", job, "gRPC", GRPCQuerySampleRoute, "success", duration, annotation)
+}
+
+func RequestDurationOkGrpcQuerySamplePercentile(percentile int, job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {
+	return requestDurationQuantile("successful GRPC reads", job, "gRPC", GRPCQuerySampleRoute, "success", percentile, duration, annotation)
 }
