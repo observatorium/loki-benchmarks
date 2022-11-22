@@ -13,12 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func CreateQueriers(
-	scenarioCfg *config.Readers,
-	cfg *config.Querier,
-	clientURL string,
-	queries map[string]string,
-) []client.Object {
+func CreateQueriers(scenarioCfg *config.Readers, cfg *config.Querier, queries map[string]string) []client.Object {
 	window := "1m"
 	if queryRange, ok := scenarioCfg.Args["query-duration"]; ok {
 		window = queryRange
@@ -28,7 +23,7 @@ func CreateQueriers(
 	for id, query := range queries {
 		dpls = append(dpls, NewLogCLIDeployment(
 			fmt.Sprintf("%s-querier", strings.ToLower(id)),
-			cfg.Namespace, cfg.Image, "", clientURL, cfg.TenantID, query, window,
+			cfg.Namespace, cfg.Image, "", cfg.PullURL, cfg.Tenant, query, window,
 			scenarioCfg.Replicas,
 		),
 		)

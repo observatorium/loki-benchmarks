@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/observatorium/loki-benchmarks/internal/loadclient"
+	"github.com/observatorium/loki-benchmarks/internal/metrics"
+	"github.com/observatorium/loki-benchmarks/internal/querier"
+	"github.com/observatorium/loki-benchmarks/internal/utils"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"github.com/prometheus/common/model"
-
-	"github.com/observatorium/loki-benchmarks/internal/loadclient"
-	"github.com/observatorium/loki-benchmarks/internal/querier"
-	"github.com/observatorium/loki-benchmarks/internal/metrics"
-	"github.com/observatorium/loki-benchmarks/internal/utils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("Scenario: High Volume Reads", func() {
@@ -33,24 +33,24 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 			Skip("High Volumes Reads Benchmark not enabled!")
 		}
 
-		generatorCfg := loadclient.GeneratorConfig(scenarioCfgs.Generator, benchCfg.Generator)
+		generatorDpl := loadclient.CreateGenerator(scenarioCfgs.Generator, benchCfg.Generator)
 
-		err := loadclient.CreateDeployment(k8sClient, generatorCfg)
+		err := k8sClient.Create(context.TODO(), generatorDpl, &client.CreateOptions{})
 		Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-		err = utils.WaitForReadyDeployment(k8sClient, generatorCfg.Name, generatorCfg.Namespace, generatorCfg.Replicas, defaultRetry, defaultTimeout)
+		err = utils.WaitForReadyDeployment(k8sClient, generatorDpl, defaultRetry, defaultTimeout)
 		Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
 		err = utils.WaitUntilReceivedBytes(metricsClient, scenarioCfgs.StartThreshold, defaultRange, defaultRetry, defaultTimeout)
 		Expect(err).Should(Succeed(), "Failed to wait until latch activated")
 
-		err = loadclient.DeleteDeployment(k8sClient, generatorCfg.Name, generatorCfg.Namespace)
+		err = k8sClient.Delete(context.TODO(), generatorDpl, &client.DeleteOptions{})
 		Expect(err).Should(Succeed(), "Failed to delete logger deployment")
 	})
 
 	for _, scenarioCfg := range scenarioCfgs.Configurations {
 		scenarioCfg := scenarioCfg
-		querierDpls := querier.CreateQueriers(scenarioCfg.Readers, querierCfg, benchCfg.Loki.QueryFrontend, scenarioCfg.Readers.Queries)
+		querierDpls := querier.CreateQueriers(scenarioCfg.Readers, benchCfg.Querier, scenarioCfg.Readers.Queries)
 
 		Describe(fmt.Sprintf("Configuration: %s", scenarioCfg.Description), func() {
 			BeforeEach(func() {
@@ -58,7 +58,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 					err := k8sClient.Create(context.TODO(), dpl, &client.CreateOptions{})
 					Expect(err).Should(Succeed(), "Failed to deploy querier")
 
-					err = utils.WaitForReadyDeployment(k8sClient, querierCfg.Namespace, dpl.GetName(), defaultRetry, defaultTimeout)
+					err = utils.WaitForReadyDeployment(k8sClient, dpl, defaultRetry, defaultTimeout)
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed to wait for ready querier deployment: %s", dpl.GetName()))
 				}
 

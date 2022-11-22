@@ -1,17 +1,19 @@
 package benchmarks_test
 
 import (
+	"context"
 	"fmt"
 	"time"
+
+	"github.com/observatorium/loki-benchmarks/internal/loadclient"
+	"github.com/observatorium/loki-benchmarks/internal/metrics"
+	"github.com/observatorium/loki-benchmarks/internal/utils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
 	"github.com/prometheus/common/model"
-
-	"github.com/observatorium/loki-benchmarks/internal/loadclient"
-	"github.com/observatorium/loki-benchmarks/internal/metrics"
-	"github.com/observatorium/loki-benchmarks/internal/utils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("Scenario: High Volume Writes", func() {
@@ -33,21 +35,21 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 
 	for _, scenarioCfg := range scenarioCfgs.Configurations {
 		scenarioCfg := scenarioCfg
-		generatorCfg := loadclient.GeneratorConfig(scenarioCfg.Writers, benchCfg.Generator)
+		generatorDpl := loadclient.CreateGenerator(scenarioCfg.Writers, benchCfg.Generator)
 
 		Describe(fmt.Sprintf("Configuration: %s", scenarioCfg.Description), func() {
 			BeforeEach(func() {
-				err := loadclient.CreateDeployment(k8sClient, generatorCfg)
+				err := k8sClient.Create(context.TODO(), generatorDpl, &client.CreateOptions{})
 				Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-				err = utils.WaitForReadyDeployment(k8sClient, generatorCfg.Name, generatorCfg.Namespace, generatorCfg.Replicas, defaultRetry, defaultTimeout)
+				err = utils.WaitForReadyDeployment(k8sClient, generatorDpl, defaultRetry, defaultTimeout)
 				Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
 				// Sleeping for the first interval so that the data is accurate for the new workload.
 				time.Sleep(scenarioCfgs.Samples.Interval)
 
 				DeferCleanup(func() {
-					err := loadclient.DeleteDeployment(k8sClient, generatorCfg.Name, generatorCfg.Namespace)
+					err := k8sClient.Delete(context.TODO(), generatorDpl, &client.DeleteOptions{})
 					Expect(err).Should(Succeed(), "Failed to delete logger deployment")
 				})
 			})
