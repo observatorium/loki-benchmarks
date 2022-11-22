@@ -7,7 +7,7 @@ logger:
 querier:
   name: querier
   namespace: observatorium-logs-test
-  image: quay.io/openshift-logging/cluster-logging-load-client:latest
+  image: docker.io/grafana/logcli:2.6.1-amd64
   tenantId: observatorium
 
 metrics:

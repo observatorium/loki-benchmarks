@@ -1,14 +1,17 @@
 package benchmarks_test
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/observatorium/loki-benchmarks/internal/loadclient"
+	"github.com/observatorium/loki-benchmarks/internal/querier"
 	"github.com/observatorium/loki-benchmarks/internal/utils"
 )
 
@@ -38,7 +41,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 		err := loadclient.CreateDeployment(k8sClient, generatorCfg)
 		Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-		err = utils.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, generatorCfg.Replicas, defaultRetry, defaultTimeout)
+		err = utils.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, defaultRetry, defaultTimeout)
 		Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
 		err = utils.WaitUntilReceivedBytes(metricsClient, scenarioCfgs.StartThreshold, defaultLatchRange, defaultRetry, defaultLatchTimeout)
@@ -50,25 +53,21 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
 	for _, scenarioCfg := range scenarioCfgs.Configurations {
 		scenarioCfg := scenarioCfg
-
-		var querierCfgs []loadclient.DeploymentConfig
-		for id, query := range scenarioCfg.Readers.Queries {
-			querierCfgs = append(querierCfgs, loadclient.QuerierConfig(scenarioCfg.Readers, querierCfg, benchCfg.Loki.QueryFrontend, query, id))
-		}
+		querierDpls := querier.CreateQueriers(scenarioCfg.Readers, querierCfg, benchCfg.Loki.QueryFrontend, scenarioCfg.Readers.Queries)
 
 		Describe(fmt.Sprintf("Configuration: %s", scenarioCfg.Description), func() {
 			BeforeEach(func() {
-				for _, cfg := range querierCfgs {
-					err := loadclient.CreateDeployment(k8sClient, cfg)
+				for _, dpl := range querierDpls {
+					err := k8sClient.Create(context.TODO(), dpl, &client.CreateOptions{})
 					Expect(err).Should(Succeed(), "Failed to deploy querier")
 
-					err = utils.WaitForReadyDeployment(k8sClient, cfg.Namespace, cfg.Name, cfg.Replicas, defaultRetry, defaultTimeout)
-					Expect(err).Should(Succeed(), fmt.Sprintf("Failed to wait for ready querier deployment: %s", cfg.Name))
+					err = utils.WaitForReadyDeployment(k8sClient, querierCfg.Namespace, dpl.GetName(), defaultRetry, defaultTimeout)
+					Expect(err).Should(Succeed(), fmt.Sprintf("Failed to wait for ready querier deployment: %s", dpl.GetName()))
 				}
 
 				DeferCleanup(func() {
-					for _, cfg := range querierCfgs {
-						err := loadclient.DeleteDeployment(k8sClient, cfg.Name, cfg.Namespace)
+					for _, dpl := range querierDpls {
+						err := k8sClient.Delete(context.TODO(), dpl, &client.DeleteOptions{})
 						Expect(err).Should(Succeed(), "Failed to delete querier deployment")
 					}
 				})
