@@ -1,6 +1,5 @@
 querier:
   namespace: openshift-logging
   serviceAccount: loki-benchmarks-querier-sa
-  image: docker.io/grafana/logcli:2.6.1-amd64
   tenant: application
   pullURL: https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application

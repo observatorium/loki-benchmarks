@@ -1,5 +1,4 @@
 querier:
   namespace: observatorium-logs-test
-  image: docker.io/grafana/logcli:2.6.1-amd64
   tenant: observatorium
   pullURL: http://observatorium-loki-query-frontend-http.observatorium-logs-test.svc.cluster.local:3100

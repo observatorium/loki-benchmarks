@@ -50,7 +50,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
 	for _, scenarioCfg := range scenarioCfgs.Configurations {
 		scenarioCfg := scenarioCfg
-		querierDpls := querier.CreateQueriers(scenarioCfg.Readers, benchCfg.Querier, scenarioCfg.Readers.Queries)
+		querierDpls := querier.CreateQueriers(scenarioCfg.Readers, benchCfg.Querier)
 
 		Describe(fmt.Sprintf("Configuration: %s", scenarioCfg.Description), func() {
 			BeforeEach(func() {

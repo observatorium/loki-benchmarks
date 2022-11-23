@@ -76,7 +76,7 @@ type Writers struct {
 }
 
 type Readers struct {
-	Replicas int32             `yaml:"replicas"`
-	Args     map[string]string `yaml:"args"`
-	Queries  map[string]string `yaml:"queries"`
+	Replicas   int32             `yaml:"replicas"`
+	Queries    map[string]string `yaml:"queries"`
+	QueryRange string            `yaml:"queryRange"`
 }

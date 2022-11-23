@@ -17,56 +17,49 @@ scenarios:
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
-          args:
-            query-range: "1s"
+          queryRange: "1s"
       - description: "Query range 1 minute"
         readers:
           replicas: 5
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
-          args:
-            query-range: "1m"
+          queryRange: "1m"
       - description: "Query range 1 hour"
         readers:
           replicas: 5
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
-          args:
-            query-range: "1h"
+          queryRange: "1h"
       - description: "Query range 1 day"
         readers:
           replicas: 5
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
-          args:
-            query-range: "24h"
+          queryRange: "24h"
       - description: "Query range 1 week"
         readers:
           replicas: 5
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
-          args:
-            query-range: "168h"
+          queryRange: "168h"
       - description: "Query range 2 weeks"
         readers:
           replicas: 5
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
-          args:
-            query-range: "336h"
+          queryRange: "336h"
       - description: "Query range 1 month"
         readers:
           replicas: 5
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
             sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
-          args:
-            query-range: "744h"
+          queryRange: "744h"
   highVolumeWrites:
     enabled: true
     samples:

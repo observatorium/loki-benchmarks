@@ -24,11 +24,11 @@ func CreateGenerator(scenarioCfg *config.Writers, cfg *config.Generator) client.
 		args = append(args, fmt.Sprintf("--%s=%s", k, v))
 	}
 
-	return NewLoadClientDeployment("generator", cfg.Namespace, cfg.Image, cfg.ServiceAccount, args, scenarioCfg.Replicas)
+	return NewLoadClientDeployment(cfg.Namespace, cfg.Image, cfg.ServiceAccount, args, scenarioCfg.Replicas)
 }
 
 func NewLoadClientDeployment(
-	name, namespace, image, serviceAccount string,
+	namespace, image, serviceAccount string,
 	args []string,
 	replicas int32,
 ) *appsv1.Deployment {
@@ -52,7 +52,7 @@ func NewLoadClientDeployment(
 
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      "generator",
 			Namespace: namespace,
 			Labels:    labels,
 		},

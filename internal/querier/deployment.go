@@ -13,18 +13,22 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func CreateQueriers(scenarioCfg *config.Readers, cfg *config.Querier, queries map[string]string) []client.Object {
-	window := "1m"
-	if queryRange, ok := scenarioCfg.Args["query-duration"]; ok {
-		window = queryRange
+const (
+	DefaultImage = "docker.io/grafana/logcli:2.6.1-amd64"
+)
+
+func CreateQueriers(reader *config.Readers, cfg *config.Querier) []client.Object {
+	image := DefaultImage
+	if cfg.Image != "" {
+		image = cfg.Image
 	}
 
 	var dpls []client.Object
-	for id, query := range queries {
+	for id, query := range reader.Queries {
 		dpls = append(dpls, NewLogCLIDeployment(
 			fmt.Sprintf("%s-querier", strings.ToLower(id)),
-			cfg.Namespace, cfg.Image, "", cfg.PullURL, cfg.Tenant, query, window,
-			scenarioCfg.Replicas,
+			cfg.Namespace, image, cfg.ServiceAccount, cfg.PullURL, cfg.Tenant, query, reader.QueryRange,
+			reader.Replicas,
 		),
 		)
 	}

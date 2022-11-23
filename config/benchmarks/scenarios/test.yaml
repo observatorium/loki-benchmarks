@@ -30,5 +30,4 @@ scenarios:
           replicas: 1
           queries:
             sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
-          args:
-            query-range: "1s"
+          queryRange: "1s"
