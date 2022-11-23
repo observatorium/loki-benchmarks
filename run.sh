@@ -31,7 +31,8 @@ observatorium() {
     KUBECTL=$(which kubectl) ./configuration/tests/e2e.sh deploy
     popd
     
-    wait_for_ready_components
+    wait_for_ready_loki_components
+    wait_for_ready_query_scheduler
     configure_prometheus
     run_benchmark_suite $output_directory
     
@@ -52,7 +53,8 @@ rhobs() {
     kubectl -n $BENCHMARK_NAMESPACE apply -f $rhobs_loki_deployment_file
     ./hack/scripts/deploy-example-secret.sh $BENCHMARK_NAMESPACE $storage_bucket
 
-    wait_for_ready_components
+    wait_for_ready_loki_components
+    wait_for_ready_query_scheduler
     configure_prometheus
     run_benchmark_suite $output_directory
 
@@ -61,7 +63,7 @@ rhobs() {
     rm $rhobs_loki_deployment_file
 
     destroy_benchmarking_environment
-    destory_s3_storage $storage_bucket
+    destroy_s3_storage $storage_bucket
 }
 
 # Deploy Loki with the Red Hat Loki Operator
@@ -97,7 +99,7 @@ operator() {
 
     kubectl -n $BENCHMARK_NAMESPACE apply -f hack/loadclient-rbac.yaml
 
-    wait_for_ready_components
+    wait_for_ready_loki_components
     configure_prometheus
     run_benchmark_suite $output_directory
 
@@ -109,7 +111,7 @@ operator() {
     fi
 
     destroy_benchmarking_environment
-    destory_s3_storage $storage_bucket
+    destroy_s3_storage $storage_bucket
 }
 
 create_benchmarking_environment() {
@@ -151,7 +153,7 @@ destroy_benchmarking_environment() {
     fi
 
     if $IS_OPENSHIFT; then
-        disable_ocp_prometheus_monitoring
+        disable_ocp_user_workload_monitoring
     fi
 
     if $IS_TESTING; then
@@ -170,7 +172,7 @@ create_s3_storage() {
     fi
 }
 
-destory_s3_storage() {
+destroy_s3_storage() {
     bucket_names=$1
 
     if $IS_OPENSHIFT; then
@@ -183,7 +185,7 @@ configure_prometheus() {
     echo -e "\nConfiguring Prometheus"
 
     if $IS_OPENSHIFT; then
-        enable_ocp_prometheus_monitoring
+        enable_ocp_user_workload_monitoring
         export_ocp_prometheus_settings
     else
         echo -e "\nForward ports to loki components"
@@ -197,24 +199,26 @@ configure_prometheus() {
     fi
 }
 
-wait_for_ready_components() {
+wait_for_ready_loki_components() {
     echo -e "\nWaiting for available querier deployment"
     kubectl -n "$BENCHMARK_NAMESPACE" rollout status "deploy/$LOKI_COMPONENT_PREFIX-querier" --timeout=600s
 
-    echo -e "\nWaiting for available loki query frontend deployment"
+    echo -e "\nWaiting for available query frontend deployment"
     kubectl -n "$BENCHMARK_NAMESPACE" rollout status "deploy/$LOKI_COMPONENT_PREFIX-query-frontend" --timeout=600s
 
-    echo -e "\nWaiting for available loki distributor deployment"
+    echo -e "\nWaiting for available distributor deployment"
     kubectl -n "$BENCHMARK_NAMESPACE" rollout status "deploy/$LOKI_COMPONENT_PREFIX-distributor" --timeout=600s
 
-    echo -e "\nWaiting for available loki ingester statefulset"
+    echo -e "\nWaiting for available ingester statefulset"
     kubectl -n "$BENCHMARK_NAMESPACE" rollout status "statefulsets/$LOKI_COMPONENT_PREFIX-ingester" --timeout=600s
 
-    echo -e "\nWaiting for available loki index gateway statefulset"
+    echo -e "\nWaiting for available index gateway statefulset"
     kubectl -n "$BENCHMARK_NAMESPACE" rollout status "statefulsets/$LOKI_COMPONENT_PREFIX-index-gateway" --timeout=600s
+}
 
-    echo -e "\nWaiting for available loki compactor statefulset"
-    kubectl -n "$BENCHMARK_NAMESPACE" rollout status "statefulsets/$LOKI_COMPONENT_PREFIX-compactor" --timeout=600s
+wait_for_ready_query_scheduler() {
+     echo -e "\nWaiting for available querier deployment"
+    kubectl -n "$BENCHMARK_NAMESPACE" rollout status "deploy/$LOKI_COMPONENT_PREFIX-query-scheduler" --timeout=600s
 }
 
 run_benchmark_suite() {
@@ -223,14 +227,14 @@ run_benchmark_suite() {
     $GINKGO --output-dir=$output_directory --json-report=report.json --junit-report=report.xml --timeout=4h ./benchmarks
 }
 
-enable_ocp_prometheus_monitoring() {
+enable_ocp_user_workload_monitoring() {
     echo -e "\nAdding user workload monitoring configuration"
 
     kubectl -n openshift-monitoring apply -f $ocp_prometheus_config_path/cluster-monitoring-config.yaml
 	kubectl -n openshift-user-workload-monitoring apply -f $ocp_prometheus_config_path/user-workload-monitoring-config.yaml
 }
 
-disable_ocp_prometheus_monitoring() {
+disable_ocp_user_workload_monitoring() {
     echo -e "\nRemoving user workload monitoring configuration"
 
     kubectl -n openshift-monitoring delete -f $ocp_prometheus_config_path/cluster-monitoring-config.yaml --ignore-not-found=true

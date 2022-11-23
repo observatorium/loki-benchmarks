@@ -31,7 +31,7 @@ jobs:
           command: |
             echo "Checkout observatorium/observatorium"
             cd ../ && git clone https://github.com/observatorium/observatorium.git
-            cd loki-benchmarks && make test-benchmarks
+            cd loki-benchmarks && make run-local-benchmarks
       - store_test_results:
           path: reports
       - store_artifacts:

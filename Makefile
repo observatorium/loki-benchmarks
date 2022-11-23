@@ -50,7 +50,7 @@ create-rhobs-loki-file: ## Create a yaml file with deployment details for Loki u
 
 ##@ Testing
 
-test-benchmarks: $(EMBEDMD) $(GINKGO) $(KIND) $(KUSTOMIZE) $(PROMETHEUS) ## Run benchmark on a Kind cluster
+run-local-benchmarks: $(EMBEDMD) $(GINKGO) $(KIND) $(KUSTOMIZE) $(PROMETHEUS) ## Run benchmark on a Kind cluster
 	@IS_TESTING=true \
 	SCENARIO_CONFIGURATION_FILE="test.yaml" \
 	./run.sh observatorium $(REPORT_DIR)
