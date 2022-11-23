@@ -5,6 +5,7 @@ import (
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/observatorium/loki-benchmarks/internal/metrics"
 	"github.com/prometheus/common/model"
@@ -13,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func WaitForReadyDeployment(c client.Client, ns, name string, replicas int32, retry, timeout time.Duration) error {
+func WaitForReadyDeployment(c client.Client, ns, name string, retry, timeout time.Duration) error {
 	return wait.Poll(retry, timeout, func() (done bool, err error) {
 		dpl := &appsv1.Deployment{}
 		key := client.ObjectKey{Name: name, Namespace: ns}
@@ -26,9 +27,12 @@ func WaitForReadyDeployment(c client.Client, ns, name string, replicas int32, re
 			return false, err
 		}
 
-		if dpl.Status.ReadyReplicas >= replicas {
-			return true, nil
+		for _, condition := range dpl.Status.Conditions {
+			if condition.Type == appsv1.DeploymentAvailable {
+				return condition.Status == corev1.ConditionTrue, nil
+			}
 		}
+
 		return false, nil
 	})
 }

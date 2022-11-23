@@ -41,7 +41,7 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 				err := loadclient.CreateDeployment(k8sClient, generatorCfg)
 				Expect(err).Should(Succeed(), "Failed to deploy logger")
 
-				err = utils.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, generatorCfg.Replicas, defaultRetry, defaultTimeout)
+				err = utils.WaitForReadyDeployment(k8sClient, loggerCfg.Namespace, loggerCfg.Name, defaultRetry, defaultTimeout)
 				Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
 				DeferCleanup(func() {

@@ -3,7 +3,6 @@ package loadclient
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/observatorium/loki-benchmarks/internal/config"
 
@@ -35,31 +34,6 @@ func GeneratorConfig(scenarioCfg *config.Writers, cfg *config.Logger, pushURL st
 
 	args = append(args, fmt.Sprintf("--%s=%s", "url", pushURL))
 	args = append(args, fmt.Sprintf("--%s=%s", "tenant", cfg.TenantID))
-
-	for k, v := range scenarioCfg.Args {
-		args = append(args, fmt.Sprintf("--%s=%s", k, v))
-	}
-
-	config.Args = args
-
-	return config
-}
-
-func QuerierConfig(scenarioCfg *config.Readers, cfg *config.Querier, url, query, id string) DeploymentConfig {
-	querierName := fmt.Sprintf("%s-%s", cfg.Name, strings.ToLower(id))
-
-	config := defaultConfig(querierName, cfg.Namespace, cfg.Image, scenarioCfg.Replicas)
-	config.Labels = map[string]string{
-		"app": "loki-benchmarks-querier",
-	}
-
-	args := []string{
-		"query",
-	}
-
-	args = append(args, fmt.Sprintf("--%s=%s", "url", url))
-	args = append(args, fmt.Sprintf("--%s=%s", "tenant", cfg.TenantID))
-	args = append(args, fmt.Sprintf("--%s=%s", "queries", query))
 
 	for k, v := range scenarioCfg.Args {
 		args = append(args, fmt.Sprintf("--%s=%s", k, v))
