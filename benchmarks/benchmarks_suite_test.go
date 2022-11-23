@@ -6,17 +6,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/observatorium/loki-benchmarks/internal/config"
+	"github.com/observatorium/loki-benchmarks/internal/metrics"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"gopkg.in/yaml.v2"
-
+	"gopkg.in/yaml.v3"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	k8sconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
-
-	"github.com/observatorium/loki-benchmarks/internal/config"
-	"github.com/observatorium/loki-benchmarks/internal/metrics"
 )
 
 var (

@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
-	"github.com/prometheus/common/model"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -20,12 +19,8 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 
 	scenarioCfgs := benchCfg.Scenarios.HighVolumeWrites
 
-	samplingRange := model.Duration(scenarioCfgs.Samples.Interval)
-	samplingCfg := gmeasure.SamplingConfig{
-		N:                   scenarioCfgs.Samples.Total,
-		Duration:            scenarioCfgs.Samples.Interval * time.Duration(scenarioCfgs.Samples.Total+1),
-		MinSamplingInterval: scenarioCfgs.Samples.Interval,
-	}
+	samplingCfg := scenarioCfgs.Samples.SamplingConfiguration()
+	samplingRange := scenarioCfgs.Samples.Interval
 
 	BeforeEach(func() {
 		if !scenarioCfgs.Enabled {

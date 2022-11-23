@@ -2,6 +2,8 @@ package config
 
 import (
 	"time"
+
+	"github.com/onsi/gomega/gmeasure"
 )
 
 type Benchmark struct {
@@ -62,6 +64,14 @@ type HighVolumeReads struct {
 type Samples struct {
 	Total    int           `yaml:"total"`
 	Interval time.Duration `yaml:"interval"`
+}
+
+func (s Samples) SamplingConfiguration() gmeasure.SamplingConfig {
+	return gmeasure.SamplingConfig{
+		N:                   s.Total,
+		Duration:            s.Interval * time.Duration(s.Total+1),
+		MinSamplingInterval: s.Interval,
+	}
 }
 
 type Configuration struct {

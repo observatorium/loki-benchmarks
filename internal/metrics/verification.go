@@ -2,9 +2,9 @@ package metrics
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/onsi/gomega/gmeasure"
-	"github.com/prometheus/common/model"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 // This measurments are only meant to verify the configuration of the
 // generator and are not actually important to the experiment.
 
-func (c *Client) DistributorBytesReceivedTotal(duration model.Duration) (float64, error) {
+func (c *Client) DistributorBytesReceivedTotal(duration time.Duration) (float64, error) {
 	// This method breaks the convention of the Measurment -> Measure structure because
 	// it is used out of the scope of an experiement.
 
@@ -30,7 +30,7 @@ func (c *Client) DistributorBytesReceivedTotal(duration model.Duration) (float64
 	return c.executeScalarQuery(query)
 }
 
-func DistributorGiPDReceivedTotal(job string, duration model.Duration) Measurement {
+func DistributorGiPDReceivedTotal(job string, duration time.Duration) Measurement {
 	return Measurement{
 		Name: "Total Bytes Received",
 		Query: fmt.Sprintf(
@@ -42,7 +42,7 @@ func DistributorGiPDReceivedTotal(job string, duration model.Duration) Measureme
 	}
 }
 
-func LoadNetworkTotal(job string, duration model.Duration) Measurement {
+func LoadNetworkTotal(job string, duration time.Duration) Measurement {
 	return Measurement{
 		Name: "Total Bytes Transmitted",
 		Query: fmt.Sprintf(
@@ -54,7 +54,7 @@ func LoadNetworkTotal(job string, duration model.Duration) Measurement {
 	}
 }
 
-func LoadNetworkGiPDTotal(job string, duration model.Duration) Measurement {
+func LoadNetworkGiPDTotal(job string, duration time.Duration) Measurement {
 	return Measurement{
 		Name: "Total Projected Bytes Transmitted",
 		Query: fmt.Sprintf(

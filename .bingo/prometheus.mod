@@ -12,4 +12,4 @@ exclude github.com/grpc-ecosystem/grpc-gateway v1.14.7
 
 exclude google.golang.org/api v0.30.0
 
-require github.com/prometheus/prometheus v0.39.1 // cmd/prometheus
+require github.com/prometheus/prometheus v0.40.2 // cmd/prometheus

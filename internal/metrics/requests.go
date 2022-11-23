@@ -2,14 +2,14 @@ package metrics
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/onsi/gomega/gmeasure"
-	"github.com/prometheus/common/model"
 )
 
 func requestRate(
 	name, job, route, code string,
-	duration model.Duration,
+	duration time.Duration,
 	annotation gmeasure.Annotation,
 ) Measurement {
 	return Measurement{
@@ -25,7 +25,7 @@ func requestRate(
 
 func requestDurationAvg(
 	name, job, method, route, code string,
-	duration model.Duration,
+	duration time.Duration,
 	annotation gmeasure.Annotation,
 ) Measurement {
 	numerator := fmt.Sprintf(
@@ -48,7 +48,7 @@ func requestDurationAvg(
 func requestDurationQuantile(
 	name, job, method, route, code string,
 	percentile int,
-	duration model.Duration,
+	duration time.Duration,
 	annotation gmeasure.Annotation,
 ) Measurement {
 	return Measurement{
@@ -64,7 +64,7 @@ func requestDurationQuantile(
 
 func requestThroughput(
 	name, job, endpoint, code, queryRange, metricType, latencyType, le string,
-	duration model.Duration,
+	duration time.Duration,
 	annotation gmeasure.Annotation,
 ) Measurement {
 	numerator := fmt.Sprintf(
@@ -84,7 +84,7 @@ func requestThroughput(
 	}
 }
 
-func requestBoltDBShipperQPS(name, job, operation, code string, duration model.Duration) Measurement {
+func requestBoltDBShipperQPS(name, job, operation, code string, duration time.Duration) Measurement {
 	return Measurement{
 		Name: fmt.Sprintf("%s request rate", name),
 		Query: fmt.Sprintf(
@@ -96,7 +96,7 @@ func requestBoltDBShipperQPS(name, job, operation, code string, duration model.D
 	}
 }
 
-func requestBoltDBShipperAvg(name, job, operation, code string, duration model.Duration) Measurement {
+func requestBoltDBShipperAvg(name, job, operation, code string, duration time.Duration) Measurement {
 	numerator := fmt.Sprintf(
 		`sum(irate(loki_boltdb_shipper_request_duration_seconds_sum{job=~".*%s.*", operation="%s", status_code=~"%s"}[%s]))`,
 		job, operation, code, duration,

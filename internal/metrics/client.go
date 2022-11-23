@@ -18,11 +18,14 @@ type Client struct {
 }
 
 func NewClient(url, token string, timeout time.Duration) (*Client, error) {
-	httpConfig := config.HTTPClientConfig{
-		BearerToken: config.Secret(token),
-		TLSConfig: config.TLSConfig{
+	httpConfig := config.HTTPClientConfig{}
+
+	if token != "" {
+		httpConfig.BearerToken = config.Secret(token)
+	} else {
+		httpConfig.TLSConfig = config.TLSConfig{
 			InsecureSkipVerify: true,
-		},
+		}
 	}
 
 	rt, err := config.NewRoundTripperFromConfig(httpConfig, "benchmarks-metrics")

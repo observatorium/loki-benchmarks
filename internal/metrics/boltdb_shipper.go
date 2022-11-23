@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"github.com/prometheus/common/model"
+	"time"
 )
 
 const (
@@ -12,18 +12,18 @@ const (
 	BoltDBWritesOperation = "WRITE"
 )
 
-func RequestBoltDBShipperReadsQPS(job string, duration model.Duration) Measurement {
+func RequestBoltDBShipperReadsQPS(job string, duration time.Duration) Measurement {
 	return requestBoltDBShipperQPS(BoltDBShipperReadsName, job, BoltDBReadsOperation, "2.*", duration)
 }
 
-func RequestBoltDBShipperReadsAvg(job string, duration model.Duration) Measurement {
+func RequestBoltDBShipperReadsAvg(job string, duration time.Duration) Measurement {
 	return requestBoltDBShipperAvg(BoltDBShipperReadsName, job, BoltDBReadsOperation, "2.*", duration)
 }
 
-func RequestBoltDBShipperWritesQPS(job string, duration model.Duration) Measurement {
+func RequestBoltDBShipperWritesQPS(job string, duration time.Duration) Measurement {
 	return requestBoltDBShipperQPS(BoltDBShipperWriteName, job, BoltDBWritesOperation, "2.*", duration)
 }
 
-func RequestBoltDBShipperWritesAvg(job string, duration model.Duration) Measurement {
+func RequestBoltDBShipperWritesAvg(job string, duration time.Duration) Measurement {
 	return requestBoltDBShipperAvg(BoltDBShipperWriteName, job, BoltDBWritesOperation, "2.*", duration)
 }
