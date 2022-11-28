@@ -1,6 +1,6 @@
 scenarios:
   highVolumeWrites:
-    enabled: true
+    enabled: false
     samples:
       total: 2
       interval: "1m"
@@ -14,7 +14,7 @@ scenarios:
             log-lines-rate: 1000
             synthetic-payload-size: 1000
   highVolumeReads:
-    enabled: true
+    enabled: false
     generator:
       replicas: 1
       args:

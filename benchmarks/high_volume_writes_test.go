@@ -59,9 +59,9 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 					annotation := metrics.DistributorAnnotation
 
 					// These are confirmation metrics to ensure that the workload matches expectations
-					err := metricsClient.Measure(e, metrics.LoadNetworkTotal(job, samplingRange))
+					err := metricsClient.Measure(e, metrics.LoadNetworkTotal("generator", samplingRange))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metrics.LoadNetworkGiPDTotal(job, samplingRange))
+					err = metricsClient.Measure(e, metrics.LoadNetworkGiPDTotal("generator", samplingRange))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 					err = metricsClient.Measure(e, metrics.DistributorGiPDReceivedTotal(job, samplingRange))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
