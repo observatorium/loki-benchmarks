@@ -2,12 +2,12 @@ package metrics
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/onsi/gomega/gmeasure"
+	"github.com/prometheus/common/model"
 )
 
-func ContainerCPU(job string, duration time.Duration, annotation gmeasure.Annotation) Measurement {
+func ContainerCPU(job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {
 	return Measurement{
 		Name: "Container CPU Usage",
 		Query: fmt.Sprintf(
@@ -19,7 +19,7 @@ func ContainerCPU(job string, duration time.Duration, annotation gmeasure.Annota
 	}
 }
 
-func ContainerMemoryWorkingSetBytes(job string, duration time.Duration, annotation gmeasure.Annotation) Measurement {
+func ContainerMemoryWorkingSetBytes(job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {
 	return Measurement{
 		Name: "Container WorkingSet Memory",
 		Query: fmt.Sprintf(
@@ -31,7 +31,7 @@ func ContainerMemoryWorkingSetBytes(job string, duration time.Duration, annotati
 	}
 }
 
-func PersistentVolumeUsedBytes(job string, duration time.Duration, annotation gmeasure.Annotation) Measurement {
+func PersistentVolumeUsedBytes(job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {
 	return Measurement{
 		Name: "Persistent Volume Used Bytes",
 		Query: fmt.Sprintf(

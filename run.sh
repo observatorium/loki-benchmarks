@@ -14,6 +14,9 @@ LOKI_COMPONENT_PREFIX="${LOKI_COMPONENT_PREFIX:-observatorium-xyz-loki}"
 SCENARIO_CONFIGURATION_FILE="${SCENARIO_CONFIGURATION_FILE:-benchmarks.yaml}"
 BENCHMARKING_CONFIGURATION_DIRECTORY="${BENCHMARKING_CONFIGURATION_DIRECTORY:-observatorium}"
 
+PROMETHEUS_CLIENT_PROTOCOL="http"
+PROMETHEUS_CLIENT_URL="${PROMETHEUS_CLIENT_URL:-127.0.0.1:9090}"
+
 benchmarking_configuration_path="config/benchmarks/$BENCHMARKING_CONFIGURATION_DIRECTORY"
 benchmarking_configuration_file="config/benchmarks/$BENCHMARKING_CONFIGURATION_DIRECTORY/benchmark.yaml"
 ocp_prometheus_config_path="config/openshift"
@@ -99,32 +102,23 @@ operator() {
 
     kubectl -n $BENCHMARK_NAMESPACE apply -f hack/loadclient-rbac.yaml
 
+    # There is a small - sometimes noticeable - time gap, between the Lokistack CR 
+    # being applied and the deployment and statefulsets being created.
+    sleep 10
+
     wait_for_ready_loki_components
     configure_prometheus
     run_benchmark_suite $output_directory
 
     # Clean Up
-    kubectl -n $BENCHMARK_NAMESPACE delete -f hack/loadclient-rbac.yaml
-
-    if $IS_OPENSHIFT; then
-        kubectl delete namespace openshift-operators-redhat --ignore-not-found=true
-    fi
-
     destroy_benchmarking_environment
     destroy_s3_storage $storage_bucket
 }
 
 create_benchmarking_environment() {
-    echo -e "\nCreating benchmarking file"
+    echo -e "\nCreating benchmarking environment"
 
     export BENCHMARKING_CONFIGURATION_DIRECTORY
-
-    cat $benchmarking_configuration_path/generator.yaml > $benchmarking_configuration_file
-    cat $benchmarking_configuration_path/querier.yaml >> $benchmarking_configuration_file
-    cat $benchmarking_configuration_path/metrics.yaml >> $benchmarking_configuration_file
-    cat config/benchmarks/scenarios/$SCENARIO_CONFIGURATION_FILE >> $benchmarking_configuration_file
-
-    echo -e "\nCreating benchmarking environment"
 
     if $IS_TESTING; then
         $KIND create cluster
@@ -140,10 +134,6 @@ create_benchmarking_environment() {
 }
 
 destroy_benchmarking_environment() {
-    echo -e "\nRemoving benchmarking file"
-
-    rm $benchmarking_configuration_file
-
     echo -e "\nDestroying benchmarking environment"
 
     if $USE_CADVISOR; then
@@ -159,6 +149,8 @@ destroy_benchmarking_environment() {
     if $IS_TESTING; then
         $KIND delete cluster
     else
+        kubectl -n $BENCHMARK_NAMESPACE delete -f hack/loadclient-rbac.yaml --ignore-not-found=true
+        kubectl delete namespace openshift-operators-redhat --ignore-not-found=true
         kubectl delete namespace $BENCHMARK_NAMESPACE --ignore-not-found=true
     fi
 }
@@ -185,7 +177,11 @@ configure_prometheus() {
     echo -e "\nConfiguring Prometheus"
 
     if $IS_OPENSHIFT; then
+        # There is a small time period between activating workload monitoring
+        # and the resulting changes being applied.
+
         enable_ocp_user_workload_monitoring
+        sleep 10
         export_ocp_prometheus_settings
     else
         echo -e "\nForward ports to loki components"
@@ -201,30 +197,59 @@ configure_prometheus() {
 
 wait_for_ready_loki_components() {
     echo -e "\nWaiting for available querier deployment"
-    kubectl -n "$BENCHMARK_NAMESPACE" rollout status "deploy/$LOKI_COMPONENT_PREFIX-querier" --timeout=600s
+    kubectl -n $BENCHMARK_NAMESPACE rollout status "deployments/$LOKI_COMPONENT_PREFIX-querier" --timeout=600s
 
     echo -e "\nWaiting for available query frontend deployment"
-    kubectl -n "$BENCHMARK_NAMESPACE" rollout status "deploy/$LOKI_COMPONENT_PREFIX-query-frontend" --timeout=600s
+    kubectl -n $BENCHMARK_NAMESPACE rollout status "deployments/$LOKI_COMPONENT_PREFIX-query-frontend" --timeout=600s
 
     echo -e "\nWaiting for available distributor deployment"
-    kubectl -n "$BENCHMARK_NAMESPACE" rollout status "deploy/$LOKI_COMPONENT_PREFIX-distributor" --timeout=600s
+    kubectl -n $BENCHMARK_NAMESPACE rollout status "deployments/$LOKI_COMPONENT_PREFIX-distributor" --timeout=600s
 
     echo -e "\nWaiting for available ingester statefulset"
-    kubectl -n "$BENCHMARK_NAMESPACE" rollout status "statefulsets/$LOKI_COMPONENT_PREFIX-ingester" --timeout=600s
+    kubectl -n $BENCHMARK_NAMESPACE rollout status "statefulsets/$LOKI_COMPONENT_PREFIX-ingester" --timeout=600s
 
     echo -e "\nWaiting for available index gateway statefulset"
-    kubectl -n "$BENCHMARK_NAMESPACE" rollout status "statefulsets/$LOKI_COMPONENT_PREFIX-index-gateway" --timeout=600s
+    kubectl -n $BENCHMARK_NAMESPACE rollout status "statefulsets/$LOKI_COMPONENT_PREFIX-index-gateway" --timeout=600s
 }
 
 wait_for_ready_query_scheduler() {
-     echo -e "\nWaiting for available querier deployment"
-    kubectl -n "$BENCHMARK_NAMESPACE" rollout status "deploy/$LOKI_COMPONENT_PREFIX-query-scheduler" --timeout=600s
+    echo -e "\nWaiting for available query scheduler deployment"
+    kubectl -n $BENCHMARK_NAMESPACE rollout status "deployments/$LOKI_COMPONENT_PREFIX-query-scheduler" --timeout=600s
 }
 
 run_benchmark_suite() {
     output_directory=$1
-    
+
+    create_benchmarking_file
+
+    echo -e "\nRunning benchmark suite"
     $GINKGO --output-dir=$output_directory --json-report=report.json --junit-report=report.xml --timeout=4h ./benchmarks
+
+    echo -e "\nMoving configuration file to report directory"
+    mv $benchmarking_configuration_file $output_directory
+}
+
+create_benchmarking_file() {
+    echo -e "\nCreating benchmarking file"
+
+    echo -e "\nCopying generator and querier configuration"
+    cat $benchmarking_configuration_path/generator.yaml > $benchmarking_configuration_file
+    cat $benchmarking_configuration_path/querier.yaml >> $benchmarking_configuration_file
+
+    echo -e "\nCreating metrics configuration"
+    cat <<-EOF >> $benchmarking_configuration_file
+metrics:
+  url: $PROMETHEUS_CLIENT_PROTOCOL://$PROMETHEUS_CLIENT_URL
+  enableCadvisorMetrics: $IS_OPENSHIFT
+  jobs:
+    distributor: $LOKI_COMPONENT_PREFIX-distributor
+    ingester: $LOKI_COMPONENT_PREFIX-ingester
+    querier: $LOKI_COMPONENT_PREFIX-querier
+    queryFrontend: $LOKI_COMPONENT_PREFIX-query-frontend
+EOF
+
+    echo -e "\nCopying scenario configuration"
+    cat config/benchmarks/scenarios/$SCENARIO_CONFIGURATION_FILE >> $benchmarking_configuration_file
 }
 
 enable_ocp_user_workload_monitoring() {
@@ -244,8 +269,10 @@ disable_ocp_user_workload_monitoring() {
 export_ocp_prometheus_settings() {
     echo -e "\nRetrieving Prometheus URL and bearer token"
 
+    PROMETHEUS_CLIENT_PROTOCOL="https"
+    PROMETHEUS_CLIENT_URL="$(kubectl -n openshift-monitoring get route thanos-querier -o json | python3 -c 'import json,sys;obj=json.load(sys.stdin);print(obj["spec"]["host"])')"
+
     secret=$(kubectl -n openshift-user-workload-monitoring get secret | grep prometheus-user-workload-token | head -n 1 | awk '{print $1 }')
-    export PROMETHEUS_URL="https://$(kubectl -n openshift-monitoring get route thanos-querier -o json | python3 -c 'import json,sys;obj=json.load(sys.stdin);print(obj["spec"]["host"])')"
     export PROMETHEUS_TOKEN=$(kubectl -n openshift-user-workload-monitoring get secret $secret -o json | python3 -c 'import json,sys;obj=json.load(sys.stdin);print(obj["data"]["token"])' | base64 -d)
 }
 
@@ -254,11 +281,11 @@ forward_ports() {
 
     cp config/prometheus/config.template config/prometheus/config.yaml
 
-    setup_ports "loki query frontend" app.kubernetes.io/component=query-frontend LOKI_QUERY_FRONTEND_TARGETS 3100 "$BENCHMARK_NAMESPACE"
-    setup_ports "loki distributor" app.kubernetes.io/component=distributor LOKI_DISTRIBUTOR_TARGETS 3100 "$BENCHMARK_NAMESPACE"
-    setup_ports "loki ingester" app.kubernetes.io/component=ingester LOKI_INGESTER_TARGETS 3100 "$BENCHMARK_NAMESPACE"
-    setup_ports "loki querier" app.kubernetes.io/component=querier LOKI_QUERIER_TARGETS 3100 "$BENCHMARK_NAMESPACE"
-    setup_ports "cadvisor ingesters" "" CADVISOR_INGESTERS_TARGETS 8080 "$BENCHMARK_NAMESPACE"
+    setup_ports "loki query frontend" app.kubernetes.io/component=query-frontend LOKI_QUERY_FRONTEND_TARGETS 3100 $BENCHMARK_NAMESPACE
+    setup_ports "loki distributor" app.kubernetes.io/component=distributor LOKI_DISTRIBUTOR_TARGETS 3100 $BENCHMARK_NAMESPACE
+    setup_ports "loki ingester" app.kubernetes.io/component=ingester LOKI_INGESTER_TARGETS 3100 $BENCHMARK_NAMESPACE
+    setup_ports "loki querier" app.kubernetes.io/component=querier LOKI_QUERIER_TARGETS 3100 $BENCHMARK_NAMESPACE
+    setup_ports "cadvisor ingesters" "" CADVISOR_INGESTERS_TARGETS 8080 $BENCHMARK_NAMESPACE
 }
 
 setup_ports() {

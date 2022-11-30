@@ -48,32 +48,21 @@ func init() {
 	}
 
 	// Create K8s Client
-	cfg, err := k8sconfig.GetConfig()
-	if err != nil {
-		panic("Failed to read kubeconfig")
-	}
-
+	cfg := k8sconfig.GetConfigOrDie()
 	mapper, err := apiutil.NewDynamicRESTMapper(cfg)
 	if err != nil {
 		panic("Failed to create new dynamic REST mapper")
 	}
 
 	opts := client.Options{Scheme: scheme.Scheme, Mapper: mapper}
-
 	k8sClient, err = client.New(cfg, opts)
 	if err != nil {
 		panic("Failed to create new k8s client")
 	}
 
 	// Create Metrics Client
-	promURL := os.Getenv("PROMETHEUS_URL")
-	if promURL == "" {
-		promURL = benchCfg.Metrics.URL
-	}
-
 	promToken := os.Getenv("PROMETHEUS_TOKEN")
-
-	metricsClient, err = metrics.NewClient(promURL, promToken, 30*time.Second)
+	metricsClient, err = metrics.NewClient(benchCfg.Metrics.URL, promToken, 30*time.Second)
 	if err != nil {
 		panic("Failed to create metrics client")
 	}

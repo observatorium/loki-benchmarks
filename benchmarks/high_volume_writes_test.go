@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
+	"github.com/prometheus/common/model"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -20,7 +21,7 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 	scenarioCfgs := benchCfg.Scenarios.HighVolumeWrites
 
 	samplingCfg := scenarioCfgs.Samples.SamplingConfiguration()
-	samplingRange := scenarioCfgs.Samples.Interval
+	samplingRange := model.Duration(scenarioCfgs.Samples.Interval)
 
 	BeforeEach(func() {
 		if !scenarioCfgs.Enabled {
@@ -59,9 +60,9 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 					annotation := metrics.DistributorAnnotation
 
 					// These are confirmation metrics to ensure that the workload matches expectations
-					err := metricsClient.Measure(e, metrics.LoadNetworkTotal("generator", samplingRange))
+					err := metricsClient.Measure(e, metrics.LoadNetworkTotal(loadclient.DeploymentName, samplingRange))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metrics.LoadNetworkGiPDTotal("generator", samplingRange))
+					err = metricsClient.Measure(e, metrics.LoadNetworkGiPDTotal(loadclient.DeploymentName, samplingRange))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 					err = metricsClient.Measure(e, metrics.DistributorGiPDReceivedTotal(job, samplingRange))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
@@ -100,8 +101,6 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 					err = metricsClient.Measure(e, metrics.RequestBoltDBShipperWritesQPS(job, samplingRange))
-					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metrics.RequestBoltDBShipperWritesAvg(job, samplingRange))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 				}, samplingCfg)
 			})

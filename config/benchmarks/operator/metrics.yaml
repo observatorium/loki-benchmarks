@@ -1,8 +1,0 @@
-metrics:
-  url: http://127.0.0.1:9090
-  enableCadvisorMetrics: true
-  jobs:
-    distributor: lokistack-dev-distributor
-    ingester: lokistack-dev-ingester
-    querier: lokistack-dev-querier
-    queryFrontend: lokistack-dev-query-frontend

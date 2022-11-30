@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
+	"github.com/prometheus/common/model"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -21,7 +22,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 	scenarioCfgs := benchCfg.Scenarios.HighVolumeReads
 
 	samplingCfg := scenarioCfgs.Samples.SamplingConfiguration()
-	samplingRange := scenarioCfgs.Samples.Interval
+	samplingRange := model.Duration(scenarioCfgs.Samples.Interval)
 
 	BeforeEach(func() {
 		if !scenarioCfgs.Enabled {
@@ -133,8 +134,6 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 					err = metricsClient.Measure(e, metrics.RequestBoltDBShipperReadsQPS(job, samplingRange))
-					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-					err = metricsClient.Measure(e, metrics.RequestBoltDBShipperReadsAvg(job, samplingRange))
 					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 				}, samplingCfg)
 			})

@@ -12,6 +12,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	DeploymentName = "generator"
+)
+
 func CreateGenerator(scenarioCfg *config.Writers, cfg *config.Generator) client.Object {
 	args := []string{
 		"generate",
@@ -52,7 +56,7 @@ func NewLoadClientDeployment(
 
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "generator",
+			Name:      DeploymentName,
 			Namespace: namespace,
 			Labels:    labels,
 		},

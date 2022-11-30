@@ -18,14 +18,20 @@ type Client struct {
 }
 
 func NewClient(url, token string, timeout time.Duration) (*Client, error) {
-	httpConfig := config.HTTPClientConfig{}
+	httpConfig := config.HTTPClientConfig{
+		TLSConfig: config.TLSConfig{
+			InsecureSkipVerify: true,
+		},
+	}
 
 	if token != "" {
-		httpConfig.BearerToken = config.Secret(token)
-	} else {
-		httpConfig.TLSConfig = config.TLSConfig{
-			InsecureSkipVerify: true,
+		httpConfig.Authorization = &config.Authorization{
+			Credentials: config.Secret(token),
 		}
+	}
+
+	if err := httpConfig.Validate(); err != nil {
+		return nil, fmt.Errorf("failed to validate httpConfig: %w", err)
 	}
 
 	rt, err := config.NewRoundTripperFromConfig(httpConfig, "benchmarks-metrics")

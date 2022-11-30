@@ -1,8 +1,0 @@
-metrics:
-  url: http://127.0.0.1:9090
-  enableCadvisorMetrics: false
-  jobs:
-    distributor: loki-distributor
-    ingester: loki-ingester
-    querier: loki-querier
-    queryFrontend: loki-query-frontend
