@@ -1,105 +1,50 @@
 package config
 
 import (
-	"fmt"
 	"time"
 
-	"github.com/prometheus/common/model"
+	"github.com/onsi/gomega/gmeasure"
 )
 
-type Logger struct {
-	Name      string `yaml:"name"`
-	Namespace string `yaml:"namespace"`
-	Image     string `yaml:"image"`
-	TenantID  string `yaml:"tenantId"`
+type Benchmark struct {
+	Generator *Generator `yaml:"generator"`
+	Querier   *Querier   `yaml:"querier"`
+	Metrics   *Metrics   `yaml:"metrics"`
+	Scenarios *Scenarios `yaml:"scenarios"`
+}
+
+type Generator struct {
+	Namespace      string `yaml:"namespace"`
+	ServiceAccount string `yaml:"serviceAccount,omitempty"`
+	Image          string `yaml:"image"`
+	Tenant         string `yaml:"tenant"`
+	PushURL        string `yaml:"pushURL"`
 }
 
 type Querier struct {
-	Name      string `yaml:"name"`
-	Namespace string `yaml:"namespace"`
-	Image     string `yaml:"image"`
-	TenantID  string `yaml:"tenantId"`
+	Namespace      string `yaml:"namespace"`
+	ServiceAccount string `yaml:"serviceAccount,omitempty"`
+	Image          string `yaml:"image"`
+	Tenant         string `yaml:"tenant"`
+	PullURL        string `yaml:"pullURL"`
 }
 
 type Metrics struct {
-	URL                   string            `yaml:"url"`
-	Jobs                  map[string]string `yaml:"jobs"`
-	CadvisorJobs          map[string]string `yaml:"cadvisorJobs"`
-	EnableCadvisorMetrics bool              `yaml:"enableCadvisorMetrics"`
+	URL                   string `yaml:"url"`
+	Jobs                  *Jobs  `yaml:"jobs"`
+	EnableCadvisorMetrics bool   `yaml:"enableCadvisorMetrics"`
 }
 
-func (m *Metrics) DistributorJob() string {
-	job, ok := m.Jobs["distributor"]
-	if !ok {
-		return ""
-	}
-	return job
-}
-
-func (m *Metrics) IngesterJob() string {
-	job, ok := m.Jobs["ingester"]
-	if !ok {
-		return ""
-	}
-	return job
-}
-
-func (m *Metrics) QuerierJob() string {
-	job, ok := m.Jobs["querier"]
-	if !ok {
-		return ""
-	}
-	return job
-}
-
-func (m *Metrics) QueryFrontendJob() string {
-	job, ok := m.Jobs["queryFrontend"]
-	if !ok {
-		return ""
-	}
-	return job
-}
-
-func (m *Metrics) CadvisorIngesterJob() string {
-	job, ok := m.CadvisorJobs["ingester"]
-	if !ok {
-		return ""
-	}
-	return job
-}
-
-func (m *Metrics) CadvisorQuerierJob() string {
-	job, ok := m.CadvisorJobs["querier"]
-	if !ok {
-		return ""
-	}
-	return job
-}
-
-type Loki struct {
+type Jobs struct {
 	Distributor   string `yaml:"distributor"`
+	Ingester      string `yaml:"ingester"`
+	Querier       string `yaml:"querier"`
 	QueryFrontend string `yaml:"queryFrontend"`
 }
 
-func (lc *Loki) PushURL() string {
-	return fmt.Sprintf("%s/loki/api/v1/push", lc.Distributor)
-}
-
-type Writers struct {
-	Replicas int32             `yaml:"replicas"`
-	Args     map[string]string `yaml:"args"`
-}
-
-type Readers struct {
-	Replicas int32             `yaml:"replicas"`
-	Args     map[string]string `yaml:"args"`
-	Queries  map[string]string `yaml:"queries"`
-}
-
-type Samples struct {
-	Interval time.Duration  `yaml:"interval"`
-	Range    model.Duration `yaml:"range"`
-	Total    int            `yaml:"total"`
+type Scenarios struct {
+	HighVolumeWrites HighVolumeWrites `yaml:"highVolumeWrites"`
+	HighVolumeReads  HighVolumeReads  `yaml:"highVolumeReads"`
 }
 
 type HighVolumeWrites struct {
@@ -116,21 +61,32 @@ type HighVolumeReads struct {
 	Configurations []Configuration `yaml:"configurations"`
 }
 
+type Samples struct {
+	Total    int           `yaml:"total"`
+	Interval time.Duration `yaml:"interval"`
+}
+
+func (s Samples) SamplingConfiguration() gmeasure.SamplingConfig {
+	return gmeasure.SamplingConfig{
+		N:                   s.Total,
+		Duration:            s.Interval * time.Duration(s.Total+1),
+		MinSamplingInterval: s.Interval,
+	}
+}
+
 type Configuration struct {
 	Description string   `yaml:"description"`
 	Readers     *Readers `yaml:"readers,omitempty"`
 	Writers     *Writers `yaml:"writers,omitempty"`
 }
 
-type Scenarios struct {
-	HighVolumeWrites HighVolumeWrites `yaml:"highVolumeWrites"`
-	HighVolumeReads  HighVolumeReads  `yaml:"highVolumeReads"`
+type Writers struct {
+	Replicas int32             `yaml:"replicas"`
+	Args     map[string]string `yaml:"args"`
 }
 
-type Benchmark struct {
-	Logger    *Logger    `yaml:"logger"`
-	Querier   *Querier   `yaml:"querier"`
-	Metrics   *Metrics   `yaml:"metrics"`
-	Loki      *Loki      `yaml:"loki"`
-	Scenarios *Scenarios `yaml:"scenarios"`
+type Readers struct {
+	Replicas   int32             `yaml:"replicas"`
+	Queries    map[string]string `yaml:"queries"`
+	QueryRange string            `yaml:"queryRange"`
 }

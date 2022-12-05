@@ -1,0 +1,5 @@
+querier:
+  namespace: openshift-logging
+  serviceAccount: loki-benchmarks-querier-sa
+  tenant: application
+  pullURL: https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application

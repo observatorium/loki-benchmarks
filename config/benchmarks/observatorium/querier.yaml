@@ -1,0 +1,4 @@
+querier:
+  namespace: default
+  tenant: observatorium
+  pullURL: http://observatorium-xyz-loki-query-frontend-http.observatorium.svc.cluster.local:3100

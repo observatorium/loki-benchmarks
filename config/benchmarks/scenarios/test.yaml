@@ -1,0 +1,33 @@
+scenarios:
+  highVolumeWrites:
+    enabled: false
+    samples:
+      total: 2
+      interval: "1m"
+    configurations:
+      - description: "Write 250 GB per day"
+        writers:
+          replicas: 3
+          args:
+            source: synthetic
+            loki-labels: host
+            log-lines-rate: 1000
+            synthetic-payload-size: 1000
+  highVolumeReads:
+    enabled: false
+    generator:
+      replicas: 1
+      args:
+        source: application
+        log-lines-rate: 200
+    startThreshold: 50000
+    samples:
+      total: 2
+      interval: "1m"
+    configurations:
+      - description: "Query range 1 second"
+        readers:
+          replicas: 1
+          queries:
+            sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
+          queryRange: "1s"

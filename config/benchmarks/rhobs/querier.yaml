@@ -1,0 +1,4 @@
+querier:
+  namespace: observatorium-logs-test
+  tenant: observatorium
+  pullURL: http://observatorium-loki-query-frontend-http.observatorium-logs-test.svc.cluster.local:3100

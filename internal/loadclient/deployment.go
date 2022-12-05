@@ -1,7 +1,6 @@
 package loadclient
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/observatorium/loki-benchmarks/internal/config"
@@ -13,85 +12,65 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type DeploymentConfig struct {
-	Name      string
-	Namespace string
-	Labels    map[string]string
-	Args      []string
-	Image     string
-	Replicas  int32
-}
+const (
+	DeploymentName = "generator"
+)
 
-func GeneratorConfig(scenarioCfg *config.Writers, cfg *config.Logger, pushURL string) DeploymentConfig {
-	config := defaultConfig(cfg.Name, cfg.Namespace, cfg.Image, scenarioCfg.Replicas)
-	config.Labels = map[string]string{
-		"app": "loki-benchmarks-logger",
-	}
-
+func CreateGenerator(scenarioCfg *config.Writers, cfg *config.Generator) client.Object {
 	args := []string{
 		"generate",
+		fmt.Sprintf("--%s=%s", "url", cfg.PushURL),
+		fmt.Sprintf("--%s=%s", "tenant", cfg.Tenant),
+		"--destination=loki",
 	}
-
-	args = append(args, fmt.Sprintf("--%s=%s", "url", pushURL))
-	args = append(args, fmt.Sprintf("--%s=%s", "tenant", cfg.TenantID))
 
 	for k, v := range scenarioCfg.Args {
 		args = append(args, fmt.Sprintf("--%s=%s", k, v))
 	}
 
-	config.Args = args
-
-	return config
+	return NewLoadClientDeployment(cfg.Namespace, cfg.Image, cfg.ServiceAccount, args, scenarioCfg.Replicas)
 }
 
-func CreateDeployment(c client.Client, cfg DeploymentConfig) error {
-	dpl := &appsv1.Deployment{
+func NewLoadClientDeployment(
+	namespace, image, serviceAccount string,
+	args []string,
+	replicas int32,
+) *appsv1.Deployment {
+	spec := corev1.PodSpec{
+		Containers: []corev1.Container{
+			{
+				Name:  "loadclient",
+				Image: image,
+				Args:  args,
+			},
+		},
+	}
+
+	if serviceAccount != "" {
+		spec.ServiceAccountName = serviceAccount
+	}
+
+	labels := map[string]string{
+		"app": "loki-benchmarks-generator",
+	}
+
+	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cfg.Name,
-			Namespace: cfg.Namespace,
-			Labels:    cfg.Labels,
+			Name:      DeploymentName,
+			Namespace: namespace,
+			Labels:    labels,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: pointer.Int32Ptr(cfg.Replicas),
+			Replicas: pointer.Int32Ptr(replicas),
 			Selector: &metav1.LabelSelector{
-				MatchLabels: cfg.Labels,
+				MatchLabels: labels,
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: cfg.Labels,
+					Labels: labels,
 				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:  cfg.Name,
-							Image: cfg.Image,
-							Args:  cfg.Args,
-						},
-					},
-				},
+				Spec: spec,
 			},
 		},
-	}
-
-	return c.Create(context.TODO(), dpl, &client.CreateOptions{})
-}
-
-func DeleteDeployment(c client.Client, name, namespace string) error {
-	dpl := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-	}
-
-	return c.Delete(context.TODO(), dpl, &client.DeleteOptions{})
-}
-
-func defaultConfig(name, namespace, image string, replicas int32) DeploymentConfig {
-	return DeploymentConfig{
-		Name:      name,
-		Namespace: namespace,
-		Image:     image,
-		Replicas:  replicas,
 	}
 }

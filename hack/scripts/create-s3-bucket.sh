@@ -25,7 +25,7 @@ block_public_access_to_bucket() {
     aws s3api put-public-access-block \
         --bucket "$BUCKET_NAME" \
         --region "$REGION" \
-        --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true" || true
+        --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
 }
 
 main() {

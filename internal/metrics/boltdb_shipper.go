@@ -1,11 +1,21 @@
 package metrics
 
-import "github.com/prometheus/common/model"
+import (
+	"github.com/prometheus/common/model"
+)
 
-func (c *client) RequestBoltDBShipperReadsQPS(job string, duration model.Duration) (float64, error) {
-	return c.requestBoltDBShipperQPS(job, "QUERY", "success", duration)
+const (
+	BoltDBShipperReadsName = "BoltDB Shipper successful reads"
+	BoltDBShipperWriteName = "BoltDB Shipper successful writes"
+
+	BoltDBReadsOperation  = "Shipper.Query"
+	BoltDBWritesOperation = "WRITE"
+)
+
+func RequestBoltDBShipperReadsQPS(job string, duration model.Duration) Measurement {
+	return requestBoltDBShipperQPS(BoltDBShipperReadsName, job, BoltDBReadsOperation, "2.*", duration)
 }
 
-func (c *client) RequestBoltDBShipperWritesQPS(job string, duration model.Duration) (float64, error) {
-	return c.requestBoltDBShipperQPS(job, "WRITE", "success", duration)
+func RequestBoltDBShipperWritesQPS(job string, duration model.Duration) Measurement {
+	return requestBoltDBShipperQPS(BoltDBShipperWriteName, job, BoltDBWritesOperation, "2.*", duration)
 }

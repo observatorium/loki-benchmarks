@@ -1,0 +1,6 @@
+generator:
+  namespace: openshift-logging
+  serviceAccount: loki-benchmarks-generator-sa
+  image: quay.io/openshift-logging/cluster-logging-load-client:latest
+  tenant: application
+  pushURL: https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application/loki/api/v1/push
