@@ -43,22 +43,24 @@ type Jobs struct {
 }
 
 type Scenarios struct {
-	HighVolumeWrites HighVolumeWrites `yaml:"highVolumeWrites"`
-	HighVolumeReads  HighVolumeReads  `yaml:"highVolumeReads"`
+	HighVolumeWrites *HighVolumeWrites `yaml:"highVolumeWrites,omitempty"`
+	HighVolumeReads  *HighVolumeReads  `yaml:"highVolumeReads,omitempty"`
 }
 
 type HighVolumeWrites struct {
-	Enabled        bool            `yaml:"enabled"`
-	Samples        Samples         `yaml:"samples"`
-	Configurations []Configuration `yaml:"configurations"`
+	Enabled     bool    `yaml:"enabled"`
+	Description string  `yaml:"description"`
+	Samples     Samples `yaml:"samples"`
+	Writers     Writers `yaml:"writers"`
 }
 
 type HighVolumeReads struct {
-	Enabled        bool            `yaml:"enabled"`
-	Generator      *Writers        `yaml:"generator"`
-	StartThreshold float64         `yaml:"startThreshold"`
-	Samples        Samples         `yaml:"samples"`
-	Configurations []Configuration `yaml:"configurations"`
+	Enabled        bool    `yaml:"enabled"`
+	Description    string  `yaml:"description"`
+	Samples        Samples `yaml:"samples"`
+	StartThreshold float64 `yaml:"startThreshold"`
+	Generator      Writers `yaml:"generator"`
+	Readers        Readers `yaml:"readers"`
 }
 
 type Samples struct {
@@ -72,12 +74,6 @@ func (s Samples) SamplingConfiguration() gmeasure.SamplingConfig {
 		Duration:            s.Interval * time.Duration(s.Total+1),
 		MinSamplingInterval: s.Interval,
 	}
-}
-
-type Configuration struct {
-	Description string   `yaml:"description"`
-	Readers     *Readers `yaml:"readers,omitempty"`
-	Writers     *Writers `yaml:"writers,omitempty"`
 }
 
 type Writers struct {

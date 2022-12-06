@@ -17,7 +17,7 @@ const (
 	DefaultImage = "docker.io/grafana/logcli:2.6.1-amd64"
 )
 
-func CreateQueriers(reader *config.Readers, cfg *config.Querier) []client.Object {
+func CreateQueriers(reader config.Readers, cfg *config.Querier) []client.Object {
 	image := DefaultImage
 	if cfg.Image != "" {
 		image = cfg.Image
