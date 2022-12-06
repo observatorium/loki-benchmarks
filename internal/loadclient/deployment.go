@@ -16,7 +16,7 @@ const (
 	DeploymentName = "generator"
 )
 
-func CreateGenerator(scenarioCfg config.Writer, cfg *config.Generator) client.Object {
+func CreateGenerator(scenarioCfg *config.Writer, cfg *config.Generator) client.Object {
 	args := []string{
 		"generate",
 		fmt.Sprintf("--%s=%s", "url", cfg.PushURL),

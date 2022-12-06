@@ -48,19 +48,46 @@ type Scenarios struct {
 	HighVolumeReads  *HighVolumeReads  `yaml:"highVolumeReads,omitempty"`
 }
 
+func (s *Scenarios) IsWriteTestRunnable() bool {
+	if s == nil {
+		return false
+	}
+
+	if s.HighVolumeWrites == nil {
+		return false
+	}
+
+	return s.HighVolumeWrites.Enabled
+}
+
+func (s *Scenarios) IsReadTestRunnable() bool {
+	if s == nil {
+		return false
+	}
+
+	if s.HighVolumeReads == nil {
+		return false
+	}
+
+	return s.HighVolumeReads.Enabled
+}
+
 type HighVolumeWrites struct {
 	Enabled     bool    `yaml:"enabled"`
 	Description string  `yaml:"description"`
-	Writers     Writer  `yaml:"writers"`
+	Writers     *Writer `yaml:"writers"`
 	samples     *Sample `yaml:"samples,omitempty"`
 }
 
 func (w *HighVolumeWrites) SamplingConfiguration() (gmeasure.SamplingConfig, model.Duration) {
-	samples := w.samples
-	if samples == nil {
-		samples = &Sample{
-			Total:    10,
-			Interval: time.Minute * 3,
+	samples := &Sample{
+		Total:    10,
+		Interval: time.Minute,
+	}
+
+	if w != nil {
+		if w.samples != nil {
+			samples = w.samples
 		}
 	}
 
@@ -75,17 +102,20 @@ type HighVolumeReads struct {
 	Enabled        bool    `yaml:"enabled"`
 	Description    string  `yaml:"description"`
 	StartThreshold float64 `yaml:"startThreshold"`
-	Readers        Reader  `yaml:"readers"`
+	Readers        *Reader `yaml:"readers"`
 	samples        *Sample `yaml:"samples,omitempty"`
 	generator      *Writer `yaml:"generator,omitempty"`
 }
 
 func (r *HighVolumeReads) SamplingConfiguration() (gmeasure.SamplingConfig, model.Duration) {
-	samples := r.samples
-	if samples == nil {
-		samples = &Sample{
-			Total:    10,
-			Interval: time.Minute,
+	samples := &Sample{
+		Total:    10,
+		Interval: time.Minute,
+	}
+
+	if r != nil {
+		if r.samples != nil {
+			samples = r.samples
 		}
 	}
 
@@ -96,17 +126,22 @@ func (r *HighVolumeReads) SamplingConfiguration() (gmeasure.SamplingConfig, mode
 	}, model.Duration(samples.Interval)
 }
 
-func (r *HighVolumeReads) LogGenerator() Writer {
-	if r.generator == nil {
-		return Writer{
-			Replicas: 10,
-			Args: map[string]string{
-				"source":         "application",
-				"log-lines-rate": "500",
-			},
+func (r *HighVolumeReads) LogGenerator() *Writer {
+	writer := &Writer{
+		Replicas: 10,
+		Args: map[string]string{
+			"source":         "application",
+			"log-lines-rate": "500",
+		},
+	}
+
+	if r != nil {
+		if r.samples != nil {
+			writer = r.generator
 		}
 	}
-	return *r.generator
+
+	return writer
 }
 
 type Sample struct {

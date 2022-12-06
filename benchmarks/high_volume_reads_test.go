@@ -14,30 +14,28 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
+	"github.com/prometheus/common/model"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("Scenario: High Volume Reads", func() {
+var _ = Describe("High Volume Reads", func() {
 	var highVolumeReadsTest *config.HighVolumeReads
+	var generatorDpl client.Object
 	var querierDpls []client.Object
+	var samplingCfg gmeasure.SamplingConfig
+	var samplingRange model.Duration
 
 	BeforeEach(func() {
-		highVolumeReadsTest = benchCfg.Scenarios.HighVolumeReads
-
-		if highVolumeReadsTest == nil {
-			Skip("No High Volume Read Benchmarks defined")
-		}
-
-		if !highVolumeReadsTest.Enabled {
+		if !benchCfg.Scenarios.IsReadTestRunnable() {
 			Skip("High Volumes Reads Benchmark not enabled")
 		}
-
-		querierDpls = querier.CreateQueriers(highVolumeReadsTest.Readers, benchCfg.Querier)
+		highVolumeReadsTest = benchCfg.Scenarios.HighVolumeReads
 	})
 
-	Describe(fmt.Sprintf("Configuration: %s", highVolumeReadsTest.Description), func() {
+	Describe("Querying logs from Loki service", func() {
 		BeforeEach(func() {
-			generatorDpl := loadclient.CreateGenerator(highVolumeReadsTest.LogGenerator(), benchCfg.Generator)
+			generatorDpl = loadclient.CreateGenerator(highVolumeReadsTest.LogGenerator(), benchCfg.Generator)
+			querierDpls = querier.CreateQueriers(highVolumeReadsTest.Readers, benchCfg.Querier)
 
 			err := k8sClient.Create(context.TODO(), generatorDpl, &client.CreateOptions{})
 			Expect(err).Should(Succeed(), "Failed to deploy logger")
@@ -68,7 +66,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 		})
 
 		It("should measure metrics", func() {
-			samplingCfg, samplingRange := highVolumeReadsTest.SamplingConfiguration()
+			samplingCfg, samplingRange = highVolumeReadsTest.SamplingConfiguration()
 
 			// Sleeping for the first interval so that the data is accurate for the new workload.
 			time.Sleep(samplingCfg.MinSamplingInterval)

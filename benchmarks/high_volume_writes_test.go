@@ -13,29 +13,27 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
+	"github.com/prometheus/common/model"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("Scenario: High Volume Writes", func() {
+var _ = Describe("High Volume Writes", func() {
 	var highVolumeWriteTest *config.HighVolumeWrites
 	var generatorDpl client.Object
+	var samplingCfg gmeasure.SamplingConfig
+	var samplingRange model.Duration
 
 	BeforeEach(func() {
-		highVolumeWriteTest = benchCfg.Scenarios.HighVolumeWrites
-
-		if highVolumeWriteTest == nil {
-			Skip("No High Volume Writes Benchmarks defined")
-		}
-
-		if !highVolumeWriteTest.Enabled {
+		if !benchCfg.Scenarios.IsWriteTestRunnable() {
 			Skip("High Volumes Writes Benchmark not enabled")
 		}
-
-		generatorDpl = loadclient.CreateGenerator(highVolumeWriteTest.Writers, benchCfg.Generator)
+		highVolumeWriteTest = benchCfg.Scenarios.HighVolumeWrites
 	})
 
-	Describe(fmt.Sprintf("Configuration: %s", highVolumeWriteTest.Description), func() {
+	Describe("Forwarding logs to Loki service", func() {
 		BeforeEach(func() {
+			generatorDpl = loadclient.CreateGenerator(highVolumeWriteTest.Writers, benchCfg.Generator)
+
 			err := k8sClient.Create(context.TODO(), generatorDpl, &client.CreateOptions{})
 			Expect(err).Should(Succeed(), "Failed to deploy logger")
 
@@ -48,8 +46,8 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 			})
 		})
 
-		It("should measure metrics", func() {
-			samplingCfg, samplingRange := highVolumeWriteTest.SamplingConfiguration()
+		It("can measure performance", func() {
+			samplingCfg, samplingRange = highVolumeWriteTest.SamplingConfiguration()
 
 			// Sleeping for the first interval so that the data is accurate for the new workload.
 			time.Sleep(samplingCfg.MinSamplingInterval)

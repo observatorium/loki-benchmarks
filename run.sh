@@ -11,7 +11,7 @@ USE_CADVISOR="${USE_CADVISOR:-false}"
 BENCHMARK_NAMESPACE="${BENCHMARK_NAMESPACE:-observatorium}"
 LOKI_COMPONENT_PREFIX="${LOKI_COMPONENT_PREFIX:-observatorium-xyz-loki}"
 
-OUTPUT_PATH="${OUTPUT_DIRECTORY:-reports}"
+OUTPUT_DIRECTORY="${OUTPUT_DIRECTORY:-reports/$(date +%Y-%m-%d-%H-%M-%S)}"
 SCENARIO_CONFIGURATION_DIRECTORY="${SCENARIO_CONFIGURATION_DIRECTORY:-benchmarks}"
 BENCHMARKING_CONFIGURATION_DIRECTORY="${BENCHMARKING_CONFIGURATION_DIRECTORY:-observatorium}"
 
@@ -28,7 +28,7 @@ port_counter=0
 # Deploy Loki with the Observatorium configuration
 # Intended to work on a Kind cluster for quick development
 observatorium() {
-    for f in $scenario_configuration_path/*.yaml; do
+    for scenario in $scenario_configuration_path/*.yaml; do
         create_benchmarking_environment
         
         pushd ../observatorium || exit 1
@@ -38,7 +38,7 @@ observatorium() {
         wait_for_ready_loki_components
         wait_for_ready_query_scheduler
         configure_prometheus
-        run_benchmark_suite
+        run_benchmark_suite $scenario
         
         # Clean up
         destroy_benchmarking_environment
@@ -51,7 +51,7 @@ rhobs() {
     rhobs_loki_deployment_file=$1
     storage_bucket=$2
 
-    for f in $scenario_configuration_path/*.yaml; do
+    for scenario in $scenario_configuration_path/*.yaml; do
         create_benchmarking_environment
         create_s3_storage $storage_bucket
 
@@ -61,7 +61,7 @@ rhobs() {
         wait_for_ready_loki_components
         wait_for_ready_query_scheduler
         configure_prometheus
-        run_benchmark_suite
+        run_benchmark_suite $scenario
 
         # Clean Up
         echo -e "\nRemoving RHOBS configuration file"
@@ -83,7 +83,7 @@ operator() {
         BENCHMARK_NAMESPACE="openshift-logging"
     fi
 
-    for f in $scenario_configuration_path/*.yaml; do
+    for scenario in $scenario_configuration_path/*.yaml; do
         # Create namespaces and storage
         create_benchmarking_environment
         create_s3_storage $storage_bucket
@@ -111,7 +111,7 @@ operator() {
 
         wait_for_ready_loki_components
         configure_prometheus
-        run_benchmark_suite
+        run_benchmark_suite $scenario
 
         # Clean Up
         destroy_benchmarking_environment
@@ -120,9 +120,13 @@ operator() {
 }
 
 create_benchmarking_environment() {
-    echo -e "\nCreating benchmarking environment"
+    echo -e "\nCreating output directory"
+    mkdir -p $OUTPUT_DIRECTORY
 
+    echo -e "\nExporting benchmark directory name"
     export BENCHMARKING_CONFIGURATION_DIRECTORY
+
+    echo -e "\nCreating benchmarking environment"
 
     if $IS_TESTING; then
         $KIND create cluster
@@ -222,19 +226,22 @@ wait_for_ready_query_scheduler() {
 }
 
 run_benchmark_suite() {
-    output_directory="$OUTPUT_PATH/$(date +%Y-%m-%d-%H-%M-%S)"
-    mkdir output_directory
+    scenario_file=$1
+    scenario_name=$(basename $scenario_file .yaml)
+    report_name="$scenario_name-report"
 
-    create_benchmarking_file
+    create_benchmarking_file $scenario_file
 
     echo -e "\nRunning benchmark suite"
-    $GINKGO --output-dir=$output_directory --json-report=report.json --junit-report=report.xml --timeout=4h ./benchmarks
+    $GINKGO --output-dir=$OUTPUT_DIRECTORY --json-report="$report_name.json" --junit-report="$report_name.xml" --timeout=4h ./benchmarks
 
     echo -e "\nMoving configuration file to report directory"
-    mv $benchmarking_configuration_file $output_directory
+    mv $benchmarking_configuration_file $OUTPUT_DIRECTORY/"$scenario_name-benchmark.yaml"
 }
 
 create_benchmarking_file() {
+    scenario_file=$1
+
     echo -e "\nCreating benchmarking file"
 
     echo -e "\nCopying generator and querier configuration"
@@ -254,7 +261,7 @@ metrics:
 EOF
 
     echo -e "\nCopying scenario configuration"
-    cat config/benchmarks/scenarios/$SCENARIO_CONFIGURATION_FILE >> $benchmarking_configuration_file
+    cat $scenario_file >> $benchmarking_configuration_file
 }
 
 enable_ocp_user_workload_monitoring() {
