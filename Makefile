@@ -14,8 +14,6 @@ LOKI_CONFIG_FILE ?= hack/rhobs-loki-parameters.yaml
 LOKI_TEMPLATE_FILE ?= /tmp/observatorium-logs-template.yaml
 RHOBS_DEPLOYMENT_FILE ?= /tmp/rhobs-loki-deployment.yaml
 
-REPORT_DIR ?= $(CURDIR)/reports/$(shell date +%Y-%m-%d-%H-%M-%S)
-
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
@@ -28,11 +26,6 @@ REPORT_DIR ?= $(CURDIR)/reports/$(shell date +%Y-%m-%d-%H-%M-%S)
 # https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters
 # More info on the awk command:
 # http://linuxcommand.org/lc3_adv_awk.php
-
-$(REPORT_DIR):
-	@mkdir -p $(REPORT_DIR)
-	@cp reports/README.template $(REPORT_DIR)
-	@mv $(REPORT_DIR)/README.template $(REPORT_DIR)/README.md
 
 help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
@@ -52,8 +45,8 @@ create-rhobs-loki-file: ## Create a yaml file with deployment details for Loki u
 
 run-local-benchmarks: $(GINKGO) $(KIND) $(KUSTOMIZE) $(PROMETHEUS) ## Run benchmark on a Kind cluster
 	@IS_TESTING=true \
-	SCENARIO_CONFIGURATION_FILE="test.yaml" \
-	./run.sh observatorium $(REPORT_DIR)
+	SCENARIO_CONFIGURATION_DIRECTORY="test" \
+	./run.sh observatorium
 .PHONY: test-benchmarks
 
 ##@ Deployment
@@ -63,7 +56,7 @@ run-rhobs-benchmarks: $(GINKGO) $(PROMETHEUS) ## Run benchmark on an OpenShift c
 	BENCHMARK_NAMESPACE=$(LOKI_NAMESPACE) \
 	LOKI_COMPONENT_PREFIX="observatorium-loki" \
 	BENCHMARKING_CONFIGURATION_DIRECTORY="rhobs" \
-	./run.sh rhobs $(REPORT_DIR) $(RHOBS_DEPLOYMENT_FILE) $(LOKI_STORAGE_BUCKET)
+	./run.sh rhobs $(RHOBS_DEPLOYMENT_FILE) $(LOKI_STORAGE_BUCKET)
 .PHONY: run-benchmarks
 
 run-operator-benchmarks: $(GINKGO) $(PROMETHEUS) ## Run benchmark on an OpenShift cluster with Loki Operator
@@ -71,5 +64,5 @@ run-operator-benchmarks: $(GINKGO) $(PROMETHEUS) ## Run benchmark on an OpenShif
 	BENCHMARK_NAMESPACE=$(LOKI_NAMESPACE) \
 	LOKI_COMPONENT_PREFIX="lokistack-dev" \
 	BENCHMARKING_CONFIGURATION_DIRECTORY="operator" \
-	./run.sh operator $(REPORT_DIR) $(LOKI_OPERATOR_REGISTRY) $(LOKI_STORAGE_BUCKET)
+	./run.sh operator $(LOKI_OPERATOR_REGISTRY) $(LOKI_STORAGE_BUCKET)
 .PHONY: run-benchmarks

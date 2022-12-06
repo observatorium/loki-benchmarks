@@ -11,108 +11,112 @@ USE_CADVISOR="${USE_CADVISOR:-false}"
 BENCHMARK_NAMESPACE="${BENCHMARK_NAMESPACE:-observatorium}"
 LOKI_COMPONENT_PREFIX="${LOKI_COMPONENT_PREFIX:-observatorium-xyz-loki}"
 
-SCENARIO_CONFIGURATION_FILE="${SCENARIO_CONFIGURATION_FILE:-benchmarks.yaml}"
+OUTPUT_PATH="${OUTPUT_DIRECTORY:-reports}"
+SCENARIO_CONFIGURATION_DIRECTORY="${SCENARIO_CONFIGURATION_DIRECTORY:-benchmarks}"
 BENCHMARKING_CONFIGURATION_DIRECTORY="${BENCHMARKING_CONFIGURATION_DIRECTORY:-observatorium}"
 
 PROMETHEUS_CLIENT_PROTOCOL="http"
 PROMETHEUS_CLIENT_URL="${PROMETHEUS_CLIENT_URL:-127.0.0.1:9090}"
 
+ocp_prometheus_config_path="config/openshift"
+scenario_configuration_path="config/benchmarks/scenarios/$SCENARIO_CONFIGURATION_DIRECTORY"
 benchmarking_configuration_path="config/benchmarks/$BENCHMARKING_CONFIGURATION_DIRECTORY"
 benchmarking_configuration_file="config/benchmarks/$BENCHMARKING_CONFIGURATION_DIRECTORY/benchmark.yaml"
-ocp_prometheus_config_path="config/openshift"
 
 port_counter=0
 
 # Deploy Loki with the Observatorium configuration
 # Intended to work on a Kind cluster for quick development
 observatorium() {
-    output_directory=$1
-    
-    create_benchmarking_environment
-    
-    pushd ../observatorium || exit 1
-    KUBECTL=$(which kubectl) ./configuration/tests/e2e.sh deploy
-    popd
-    
-    wait_for_ready_loki_components
-    wait_for_ready_query_scheduler
-    configure_prometheus
-    run_benchmark_suite $output_directory
-    
-    # Clean up
-    destroy_benchmarking_environment
+    for f in $scenario_configuration_path/*.yaml; do
+        create_benchmarking_environment
+        
+        pushd ../observatorium || exit 1
+        KUBECTL=$(which kubectl) ./configuration/tests/e2e.sh deploy
+        popd
+        
+        wait_for_ready_loki_components
+        wait_for_ready_query_scheduler
+        configure_prometheus
+        run_benchmark_suite
+        
+        # Clean up
+        destroy_benchmarking_environment
+    done
 }
 
 # Deploy Loki with the Red Hat Observability Service configuration
 # Intended to work on a OpenShift cluster for benchmarking
 rhobs() {
-    output_directory=$1
-    rhobs_loki_deployment_file=$2
-    storage_bucket=$3
+    rhobs_loki_deployment_file=$1
+    storage_bucket=$2
 
-    create_benchmarking_environment
-    create_s3_storage $storage_bucket
+    for f in $scenario_configuration_path/*.yaml; do
+        create_benchmarking_environment
+        create_s3_storage $storage_bucket
 
-    kubectl -n $BENCHMARK_NAMESPACE apply -f $rhobs_loki_deployment_file
-    ./hack/scripts/deploy-example-secret.sh $BENCHMARK_NAMESPACE $storage_bucket
+        kubectl -n $BENCHMARK_NAMESPACE apply -f $rhobs_loki_deployment_file
+        ./hack/scripts/deploy-example-secret.sh $BENCHMARK_NAMESPACE $storage_bucket
 
-    wait_for_ready_loki_components
-    wait_for_ready_query_scheduler
-    configure_prometheus
-    run_benchmark_suite $output_directory
+        wait_for_ready_loki_components
+        wait_for_ready_query_scheduler
+        configure_prometheus
+        run_benchmark_suite
 
-    # Clean Up
-    echo -e "\nRemoving RHOBS configuration file"
-    rm $rhobs_loki_deployment_file
+        # Clean Up
+        echo -e "\nRemoving RHOBS configuration file"
+        rm $rhobs_loki_deployment_file
 
-    destroy_benchmarking_environment
-    destroy_s3_storage $storage_bucket
+        destroy_benchmarking_environment
+        destroy_s3_storage $storage_bucket
+    done
 }
 
 # Deploy Loki with the Red Hat Loki Operator
 # Intended to work on a OpenShift cluster for benchmarking
 operator() {
-    output_directory=$1
-    operator_registry=$2
-    storage_bucket=$3
+    operator_registry=$1
+    storage_bucket=$2
 
     if $IS_OPENSHIFT; then
         echo -e "\nOverwriting BENCHMARK_NAMESPACE"
         BENCHMARK_NAMESPACE="openshift-logging"
     fi
 
-    # Create namespaces and storage
-    create_benchmarking_environment
-    create_s3_storage $storage_bucket
-    
-    # Deploy operator and Lokistack
-    pushd ../loki/operator || exit 1
-    if $IS_OPENSHIFT; then
-        kubectl create namespace openshift-operators-redhat
-        kubectl label ns/$BENCHMARK_NAMESPACE openshift.io/cluster-monitoring=true --overwrite 
+    for f in $scenario_configuration_path/*.yaml; do
+        # Create namespaces and storage
+        create_benchmarking_environment
+        create_s3_storage $storage_bucket
+        
+        # Deploy operator and Lokistack
+        pushd ../loki/operator || exit 1
+        if $IS_OPENSHIFT; then
+            kubectl create namespace openshift-operators-redhat
+            kubectl label ns/$BENCHMARK_NAMESPACE openshift.io/cluster-monitoring=true --overwrite 
 
-        make olm-deploy REGISTRY_ORG=$operator_registry VERSION=v0.0.1
-        ./hack/deploy-aws-storage-secret.sh $storage_bucket
-        kubectl -n $BENCHMARK_NAMESPACE apply -f hack/lokistack_gateway_ocp.yaml
-    else
-        make deploy REGISTRY_ORG=$operator_registry VERSION=v0.0.1
-        kubectl -n $BENCHMARK_NAMESPACE apply -f hack/lokistack_gateway_dev.yaml
-    fi
-    popd
+            make olm-deploy REGISTRY_ORG=$operator_registry VERSION=v0.0.1
+            ./hack/deploy-aws-storage-secret.sh $storage_bucket
+            kubectl -n $BENCHMARK_NAMESPACE apply -f hack/lokistack_gateway_ocp.yaml
+        else
+            make deploy REGISTRY_ORG=$operator_registry VERSION=v0.0.1
+            kubectl -n $BENCHMARK_NAMESPACE apply -f hack/lokistack_gateway_dev.yaml
+        fi
+        popd
 
-    kubectl -n $BENCHMARK_NAMESPACE apply -f hack/loadclient-rbac.yaml
+        kubectl -n $BENCHMARK_NAMESPACE apply -f hack/loadclient-rbac.yaml
 
-    # There is a small - sometimes noticeable - time gap, between the Lokistack CR 
-    # being applied and the deployment and statefulsets being created.
-    sleep 10
+        # There is a small - sometimes noticeable - time gap, between the Lokistack CR 
+        # being applied and the deployment and statefulsets being created.
+        sleep 10
 
-    wait_for_ready_loki_components
-    configure_prometheus
-    run_benchmark_suite $output_directory
+        wait_for_ready_loki_components
+        configure_prometheus
+        run_benchmark_suite
 
-    # Clean Up
-    destroy_benchmarking_environment
-    destroy_s3_storage $storage_bucket
+        # Clean Up
+        destroy_benchmarking_environment
+        destroy_s3_storage $storage_bucket
+    done
 }
 
 create_benchmarking_environment() {
@@ -218,7 +222,8 @@ wait_for_ready_query_scheduler() {
 }
 
 run_benchmark_suite() {
-    output_directory=$1
+    output_directory="$OUTPUT_PATH/$(date +%Y-%m-%d-%H-%M-%S)"
+    mkdir output_directory
 
     create_benchmarking_file
 
@@ -326,15 +331,15 @@ scrape_loki_metrics() {
 
 case $1 in
 observatorium)
-    observatorium $2
+    observatorium
     ;;
 
 rhobs)
-    rhobs $2 $3 $4
+    rhobs $2 $3
     ;;
 
 operator)
-    operator $2 $3 $4
+    operator $2 $3
     ;;
 
 help)

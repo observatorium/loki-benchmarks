@@ -1,0 +1,19 @@
+scenarios:
+  highVolumeReads:
+    enabled: false
+    description: "Query range 1 second"
+    generator:
+      replicas: 10
+      args:
+        source: application
+        log-lines-rate: 500
+    startThreshold: 1000000000
+    samples:
+      total: 10
+      interval: "1m"
+    readers: 
+      replicas: 5
+      queries:
+        sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
+        sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
+      queryRange: "1s"

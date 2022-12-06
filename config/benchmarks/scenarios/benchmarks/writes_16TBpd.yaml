@@ -1,0 +1,14 @@
+scenarios:
+  highVolumeWrites:
+    enabled: false
+    description: "Write 16 TB per day"
+    samples:
+      total: 10
+      interval: "1m" 
+    writers:
+      replicas: 192
+      args:
+        source: synthetic
+        loki-labels: host
+        log-lines-rate: 1000
+        synthetic-payload-size: 1000
