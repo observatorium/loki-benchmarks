@@ -13,7 +13,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
-	"github.com/prometheus/common/model"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -25,11 +24,11 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		highVolumeWriteTest = benchCfg.Scenarios.HighVolumeWrites
 
 		if highVolumeWriteTest == nil {
-			Skip("No High Volume Writes Benchmarks defined.")
+			Skip("No High Volume Writes Benchmarks defined")
 		}
 
 		if !highVolumeWriteTest.Enabled {
-			Skip("High Volumes Writes Benchmark not enabled!")
+			Skip("High Volumes Writes Benchmark not enabled")
 		}
 
 		generatorDpl = loadclient.CreateGenerator(highVolumeWriteTest.Writers, benchCfg.Generator)
@@ -43,9 +42,6 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 			err = utils.WaitForReadyDeployment(k8sClient, generatorDpl, defaultRetry, defaultTimeout)
 			Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
-			// Sleeping for the first interval so that the data is accurate for the new workload.
-			time.Sleep(highVolumeWriteTest.Samples.Interval)
-
 			DeferCleanup(func() {
 				err := k8sClient.Delete(context.TODO(), generatorDpl, &client.DeleteOptions{})
 				Expect(err).Should(Succeed(), "Failed to delete logger deployment")
@@ -53,7 +49,10 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 		})
 
 		It("should measure metrics", func() {
-			samplingRange := model.Duration(highVolumeWriteTest.Samples.Interval)
+			samplingCfg, samplingRange := highVolumeWriteTest.SamplingConfiguration()
+
+			// Sleeping for the first interval so that the data is accurate for the new workload.
+			time.Sleep(samplingCfg.MinSamplingInterval)
 
 			e := gmeasure.NewExperiment(highVolumeWriteTest.Description)
 			AddReportEntry(e.Name, e)
@@ -106,7 +105,7 @@ var _ = Describe("Scenario: High Volume Writes", func() {
 
 				err = metricsClient.Measure(e, metrics.RequestBoltDBShipperWritesQPS(job, samplingRange))
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			}, highVolumeWriteTest.Samples.SamplingConfiguration())
+			}, samplingCfg)
 		})
 	})
 })

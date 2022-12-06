@@ -14,7 +14,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
-	"github.com/prometheus/common/model"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -26,11 +25,11 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 		highVolumeReadsTest = benchCfg.Scenarios.HighVolumeReads
 
 		if highVolumeReadsTest == nil {
-			Skip("No High Volume Read Benchmarks defined.")
+			Skip("No High Volume Read Benchmarks defined")
 		}
 
 		if !highVolumeReadsTest.Enabled {
-			Skip("High Volumes Reads Benchmark not enabled!")
+			Skip("High Volumes Reads Benchmark not enabled")
 		}
 
 		querierDpls = querier.CreateQueriers(highVolumeReadsTest.Readers, benchCfg.Querier)
@@ -38,7 +37,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
 	Describe(fmt.Sprintf("Configuration: %s", highVolumeReadsTest.Description), func() {
 		BeforeEach(func() {
-			generatorDpl := loadclient.CreateGenerator(highVolumeReadsTest.Generator, benchCfg.Generator)
+			generatorDpl := loadclient.CreateGenerator(highVolumeReadsTest.LogGenerator(), benchCfg.Generator)
 
 			err := k8sClient.Create(context.TODO(), generatorDpl, &client.CreateOptions{})
 			Expect(err).Should(Succeed(), "Failed to deploy logger")
@@ -60,9 +59,6 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed to wait for ready querier deployment: %s", dpl.GetName()))
 			}
 
-			// Sleeping for the first interval so that the data is accurate for the new workload.
-			time.Sleep(highVolumeReadsTest.Samples.Interval)
-
 			DeferCleanup(func() {
 				for _, dpl := range querierDpls {
 					err := k8sClient.Delete(context.TODO(), dpl, &client.DeleteOptions{})
@@ -72,7 +68,10 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 		})
 
 		It("should measure metrics", func() {
-			samplingRange := model.Duration(highVolumeReadsTest.Samples.Interval)
+			samplingCfg, samplingRange := highVolumeReadsTest.SamplingConfiguration()
+
+			// Sleeping for the first interval so that the data is accurate for the new workload.
+			time.Sleep(samplingCfg.MinSamplingInterval)
 
 			e := gmeasure.NewExperiment(highVolumeReadsTest.Description)
 			AddReportEntry(e.Name, e)
@@ -139,7 +138,7 @@ var _ = Describe("Scenario: High Volume Reads", func() {
 
 				err = metricsClient.Measure(e, metrics.RequestBoltDBShipperReadsQPS(job, samplingRange))
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-			}, highVolumeReadsTest.Samples.SamplingConfiguration())
+			}, samplingCfg)
 		})
 	})
 })

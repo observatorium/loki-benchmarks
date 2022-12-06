@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/onsi/gomega/gmeasure"
+	"github.com/prometheus/common/model"
 )
 
 type Benchmark struct {
@@ -50,38 +51,75 @@ type Scenarios struct {
 type HighVolumeWrites struct {
 	Enabled     bool    `yaml:"enabled"`
 	Description string  `yaml:"description"`
-	Samples     Samples `yaml:"samples"`
-	Writers     Writers `yaml:"writers"`
+	Writers     Writer  `yaml:"writers"`
+	samples     *Sample `yaml:"samples,omitempty"`
+}
+
+func (w *HighVolumeWrites) SamplingConfiguration() (gmeasure.SamplingConfig, model.Duration) {
+	samples := w.samples
+	if samples == nil {
+		samples = &Sample{
+			Total:    10,
+			Interval: time.Minute * 3,
+		}
+	}
+
+	return gmeasure.SamplingConfig{
+		N:                   samples.Total,
+		Duration:            samples.Interval * time.Duration(samples.Total+1),
+		MinSamplingInterval: samples.Interval,
+	}, model.Duration(samples.Interval)
 }
 
 type HighVolumeReads struct {
 	Enabled        bool    `yaml:"enabled"`
 	Description    string  `yaml:"description"`
-	Samples        Samples `yaml:"samples"`
 	StartThreshold float64 `yaml:"startThreshold"`
-	Generator      Writers `yaml:"generator"`
-	Readers        Readers `yaml:"readers"`
+	Readers        Reader  `yaml:"readers"`
+	samples        *Sample `yaml:"samples,omitempty"`
+	generator      *Writer `yaml:"generator,omitempty"`
 }
 
-type Samples struct {
+func (r *HighVolumeReads) SamplingConfiguration() (gmeasure.SamplingConfig, model.Duration) {
+	samples := r.samples
+	if samples == nil {
+		samples = &Sample{
+			Total:    10,
+			Interval: time.Minute,
+		}
+	}
+
+	return gmeasure.SamplingConfig{
+		N:                   samples.Total,
+		Duration:            samples.Interval * time.Duration(samples.Total+1),
+		MinSamplingInterval: samples.Interval,
+	}, model.Duration(samples.Interval)
+}
+
+func (r *HighVolumeReads) LogGenerator() Writer {
+	if r.generator == nil {
+		return Writer{
+			Replicas: 10,
+			Args: map[string]string{
+				"source":         "application",
+				"log-lines-rate": "500",
+			},
+		}
+	}
+	return *r.generator
+}
+
+type Sample struct {
 	Total    int           `yaml:"total"`
 	Interval time.Duration `yaml:"interval"`
 }
 
-func (s Samples) SamplingConfiguration() gmeasure.SamplingConfig {
-	return gmeasure.SamplingConfig{
-		N:                   s.Total,
-		Duration:            s.Interval * time.Duration(s.Total+1),
-		MinSamplingInterval: s.Interval,
-	}
-}
-
-type Writers struct {
+type Writer struct {
 	Replicas int32             `yaml:"replicas"`
 	Args     map[string]string `yaml:"args"`
 }
 
-type Readers struct {
+type Reader struct {
 	Replicas   int32             `yaml:"replicas"`
 	Queries    map[string]string `yaml:"queries"`
 	QueryRange string            `yaml:"queryRange"`

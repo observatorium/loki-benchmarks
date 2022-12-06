@@ -2,9 +2,6 @@ scenarios:
   highVolumeWrites:
     enabled: false
     description: "Write 32 TB per day"
-    samples:
-      total: 10
-      interval: "1m" 
     writers:
       replicas: 192
       args:
