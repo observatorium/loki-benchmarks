@@ -62,7 +62,12 @@ func init() {
 
 	// Create Metrics Client
 	promToken := os.Getenv("PROMETHEUS_TOKEN")
-	metricsClient, err = metrics.NewClient(benchCfg.Metrics.URL, promToken, 30*time.Second)
+	metricsClient, err = metrics.NewClient(
+		benchCfg.Metrics.URL,
+		promToken,
+		30*time.Second,
+		benchCfg.Metrics.EnableCadvisorMetrics,
+	)
 	if err != nil {
 		panic("Failed to create metrics client")
 	}

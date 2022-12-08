@@ -61,44 +61,19 @@ var _ = Describe("High Volume Writes", func() {
 				annotation := metrics.DistributorAnnotation
 
 				// These are confirmation metrics to ensure that the workload matches expectations
-				err := metricsClient.Measure(e, metrics.LoadNetworkTotal(loadclient.DeploymentName, samplingRange))
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-				err = metricsClient.Measure(e, metrics.LoadNetworkGiPDTotal(loadclient.DeploymentName, samplingRange))
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-				err = metricsClient.Measure(e, metrics.DistributorGiPDReceivedTotal(job, samplingRange))
+				err := metricsClient.MeasureIngestionVerificationMetrics(e, generatorDpl.GetName(), job, samplingRange)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
-				err = metricsClient.Measure(e, metrics.RequestWritesQPS(job, samplingRange, annotation))
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-				err = metricsClient.Measure(e, metrics.RequestDurationOkPushAvg(job, samplingRange, annotation))
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-				err = metricsClient.Measure(e, metrics.RequestDurationOkPushPercentile(99, job, samplingRange, annotation))
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-				err = metricsClient.Measure(e, metrics.RequestDurationOkPushPercentile(50, job, samplingRange, annotation))
+				err = metricsClient.MeasureHTTPRequestMetrics(e, metrics.WriteRequestPath, job, samplingRange, annotation)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 				// Ingesters
 				job = benchCfg.Metrics.Jobs.Ingester
 				annotation = metrics.IngesterAnnotation
 
-				err = metricsClient.Measure(e, metrics.ContainerCPU(job, samplingRange, annotation))
+				err = metricsClient.MeasureGRPCRequestMetrics(e, metrics.WriteRequestPath, job, samplingRange, annotation)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-
-				if benchCfg.Metrics.EnableCadvisorMetrics {
-					err = metricsClient.Measure(e, metrics.ContainerMemoryWorkingSetBytes(job, samplingRange, annotation))
-					Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-				}
-
-				err = metricsClient.Measure(e, metrics.PersistentVolumeUsedBytes(job, samplingRange, annotation))
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-
-				err = metricsClient.Measure(e, metrics.RequestWritesGrpcQPS(job, samplingRange, annotation))
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-				err = metricsClient.Measure(e, metrics.RequestDurationOkGrpcPushAvg(job, samplingRange, annotation))
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-				err = metricsClient.Measure(e, metrics.RequestDurationOkGrpcPushPercentile(99, job, samplingRange, annotation))
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-				err = metricsClient.Measure(e, metrics.RequestDurationOkGrpcPushPercentile(50, job, samplingRange, annotation))
+				err = metricsClient.MeasureResourceUsageMetrics(e, job, samplingRange, annotation)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 				err = metricsClient.Measure(e, metrics.RequestBoltDBShipperWritesQPS(job, samplingRange))

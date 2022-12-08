@@ -7,23 +7,7 @@ import (
 	"github.com/prometheus/common/model"
 )
 
-func requestRate(
-	name, job, route, code string,
-	duration model.Duration,
-	annotation gmeasure.Annotation,
-) Measurement {
-	return Measurement{
-		Name: fmt.Sprintf("%s request rate", name),
-		Query: fmt.Sprintf(
-			`sum(irate(loki_request_duration_seconds_count{job=~".*%s.*", route=~"%s", status_code=~"%s"}[%s]))`,
-			job, route, code, duration,
-		),
-		Unit:       RequestsPerSecondUnit,
-		Annotation: annotation,
-	}
-}
-
-func requestDurationAvg(
+func RequestDurationAverage(
 	name, job, method, route, code string,
 	duration model.Duration,
 	annotation gmeasure.Annotation,
@@ -45,7 +29,7 @@ func requestDurationAvg(
 	}
 }
 
-func requestDurationQuantile(
+func RequestDurationQuantile(
 	name, job, method, route, code string,
 	percentile int,
 	duration model.Duration,
@@ -58,6 +42,22 @@ func requestDurationQuantile(
 			percentile, job, method, route, code, duration, SecondsToMillisecondsMultiplier,
 		),
 		Unit:       MillisecondsUnit,
+		Annotation: annotation,
+	}
+}
+
+func requestRate(
+	name, job, route, code string,
+	duration model.Duration,
+	annotation gmeasure.Annotation,
+) Measurement {
+	return Measurement{
+		Name: fmt.Sprintf("%s request rate", name),
+		Query: fmt.Sprintf(
+			`sum(irate(loki_request_duration_seconds_count{job=~".*%s.*", route=~"%s", status_code=~"%s"}[%s]))`,
+			job, route, code, duration,
+		),
+		Unit:       RequestsPerSecondUnit,
 		Annotation: annotation,
 	}
 }

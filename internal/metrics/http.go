@@ -6,6 +6,9 @@ import (
 )
 
 const (
+	HTTPGetMethod  = "GET"
+	HTTPPostMethod = "POST"
+
 	HTTPQueryRangeRoute = "loki_api_v1_query_range"
 	HTTPPushRoute       = "loki_api_v1_push"
 )
@@ -14,25 +17,9 @@ func RequestWritesQPS(job string, duration model.Duration, annotation gmeasure.A
 	return requestRate("2xx push", job, HTTPPushRoute, "2.*", duration, annotation)
 }
 
-func RequestDurationOkPushAvg(job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {
-	return requestDurationAvg("2xx push", job, "POST", HTTPPushRoute, "2.*", duration, annotation)
-}
-
-func RequestDurationOkPushPercentile(percentile int, job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {
-	return requestDurationQuantile("2xx push", job, "POST", HTTPPushRoute, "2.*", percentile, duration, annotation)
-}
-
 func RequestReadsQPS(job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {
 	route := "loki_api_v1_series|api_prom_series|api_prom_query|api_prom_label|api_prom_label_name_values|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_name_values"
 	return requestRate("2xx reads", job, route, "2.*", duration, annotation)
-}
-
-func RequestDurationOkQueryRangeAvg(job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {
-	return requestDurationAvg("2xx reads", job, "GET", HTTPQueryRangeRoute, "2.*", duration, annotation)
-}
-
-func RequestDurationOkQueryRangePercentile(percentile int, job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {
-	return requestDurationQuantile("2xx reads", job, "GET", HTTPQueryRangeRoute, "2.*", percentile, duration, annotation)
 }
 
 func RequestQueryRangeThroughput(job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {

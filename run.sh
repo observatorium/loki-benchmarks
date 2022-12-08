@@ -227,16 +227,16 @@ wait_for_ready_query_scheduler() {
 
 run_benchmark_suite() {
     scenario_file=$1
-    scenario_name=$(basename $scenario_file .yaml)
-    report_name="$scenario_name-report"
+    report_directory="$OUTPUT_DIRECTORY/$(basename $scenario_file .yaml)"
 
+    mkdir -p report_directory
     create_benchmarking_file $scenario_file
 
     echo -e "\nRunning benchmark suite"
-    $GINKGO --output-dir=$OUTPUT_DIRECTORY --json-report="$report_name.json" --junit-report="$report_name.xml" --timeout=4h ./benchmarks
+    $GINKGO --output-dir=$report_directory --json-report="report.json" --junit-report="report.xml" --timeout=4h ./benchmarks
 
     echo -e "\nMoving configuration file to report directory"
-    mv $benchmarking_configuration_file $OUTPUT_DIRECTORY/"$scenario_name-benchmark.yaml"
+    mv $benchmarking_configuration_file $report_directory
 }
 
 create_benchmarking_file() {
