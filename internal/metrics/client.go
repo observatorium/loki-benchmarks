@@ -85,18 +85,12 @@ func (c *Client) MeasureHTTPRequestMetrics(
 ) error {
 	switch path {
 	case WriteRequestPath:
-		if err := c.Measure(e, RequestWritesQPS(job, sampleRange, annotation)); err != nil {
-			return err
-		}
-		return c.measureCommonRequestMetrics(e, job, HTTPPostMethod, HTTPPushRoute, sampleRange, annotation)
+		return c.measureCommonRequestMetrics(e, job, HTTPPostMethod, HTTPPushRoute, HTTPPushRoute, sampleRange, annotation)
 	case ReadRequestPath:
 		if err := c.Measure(e, RequestQueryRangeThroughput(job, sampleRange, annotation)); err != nil {
 			return err
 		}
-		if err := c.Measure(e, RequestReadsQPS(job, sampleRange, annotation)); err != nil {
-			return err
-		}
-		return c.measureCommonRequestMetrics(e, job, HTTPGetMethod, HTTPQueryRangeRoute, sampleRange, annotation)
+		return c.measureCommonRequestMetrics(e, job, HTTPGetMethod, HTTPQueryRangeRoute, HTTPReadPathRoutes, sampleRange, annotation)
 	default:
 		return fmt.Errorf("error unknown path specified: %d", path)
 	}
@@ -111,15 +105,9 @@ func (c *Client) MeasureGRPCRequestMetrics(
 ) error {
 	switch path {
 	case WriteRequestPath:
-		if err := c.Measure(e, RequestWritesGrpcQPS(job, sampleRange, annotation)); err != nil {
-			return err
-		}
-		return c.measureCommonRequestMetrics(e, job, GRPCMethod, GRPCPushRoute, sampleRange, annotation)
+		return c.measureCommonRequestMetrics(e, job, GRPCMethod, GRPCPushRoute, GRPCPushRoute, sampleRange, annotation)
 	case ReadRequestPath:
-		if err := c.Measure(e, RequestReadsGrpcQPS(job, sampleRange, annotation)); err != nil {
-			return err
-		}
-		return c.measureCommonRequestMetrics(e, job, GRPCMethod, GRPCQuerySampleRoute, sampleRange, annotation)
+		return c.measureCommonRequestMetrics(e, job, GRPCMethod, GRPCQuerySampleRoute, GRPCReadPathRoutes, sampleRange, annotation)
 	default:
 		return fmt.Errorf("error unknown path specified: %d", path)
 	}
@@ -149,7 +137,7 @@ func (c *Client) MeasureResourceUsageMetrics(
 
 func (c *Client) MeasureIngestionVerificationMetrics(
 	e *gmeasure.Experiment,
-	deployment, distributor string,
+	deployment, distributor, tenant string,
 	sampleRange model.Duration,
 ) error {
 	if err := c.Measure(e, LoadNetworkTotal(deployment, sampleRange)); err != nil {
@@ -159,6 +147,9 @@ func (c *Client) MeasureIngestionVerificationMetrics(
 		return err
 	}
 	if err := c.Measure(e, DistributorGiPDReceivedTotal(distributor, sampleRange)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, LokiStreamsInMemoryTotal(tenant, sampleRange)); err != nil {
 		return err
 	}
 	return nil
@@ -190,17 +181,33 @@ func (c *Client) executeScalarQuery(query string) (float64, error) {
 
 func (c *Client) measureCommonRequestMetrics(
 	e *gmeasure.Experiment,
-	job, method, route string,
+	job, method, route, pathRoutes string,
 	sampleRange model.Duration,
 	annotation gmeasure.Annotation,
 ) error {
-	name := fmt.Sprintf("2xx %s", route)
-	code := "2.*"
+	var name, code, requestRateName string
+
 	if method == GRPCMethod {
 		name = fmt.Sprintf("successful GRPC %s", route)
 		code = "success"
+
+		requestRateName = name
+		if pathRoutes == GRPCReadPathRoutes {
+			requestRateName = "successful GRPC reads"
+		}
+	} else {
+		name = fmt.Sprintf("2xx %s", route)
+		code = "2.*"
+
+		requestRateName = name
+		if pathRoutes == HTTPReadPathRoutes {
+			requestRateName = "2xx reads"
+		}
 	}
 
+	if err := c.Measure(e, RequestRate(requestRateName, job, pathRoutes, code, sampleRange, annotation)); err != nil {
+		return err
+	}
 	if err := c.Measure(e, RequestDurationAverage(name, job, method, route, code, sampleRange, annotation)); err != nil {
 		return err
 	}

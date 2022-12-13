@@ -229,7 +229,7 @@ run_benchmark_suite() {
     scenario_file=$1
     report_directory="$OUTPUT_DIRECTORY/$(basename $scenario_file .yaml)"
 
-    mkdir -p report_directory
+    mkdir -p $report_directory
     create_benchmarking_file $scenario_file
 
     echo -e "\nRunning benchmark suite"

@@ -22,6 +22,7 @@ var _ = Describe("High Volume Writes", func() {
 	var generatorDpl client.Object
 	var samplingCfg gmeasure.SamplingConfig
 	var samplingRange model.Duration
+	var tenant string
 
 	BeforeEach(func() {
 		if !benchCfg.Scenarios.IsWriteTestRunnable() {
@@ -32,6 +33,7 @@ var _ = Describe("High Volume Writes", func() {
 
 	Describe("Forwarding logs to Loki service", func() {
 		BeforeEach(func() {
+			tenant = benchCfg.Generator.Tenant
 			generatorDpl = loadclient.CreateGenerator(highVolumeWriteTest.Writers, benchCfg.Generator)
 
 			err := k8sClient.Create(context.TODO(), generatorDpl, &client.CreateOptions{})
@@ -61,7 +63,7 @@ var _ = Describe("High Volume Writes", func() {
 				annotation := metrics.DistributorAnnotation
 
 				// These are confirmation metrics to ensure that the workload matches expectations
-				err := metricsClient.MeasureIngestionVerificationMetrics(e, generatorDpl.GetName(), job, samplingRange)
+				err := metricsClient.MeasureIngestionVerificationMetrics(e, generatorDpl.GetName(), job, tenant, samplingRange)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 				err = metricsClient.MeasureHTTPRequestMetrics(e, metrics.WriteRequestPath, job, samplingRange, annotation)

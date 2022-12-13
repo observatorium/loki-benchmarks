@@ -14,6 +14,8 @@ const (
 	MillicoresUnit   = gmeasure.Units("m")
 	MillisecondsUnit = gmeasure.Units("ms")
 
+	StreamsUnit = gmeasure.Units("streams")
+
 	RequestsPerSecondUnit = gmeasure.Units("requests per second")
 
 	DistributorAnnotation   = gmeasure.Annotation("distributor")
