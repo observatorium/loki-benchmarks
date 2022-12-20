@@ -20,6 +20,7 @@ PROMETHEUS_CLIENT_URL="${PROMETHEUS_CLIENT_URL:-127.0.0.1:9090}"
 benchmarking_configuration_path="config/benchmarks/$BENCHMARKING_CONFIGURATION_DIRECTORY"
 benchmarking_configuration_file="config/benchmarks/$BENCHMARKING_CONFIGURATION_DIRECTORY/benchmark.yaml"
 ocp_prometheus_config_path="config/openshift"
+scripts_path="hack/scripts"
 
 port_counter=0
 
@@ -54,7 +55,7 @@ rhobs() {
     create_s3_storage $storage_bucket
 
     kubectl -n $BENCHMARK_NAMESPACE apply -f $rhobs_loki_deployment_file
-    ./hack/scripts/deploy-example-secret.sh $BENCHMARK_NAMESPACE $storage_bucket
+    $scripts_path/deploy-example-secret.sh $BENCHMARK_NAMESPACE $storage_bucket
 
     wait_for_ready_loki_components
     wait_for_ready_query_scheduler
@@ -160,7 +161,7 @@ create_s3_storage() {
 
     if $IS_OPENSHIFT; then
         echo -e "\nCreating AWS S3 storage"
-        ./hack/scripts/create-s3-bucket.sh $bucket_names
+        $scripts_path/create-s3-bucket.sh $bucket_names
     fi
 }
 
@@ -169,7 +170,7 @@ destroy_s3_storage() {
 
     if $IS_OPENSHIFT; then
         echo -e "\nDestroying AWS S3 storage"
-        ./hack/scripts/delete-s3-bucket.sh $bucket_names
+        $scripts_path/delete-s3-bucket.sh $bucket_names
     fi
 }
 
@@ -223,10 +224,13 @@ run_benchmark_suite() {
     create_benchmarking_file
 
     echo -e "\nRunning benchmark suite"
-    $GINKGO --output-dir=$output_directory --json-report=report.json --junit-report=report.xml --timeout=4h ./benchmarks
+    $GINKGO --output-dir=$output_directory --json-report=report.json --timeout=4h ./benchmarks
 
     echo -e "\nMoving configuration file to report directory"
     mv $benchmarking_configuration_file $output_directory
+
+    echo -e "\nProcessing JSON report"
+    python3 $scripts_path/post_processing.py $output_directory
 }
 
 create_benchmarking_file() {
