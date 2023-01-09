@@ -22,7 +22,6 @@ var _ = Describe("High Volume Writes", func() {
 	var generatorDpl client.Object
 	var samplingCfg gmeasure.SamplingConfig
 	var samplingRange model.Duration
-	var tenant string
 
 	BeforeEach(func() {
 		if !benchCfg.Scenarios.IsWriteTestRunnable() {
@@ -33,7 +32,6 @@ var _ = Describe("High Volume Writes", func() {
 
 	Describe("Forwarding logs to Loki service", func() {
 		BeforeEach(func() {
-			tenant = benchCfg.Generator.Tenant
 			generatorDpl = loadclient.CreateGenerator(highVolumeWriteTest.Writers, benchCfg.Generator)
 
 			err := k8sClient.Create(context.TODO(), generatorDpl, &client.CreateOptions{})
@@ -58,13 +56,13 @@ var _ = Describe("High Volume Writes", func() {
 			AddReportEntry(e.Name, e)
 
 			e.Sample(func(idx int) {
+				// Load Generation
+				err := metricsClient.MeasureIngestionVerificationMetrics(e, generatorDpl.GetName(), samplingRange)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+
 				// Distributors
 				job := benchCfg.Metrics.Jobs.Distributor
 				annotation := metrics.DistributorAnnotation
-
-				// These are confirmation metrics to ensure that the workload matches expectations
-				err := metricsClient.MeasureIngestionVerificationMetrics(e, generatorDpl.GetName(), job, tenant, samplingRange)
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 				err = metricsClient.MeasureHTTPRequestMetrics(e, metrics.WriteRequestPath, job, samplingRange, annotation)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
@@ -73,12 +71,11 @@ var _ = Describe("High Volume Writes", func() {
 				job = benchCfg.Metrics.Jobs.Ingester
 				annotation = metrics.IngesterAnnotation
 
-				err = metricsClient.MeasureGRPCRequestMetrics(e, metrics.WriteRequestPath, job, samplingRange, annotation)
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 				err = metricsClient.MeasureResourceUsageMetrics(e, job, samplingRange, annotation)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-
-				err = metricsClient.Measure(e, metrics.RequestBoltDBShipperWritesQPS(job, samplingRange))
+				err = metricsClient.MeasureGRPCRequestMetrics(e, metrics.WriteRequestPath, job, samplingRange, annotation)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+				err = metricsClient.MeasureBoltDBShipperRequestMetrics(e, metrics.WriteRequestPath, job, samplingRange)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			}, samplingCfg)
 		})

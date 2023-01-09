@@ -5,6 +5,10 @@ import (
 )
 
 const (
+	DefaultPercentile = 95
+)
+
+const (
 	CoresToMillicores               int = 1000
 	SecondsToMillisecondsMultiplier int = 1000
 	BytesToMegabytesMultiplier      int = 1000 * 1000
@@ -14,8 +18,8 @@ const (
 	MillicoresUnit   = gmeasure.Units("m")
 	MillisecondsUnit = gmeasure.Units("ms")
 
-	StreamsUnit = gmeasure.Units("streams")
-
+	StreamsUnit           = gmeasure.Units("streams")
+	QueriesPerSecondUnit  = gmeasure.Units("queries per second")
 	RequestsPerSecondUnit = gmeasure.Units("requests per second")
 
 	DistributorAnnotation   = gmeasure.Annotation("distributor")

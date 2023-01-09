@@ -113,6 +113,22 @@ func (c *Client) MeasureGRPCRequestMetrics(
 	}
 }
 
+func (c *Client) MeasureBoltDBShipperRequestMetrics(
+	e *gmeasure.Experiment,
+	path RequestPath,
+	job string,
+	sampleRange model.Duration,
+) error {
+	switch path {
+	case WriteRequestPath:
+		return c.Measure(e, RequestBoltDBShipperRequestRate(BoltDBShipperWriteName, job, BoltDBWriteOperation, "2.*", sampleRange))
+	case ReadRequestPath:
+		return c.Measure(e, RequestBoltDBShipperRequestRate(BoltDBShipperReadName, job, BoltDBReadOperation, "2.*", sampleRange))
+	default:
+		return fmt.Errorf("error unknown path specified: %d", path)
+	}
+}
+
 func (c *Client) MeasureResourceUsageMetrics(
 	e *gmeasure.Experiment,
 	job string,
@@ -135,9 +151,31 @@ func (c *Client) MeasureResourceUsageMetrics(
 	return nil
 }
 
+func (c *Client) MeasureQueryMetrics(
+	e *gmeasure.Experiment,
+	job string,
+	sampleRange model.Duration,
+	annotation gmeasure.Annotation,
+) error {
+	if err := c.Measure(e, LogQLQueryLatencyAverage("2.*", job, sampleRange, annotation)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, LogQLQueryLatencyQuantile("2.*", job, DefaultPercentile, sampleRange, annotation)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, LogQLQueryMBpSProcessedAverage("2.*", job, sampleRange, annotation)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, LogQLQueryMBpSProcessedQuantile("2.*", job, DefaultPercentile, sampleRange, annotation)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *Client) MeasureIngestionVerificationMetrics(
 	e *gmeasure.Experiment,
-	deployment, distributor, tenant string,
+	deployment string,
 	sampleRange model.Duration,
 ) error {
 	if err := c.Measure(e, LoadNetworkTotal(deployment, sampleRange)); err != nil {
@@ -146,10 +184,26 @@ func (c *Client) MeasureIngestionVerificationMetrics(
 	if err := c.Measure(e, LoadNetworkGiPDTotal(deployment, sampleRange)); err != nil {
 		return err
 	}
-	if err := c.Measure(e, DistributorGiPDReceivedTotal(distributor, sampleRange)); err != nil {
+	if err := c.Measure(e, DistributorGiPDReceivedTotal(sampleRange)); err != nil {
 		return err
 	}
-	if err := c.Measure(e, LokiStreamsInMemoryTotal(tenant, sampleRange)); err != nil {
+	if err := c.Measure(e, LokiStreamsInMemoryTotal(sampleRange)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) MeasureLoadQuerierMetrics(
+	e *gmeasure.Experiment,
+	sampleRange model.Duration,
+) error {
+	if err := c.Measure(e, LogQLQueryRate(sampleRange)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, LogQLQueryDurationAverage(sampleRange)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, LogQLQueryDurationQuantile(DefaultPercentile, sampleRange)); err != nil {
 		return err
 	}
 	return nil
@@ -211,7 +265,7 @@ func (c *Client) measureCommonRequestMetrics(
 	if err := c.Measure(e, RequestDurationAverage(name, job, method, route, code, sampleRange, annotation)); err != nil {
 		return err
 	}
-	if err := c.Measure(e, RequestDurationQuantile(name, job, method, route, code, 90, sampleRange, annotation)); err != nil {
+	if err := c.Measure(e, RequestDurationQuantile(name, job, method, route, code, DefaultPercentile, sampleRange, annotation)); err != nil {
 		return err
 	}
 	return nil

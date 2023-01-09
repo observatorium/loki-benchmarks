@@ -35,7 +35,6 @@ var _ = Describe("High Volume Reads", func() {
 	Describe("Querying logs from Loki service", func() {
 		BeforeEach(func() {
 			generatorDpl = loadclient.CreateGenerator(highVolumeReadsTest.LogGenerator(), benchCfg.Generator)
-			querierDpls = querier.CreateQueriers(highVolumeReadsTest.Readers, benchCfg.Querier)
 
 			err := k8sClient.Create(context.TODO(), generatorDpl, &client.CreateOptions{})
 			Expect(err).Should(Succeed(), "Failed to deploy logger")
@@ -43,11 +42,15 @@ var _ = Describe("High Volume Reads", func() {
 			err = utils.WaitForReadyDeployment(k8sClient, generatorDpl, defaultRetry, defaultTimeout)
 			Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
-			err = utils.WaitUntilReceivedBytes(metricsClient, highVolumeReadsTest.StartThreshold, defaultRange, defaultRetry, defaultTimeout)
-			Expect(err).Should(Succeed(), "Failed to wait until latch activated")
+			time.Sleep(time.Minute)
 
-			err = k8sClient.Delete(context.TODO(), generatorDpl, &client.DeleteOptions{})
-			Expect(err).Should(Succeed(), "Failed to delete logger deployment")
+			// err = utils.WaitUntilReceivedBytes(metricsClient, highVolumeReadsTest.StartThreshold, defaultRange, defaultRetry, defaultTimeout)
+			// Expect(err).Should(Succeed(), "Failed to wait until latch activated")
+
+			// err = k8sClient.Delete(context.TODO(), generatorDpl, &client.DeleteOptions{})
+			// Expect(err).Should(Succeed(), "Failed to delete logger deployment")
+
+			querierDpls = querier.CreateQueriers(highVolumeReadsTest.Readers, benchCfg.Querier)
 
 			for _, dpl := range querierDpls {
 				err := k8sClient.Create(context.TODO(), dpl, &client.CreateOptions{})
@@ -75,32 +78,41 @@ var _ = Describe("High Volume Reads", func() {
 			AddReportEntry(e.Name, e)
 
 			e.Sample(func(idx int) {
+				// Load Generation
+				err := metricsClient.MeasureLoadQuerierMetrics(e, samplingRange)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+				err = metricsClient.MeasureIngestionVerificationMetrics(e, generatorDpl.GetName(), samplingRange)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+
 				// Query Frontend
 				job := benchCfg.Metrics.Jobs.QueryFrontend
 				annotation := metrics.QueryFrontendAnnotation
 
-				err := metricsClient.MeasureHTTPRequestMetrics(e, metrics.ReadRequestPath, job, samplingRange, annotation)
+				err = metricsClient.MeasureHTTPRequestMetrics(e, metrics.ReadRequestPath, job, samplingRange, annotation)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+				err = metricsClient.MeasureQueryMetrics(e, job, samplingRange, annotation)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 				// Querier
 				job = benchCfg.Metrics.Jobs.Querier
 				annotation = metrics.QuerierAnnotation
 
-				err = metricsClient.MeasureHTTPRequestMetrics(e, metrics.ReadRequestPath, job, samplingRange, annotation)
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 				err = metricsClient.MeasureResourceUsageMetrics(e, job, samplingRange, annotation)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+				err = metricsClient.MeasureQueryMetrics(e, job, samplingRange, annotation)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+				err = metricsClient.MeasureHTTPRequestMetrics(e, metrics.ReadRequestPath, job, samplingRange, annotation)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 				// Ingesters
 				job = benchCfg.Metrics.Jobs.Ingester
 				annotation = metrics.IngesterAnnotation
 
-				err = metricsClient.MeasureGRPCRequestMetrics(e, metrics.ReadRequestPath, job, samplingRange, annotation)
-				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 				err = metricsClient.MeasureResourceUsageMetrics(e, job, samplingRange, annotation)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-
-				err = metricsClient.Measure(e, metrics.RequestBoltDBShipperReadsQPS(job, samplingRange))
+				err = metricsClient.MeasureGRPCRequestMetrics(e, metrics.ReadRequestPath, job, samplingRange, annotation)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+				err = metricsClient.MeasureBoltDBShipperRequestMetrics(e, metrics.ReadRequestPath, job, samplingRange)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 			}, samplingCfg)
 		})

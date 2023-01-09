@@ -30,12 +30,12 @@ func (c *Client) DistributorBytesReceivedTotal(duration model.Duration) (float64
 	return c.executeScalarQuery(query)
 }
 
-func DistributorGiPDReceivedTotal(job string, duration model.Duration) Measurement {
+func DistributorGiPDReceivedTotal(duration model.Duration) Measurement {
 	return Measurement{
 		Name: "Total Projected Bytes Received",
 		Query: fmt.Sprintf(
-			`sum(rate(loki_distributor_bytes_received_total{job=~".*%s.*"}[%s])) / %d * %d`,
-			job, duration, BytesToGigabytesMultiplier, SecondsPerDay,
+			`sum(rate(loki_distributor_bytes_received_total[%s])) / %d * %d`,
+			duration, BytesToGigabytesMultiplier, SecondsPerDay,
 		),
 		Unit:       GigabytesPerDayUnit,
 		Annotation: DistributorAnnotation,
@@ -58,7 +58,7 @@ func LoadNetworkGiPDTotal(pod string, duration model.Duration) Measurement {
 	return Measurement{
 		Name: "Total Projected Bytes Transmitted",
 		Query: fmt.Sprintf(
-			`sum(rate(container_network_transmit_bytes_total{pod=~".*%s.*"}[%s])) / %d * %d`,
+			`sum(rate(container_network_transmit_bytes_total{pod=~"%s-.*"}[%s])) / %d * %d`,
 			pod, duration, BytesToGigabytesMultiplier, SecondsPerDay,
 		),
 		Unit:       GigabytesPerDayUnit,
@@ -66,12 +66,12 @@ func LoadNetworkGiPDTotal(pod string, duration model.Duration) Measurement {
 	}
 }
 
-func LokiStreamsInMemoryTotal(tenant string, duration model.Duration) Measurement {
+func LokiStreamsInMemoryTotal(duration model.Duration) Measurement {
 	return Measurement{
 		Name: "Total Streams In Memory",
 		Query: fmt.Sprintf(
-			`sum(max_over_time(loki_ingester_memory_streams{tenant="%s"}[%s]))`,
-			tenant, duration,
+			`sum(max_over_time(loki_ingester_memory_streams[%s]))`,
+			duration,
 		),
 		Unit:       StreamsUnit,
 		Annotation: IngesterAnnotation,
