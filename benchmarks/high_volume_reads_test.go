@@ -34,6 +34,7 @@ var _ = Describe("High Volume Reads", func() {
 
 	Describe("Querying logs from Loki service", func() {
 		BeforeEach(func() {
+			querierDpls = querier.CreateQueriers(highVolumeReadsTest.Readers, benchCfg.Querier)
 			generatorDpl = loadclient.CreateGenerator(highVolumeReadsTest.LogGenerator(), benchCfg.Generator)
 
 			err := k8sClient.Create(context.TODO(), generatorDpl, &client.CreateOptions{})
@@ -42,15 +43,8 @@ var _ = Describe("High Volume Reads", func() {
 			err = utils.WaitForReadyDeployment(k8sClient, generatorDpl, defaultRetry, defaultTimeout)
 			Expect(err).Should(Succeed(), "Failed to wait for ready logger deployment")
 
-			time.Sleep(time.Minute)
-
-			// err = utils.WaitUntilReceivedBytes(metricsClient, highVolumeReadsTest.StartThreshold, defaultRange, defaultRetry, defaultTimeout)
-			// Expect(err).Should(Succeed(), "Failed to wait until latch activated")
-
-			// err = k8sClient.Delete(context.TODO(), generatorDpl, &client.DeleteOptions{})
-			// Expect(err).Should(Succeed(), "Failed to delete logger deployment")
-
-			querierDpls = querier.CreateQueriers(highVolumeReadsTest.Readers, benchCfg.Querier)
+			// Begin loading data into the Loki service so there is something to query for.
+			time.Sleep(time.Minute * 5)
 
 			for _, dpl := range querierDpls {
 				err := k8sClient.Create(context.TODO(), dpl, &client.CreateOptions{})
@@ -61,6 +55,9 @@ var _ = Describe("High Volume Reads", func() {
 			}
 
 			DeferCleanup(func() {
+				err = k8sClient.Delete(context.TODO(), generatorDpl, &client.DeleteOptions{})
+				Expect(err).Should(Succeed(), "Failed to delete logger deployment")
+
 				for _, dpl := range querierDpls {
 					err := k8sClient.Delete(context.TODO(), dpl, &client.DeleteOptions{})
 					Expect(err).Should(Succeed(), "Failed to delete querier deployment")

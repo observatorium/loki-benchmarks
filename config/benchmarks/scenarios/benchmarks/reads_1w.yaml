@@ -2,7 +2,6 @@ scenarios:
   highVolumeReads:
     enabled: false
     description: "Query range 1 week"
-    startThreshold: 1000000000
     readers: 
       replicas: 5
       queries:

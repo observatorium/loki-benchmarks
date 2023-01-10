@@ -24,7 +24,6 @@ var (
 	metricsClient *metrics.Client
 
 	defaultRetry   = 5 * time.Second
-	defaultRange   = 5 * time.Minute
 	defaultTimeout = 1 * time.Minute
 )
 

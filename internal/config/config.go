@@ -99,12 +99,11 @@ func (w *HighVolumeWrites) SamplingConfiguration() (gmeasure.SamplingConfig, mod
 }
 
 type HighVolumeReads struct {
-	Enabled        bool    `yaml:"enabled"`
-	Description    string  `yaml:"description"`
-	StartThreshold float64 `yaml:"startThreshold"`
-	Readers        *Reader `yaml:"readers"`
-	samples        *Sample `yaml:"samples,omitempty"`
-	generator      *Writer `yaml:"generator,omitempty"`
+	Enabled     bool    `yaml:"enabled"`
+	Description string  `yaml:"description"`
+	Readers     *Reader `yaml:"readers"`
+	samples     *Sample `yaml:"samples,omitempty"`
+	generator   *Writer `yaml:"generator,omitempty"`
 }
 
 func (r *HighVolumeReads) SamplingConfiguration() (gmeasure.SamplingConfig, model.Duration) {

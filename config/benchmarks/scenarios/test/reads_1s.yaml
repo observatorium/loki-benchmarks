@@ -7,7 +7,6 @@ scenarios:
       args:
         source: application
         log-lines-rate: 200
-    startThreshold: 50000
     samples:
       total: 2
       interval: "1m"
