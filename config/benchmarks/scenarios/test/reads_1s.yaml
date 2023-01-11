@@ -6,7 +6,7 @@ scenarios:
       replicas: 1
       args:
         source: application
-        log-lines-rate: 200
+        logs-per-second: 200
     samples:
       total: 2
       interval: "1m"

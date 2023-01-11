@@ -8,7 +8,7 @@ scenarios:
     writers:
       replicas: 3
       args:
-        source: synthetic
-        loki-labels: host
-        log-lines-rate: 1000
+        log-type: synthetic
+        label-type: host
+        logs-per-second: 1000
         synthetic-payload-size: 1000

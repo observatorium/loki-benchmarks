@@ -18,10 +18,10 @@ const (
 
 func CreateGenerator(scenarioCfg *config.Writer, cfg *config.Generator) client.Object {
 	args := []string{
-		"generate",
+		"--command=generate",
+		"--destination=loki",
 		fmt.Sprintf("--%s=%s", "url", cfg.PushURL),
 		fmt.Sprintf("--%s=%s", "tenant", cfg.Tenant),
-		"--destination=loki",
 	}
 
 	for k, v := range scenarioCfg.Args {

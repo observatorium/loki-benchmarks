@@ -1,6 +1,6 @@
 scenarios:
   highVolumeReads:
-    enabled: false
+    enabled: true
     description: "Query range 1 second"
     readers: 
       replicas: 5

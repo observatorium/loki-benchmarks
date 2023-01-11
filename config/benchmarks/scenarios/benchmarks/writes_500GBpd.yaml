@@ -3,9 +3,8 @@ scenarios:
     enabled: true
     description: "Write 500 GB per day"
     writers:
-      replicas: 6
+      replicas: 48
       args:
-        source: synthetic
-        loki-labels: host
-        log-lines-rate: 1000
-        synthetic-payload-size: 1000
+        log-type: synthetic
+        logs-per-second: 250
+        synthetic-payload-size: 500
