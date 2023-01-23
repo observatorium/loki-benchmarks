@@ -36,8 +36,8 @@ func LogQLQueryDurationAverage(duration model.Duration) Measurement {
 
 	return Measurement{
 		Name:       "LogQL query duration avg",
-		Query:      fmt.Sprintf(`%s / %s`, numerator, denomintator),
-		Unit:       QueriesPerSecondUnit,
+		Query:      fmt.Sprintf(`(%s / %s) * %d`, numerator, denomintator, SecondsToMillisecondsMultiplier),
+		Unit:       MillisecondsUnit,
 		Annotation: LogQLAnnotation,
 	}
 }
@@ -46,10 +46,10 @@ func LogQLQueryDurationQuantile(percentile int, duration model.Duration) Measure
 	return Measurement{
 		Name: fmt.Sprintf("LogQL query duration P%d", percentile),
 		Query: fmt.Sprintf(
-			`histogram_quantile(0.%d, sum by (le) (rate(logql_query_duration_seconds_bucket[%s])))`,
-			percentile, duration,
+			`histogram_quantile(0.%d, sum by (le) (rate(logql_query_duration_seconds_bucket[%s]))) * %d`,
+			percentile, duration, SecondsToMillisecondsMultiplier,
 		),
-		Unit:       QueriesPerSecondUnit,
+		Unit:       MillisecondsUnit,
 		Annotation: LogQLAnnotation,
 	}
 }

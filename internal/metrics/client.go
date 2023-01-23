@@ -87,9 +87,6 @@ func (c *Client) MeasureHTTPRequestMetrics(
 	case WriteRequestPath:
 		return c.measureCommonRequestMetrics(e, job, HTTPPostMethod, HTTPPushRoute, HTTPPushRoute, sampleRange, annotation)
 	case ReadRequestPath:
-		if err := c.Measure(e, RequestQueryRangeThroughput(job, sampleRange, annotation)); err != nil {
-			return err
-		}
 		return c.measureCommonRequestMetrics(e, job, HTTPGetMethod, HTTPQueryRangeRoute, HTTPReadPathRoutes, sampleRange, annotation)
 	default:
 		return fmt.Errorf("error unknown path specified: %d", path)

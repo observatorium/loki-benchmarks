@@ -100,30 +100,3 @@ func RequestBoltDBShipperRequestRate(name, job, operation, code string, duration
 		Annotation: IngesterAnnotation,
 	}
 }
-
-func RequestQueryRangeThroughput(job string, duration model.Duration, annotation gmeasure.Annotation) Measurement {
-	endpoint := "loki_api_v1_query|loki_api_v1_query_range|api_prom_query|metrics"
-	return requestThroughput("2xx reads", job, endpoint, "2.*", "range", "filter|metric", "slow", "4e+09", duration, annotation)
-}
-
-func requestThroughput(
-	name, job, endpoint, code, queryRange, metricType, latencyType, le string,
-	duration model.Duration,
-	annotation gmeasure.Annotation,
-) Measurement {
-	numerator := fmt.Sprintf(
-		`sum by (namespace, job) (rate(loki_logql_querystats_bytes_processed_per_seconds_bucket{status_code=~"%s", endpoint=~"%s", range="%s", type=~"%s", job=~".*%s.*", latency_type="%s", le="%s"}[%s]))`,
-		code, endpoint, queryRange, metricType, job, latencyType, le, duration,
-	)
-	denomintator := fmt.Sprintf(
-		`sum by (namespace, job) (rate(loki_logql_querystats_bytes_processed_per_seconds_count{status_code=~"%s", endpoint=~"%s", range="%s", type=~"%s", job=~".*%s.*"}[%s]))`,
-		code, endpoint, queryRange, metricType, job, duration,
-	)
-
-	return Measurement{
-		Name:       fmt.Sprintf("%s throughput", name),
-		Query:      fmt.Sprintf("(%s / %s) * %d", numerator, denomintator, SecondsToMillisecondsMultiplier),
-		Unit:       MillisecondsUnit,
-		Annotation: annotation,
-	}
-}

@@ -108,7 +108,7 @@ type HighVolumeReads struct {
 
 func (r *HighVolumeReads) SamplingConfiguration() (gmeasure.SamplingConfig, model.Duration) {
 	samples := &Sample{
-		Total:    10,
+		Total:    15,
 		Interval: time.Minute,
 	}
 
@@ -127,10 +127,10 @@ func (r *HighVolumeReads) SamplingConfiguration() (gmeasure.SamplingConfig, mode
 
 func (r *HighVolumeReads) LogGenerator() *Writer {
 	writer := &Writer{
-		Replicas: 10,
+		Replicas: 15,
 		Args: map[string]string{
 			"log-type":        "application",
-			"logs-per-second": "1000",
+			"logs-per-second": "500",
 		},
 	}
 
