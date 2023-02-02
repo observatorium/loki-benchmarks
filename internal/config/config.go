@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/onsi/gomega/gmeasure"
+	"github.com/prometheus/common/model"
 )
 
 type Benchmark struct {
@@ -40,52 +41,120 @@ type Jobs struct {
 	Ingester      string `yaml:"ingester"`
 	Querier       string `yaml:"querier"`
 	QueryFrontend string `yaml:"queryFrontend"`
+	IndexGateway  string `yaml:"indexGateway"`
 }
 
 type Scenarios struct {
-	HighVolumeWrites HighVolumeWrites `yaml:"highVolumeWrites"`
-	HighVolumeReads  HighVolumeReads  `yaml:"highVolumeReads"`
+	IngestionPath *IngestionPath `yaml:"ingestionPath,omitempty"`
+	QueryPath     *QueryPath     `yaml:"queryPath,omitempty"`
 }
 
-type HighVolumeWrites struct {
-	Enabled        bool            `yaml:"enabled"`
-	Samples        Samples         `yaml:"samples"`
-	Configurations []Configuration `yaml:"configurations"`
+func (s *Scenarios) IsWriteTestEnabled() bool {
+	if s == nil {
+		return false
+	}
+
+	if s.IngestionPath == nil {
+		return false
+	}
+
+	return s.IngestionPath.Enabled
 }
 
-type HighVolumeReads struct {
-	Enabled        bool            `yaml:"enabled"`
-	Generator      *Writers        `yaml:"generator"`
-	StartThreshold float64         `yaml:"startThreshold"`
-	Samples        Samples         `yaml:"samples"`
-	Configurations []Configuration `yaml:"configurations"`
+func (s *Scenarios) IsReadTestEnabled() bool {
+	if s == nil {
+		return false
+	}
+
+	if s.QueryPath == nil {
+		return false
+	}
+
+	return s.QueryPath.Enabled
 }
 
-type Samples struct {
+type IngestionPath struct {
+	Enabled     bool    `yaml:"enabled"`
+	Description string  `yaml:"description"`
+	Writers     *Writer `yaml:"writers"`
+	samples     *Sample `yaml:"samples,omitempty"`
+}
+
+func (w *IngestionPath) SamplingConfiguration() (gmeasure.SamplingConfig, model.Duration) {
+	samples := &Sample{
+		Total:    10,
+		Interval: time.Minute * 3,
+	}
+
+	if w != nil {
+		if w.samples != nil {
+			samples = w.samples
+		}
+	}
+
+	return gmeasure.SamplingConfig{
+		N:                   samples.Total,
+		Duration:            samples.Interval * time.Duration(samples.Total+1),
+		MinSamplingInterval: samples.Interval,
+	}, model.Duration(samples.Interval)
+}
+
+type QueryPath struct {
+	Enabled     bool    `yaml:"enabled"`
+	Description string  `yaml:"description"`
+	Readers     *Reader `yaml:"readers"`
+	samples     *Sample `yaml:"samples,omitempty"`
+	generator   *Writer `yaml:"generator,omitempty"`
+}
+
+func (r *QueryPath) SamplingConfiguration() (gmeasure.SamplingConfig, model.Duration) {
+	samples := &Sample{
+		Total:    15,
+		Interval: time.Minute,
+	}
+
+	if r != nil {
+		if r.samples != nil {
+			samples = r.samples
+		}
+	}
+
+	return gmeasure.SamplingConfig{
+		N:                   samples.Total,
+		Duration:            samples.Interval * time.Duration(samples.Total+1),
+		MinSamplingInterval: samples.Interval,
+	}, model.Duration(samples.Interval)
+}
+
+func (r *QueryPath) LogGenerator() *Writer {
+	writer := &Writer{
+		Replicas: 15,
+		Args: map[string]string{
+			"log-type":        "application",
+			"logs-per-second": "500",
+		},
+	}
+
+	if r != nil {
+		if r.samples != nil {
+			writer = r.generator
+		}
+	}
+
+	return writer
+}
+
+type Sample struct {
 	Total    int           `yaml:"total"`
 	Interval time.Duration `yaml:"interval"`
 }
 
-func (s Samples) SamplingConfiguration() gmeasure.SamplingConfig {
-	return gmeasure.SamplingConfig{
-		N:                   s.Total,
-		Duration:            s.Interval * time.Duration(s.Total+1),
-		MinSamplingInterval: s.Interval,
-	}
-}
-
-type Configuration struct {
-	Description string   `yaml:"description"`
-	Readers     *Readers `yaml:"readers,omitempty"`
-	Writers     *Writers `yaml:"writers,omitempty"`
-}
-
-type Writers struct {
+type Writer struct {
 	Replicas int32             `yaml:"replicas"`
 	Args     map[string]string `yaml:"args"`
 }
 
-type Readers struct {
+type Reader struct {
 	Replicas   int32             `yaml:"replicas"`
 	Queries    map[string]string `yaml:"queries"`
 	QueryRange string            `yaml:"queryRange"`

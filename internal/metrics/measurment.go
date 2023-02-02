@@ -5,6 +5,10 @@ import (
 )
 
 const (
+	DefaultPercentile = 95
+)
+
+const (
 	CoresToMillicores               int = 1000
 	SecondsToMillisecondsMultiplier int = 1000
 	BytesToMegabytesMultiplier      int = 1000 * 1000
@@ -14,12 +18,15 @@ const (
 	MillicoresUnit   = gmeasure.Units("m")
 	MillisecondsUnit = gmeasure.Units("ms")
 
+	StreamsUnit           = gmeasure.Units("streams")
+	QueriesPerSecondUnit  = gmeasure.Units("queries per second")
 	RequestsPerSecondUnit = gmeasure.Units("requests per second")
 
 	DistributorAnnotation   = gmeasure.Annotation("distributor")
 	IngesterAnnotation      = gmeasure.Annotation("ingester")
 	QuerierAnnotation       = gmeasure.Annotation("querier")
 	QueryFrontendAnnotation = gmeasure.Annotation("query-frontend")
+	IndexGatewayAnnotation  = gmeasure.Annotation("index-gateway")
 )
 
 type Measurement struct {

@@ -1,0 +1,11 @@
+scenarios:
+  ingestionPath:
+    enabled: false
+    description: "Write 32 TB per day"
+    writers:
+      replicas: 384
+      args:
+        log-type: synthetic
+        label-type: client-host
+        logs-per-second: 1000
+        synthetic-payload-size: 1000

@@ -12,12 +12,20 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+type RequestPath int
+
+const (
+	WriteRequestPath RequestPath = iota
+	ReadRequestPath
+)
+
 type Client struct {
-	api     v1.API
-	timeout time.Duration
+	api               v1.API
+	timeout           time.Duration
+	isCAdvisorEnabled bool
 }
 
-func NewClient(url, token string, timeout time.Duration) (*Client, error) {
+func NewClient(url, token string, timeout time.Duration, cadvisorEnabled bool) (*Client, error) {
 	httpConfig := config.HTTPClientConfig{
 		TLSConfig: config.TLSConfig{
 			InsecureSkipVerify: true,
@@ -48,8 +56,9 @@ func NewClient(url, token string, timeout time.Duration) (*Client, error) {
 	}
 
 	return &Client{
-		api:     v1.NewAPI(pc),
-		timeout: timeout,
+		api:               v1.NewAPI(pc),
+		timeout:           timeout,
+		isCAdvisorEnabled: cadvisorEnabled,
 	}, nil
 }
 
@@ -64,6 +73,145 @@ func (c *Client) Measure(e *gmeasure.Experiment, data Measurement) error {
 	}
 
 	e.RecordValue(data.Name, value, data.Unit, data.Annotation, gmeasure.Precision(4))
+	return nil
+}
+
+func (c *Client) MeasureHTTPRequestMetrics(
+	e *gmeasure.Experiment,
+	path RequestPath,
+	job string,
+	sampleRange model.Duration,
+	annotation gmeasure.Annotation,
+) error {
+	switch path {
+	case WriteRequestPath:
+		return c.measureCommonRequestMetrics(e, job, HTTPPostMethod, HTTPPushRoute, HTTPPushRoute, sampleRange, annotation)
+	case ReadRequestPath:
+		return c.measureCommonRequestMetrics(e, job, HTTPGetMethod, HTTPQueryRangeRoute, HTTPReadPathRoutes, sampleRange, annotation)
+	default:
+		return fmt.Errorf("error unknown path specified: %d", path)
+	}
+}
+
+func (c *Client) MeasureGRPCRequestMetrics(
+	e *gmeasure.Experiment,
+	path RequestPath,
+	job string,
+	sampleRange model.Duration,
+	annotation gmeasure.Annotation,
+) error {
+	switch path {
+	case WriteRequestPath:
+		return c.measureCommonRequestMetrics(e, job, GRPCMethod, GRPCPushRoute, GRPCPushRoute, sampleRange, annotation)
+	case ReadRequestPath:
+		return c.measureCommonRequestMetrics(e, job, GRPCMethod, GRPCQuerySampleRoute, GRPCReadPathRoutes, sampleRange, annotation)
+	default:
+		return fmt.Errorf("error unknown path specified: %d", path)
+	}
+}
+
+func (c *Client) MeasureBoltDBShipperRequestMetrics(
+	e *gmeasure.Experiment,
+	path RequestPath,
+	job string,
+	sampleRange model.Duration,
+) error {
+	switch path {
+	case WriteRequestPath:
+		return c.Measure(e, RequestBoltDBShipperRequestRate(BoltDBShipperWriteName, job, BoltDBWriteOperation, "2.*", sampleRange))
+	case ReadRequestPath:
+		return c.Measure(e, RequestBoltDBShipperRequestRate(BoltDBShipperReadName, job, BoltDBReadOperation, "2.*", sampleRange))
+	default:
+		return fmt.Errorf("error unknown path specified: %d", path)
+	}
+}
+
+func (c *Client) MeasureResourceUsageMetrics(
+	e *gmeasure.Experiment,
+	job string,
+	sampleRange model.Duration,
+	annotation gmeasure.Annotation,
+) error {
+	if err := c.Measure(e, ContainerCPU(job, sampleRange, annotation)); err != nil {
+		return err
+	}
+
+	if c.isCAdvisorEnabled {
+		if err := c.Measure(e, ContainerMemoryWorkingSetBytes(job, sampleRange, annotation)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) MeasureVolumeUsageMetrics(
+	e *gmeasure.Experiment,
+	job string,
+	sampleRange model.Duration,
+	annotation gmeasure.Annotation,
+) error {
+	if err := c.Measure(e, PersistentVolumeUsedBytes(job, sampleRange, annotation)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) MeasureQueryMetrics(
+	e *gmeasure.Experiment,
+	job string,
+	sampleRange model.Duration,
+	annotation gmeasure.Annotation,
+) error {
+	if err := c.Measure(e, LogQLQueryLatencyAverage("2.*", job, sampleRange, annotation)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, LogQLQueryLatencyQuantile("2.*", job, DefaultPercentile, sampleRange, annotation)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, LogQLQueryMBpSProcessedAverage("2.*", job, sampleRange, annotation)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, LogQLQueryMBpSProcessedQuantile("2.*", job, DefaultPercentile, sampleRange, annotation)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) MeasureIngestionVerificationMetrics(
+	e *gmeasure.Experiment,
+	deployment string,
+	sampleRange model.Duration,
+) error {
+	if err := c.Measure(e, LoadNetworkTotal(deployment, sampleRange)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, LoadNetworkGiPDTotal(deployment, sampleRange)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, DistributorGiPDReceivedTotal(sampleRange)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, LokiStreamsInMemoryTotal(sampleRange)); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) MeasureLoadQuerierMetrics(
+	e *gmeasure.Experiment,
+	sampleRange model.Duration,
+) error {
+	if err := c.Measure(e, LogQLQueryRate(sampleRange)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, LogQLQueryDurationAverage(sampleRange)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, LogQLQueryDurationQuantile(DefaultPercentile, sampleRange)); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -89,4 +237,42 @@ func (c *Client) executeScalarQuery(query string) (float64, error) {
 	default:
 		return 0.0, fmt.Errorf("failed to parse result for query: %s", query)
 	}
+}
+
+func (c *Client) measureCommonRequestMetrics(
+	e *gmeasure.Experiment,
+	job, method, route, pathRoutes string,
+	sampleRange model.Duration,
+	annotation gmeasure.Annotation,
+) error {
+	var name, code, requestRateName string
+
+	if method == GRPCMethod {
+		name = fmt.Sprintf("successful GRPC %s", route)
+		code = "success"
+
+		requestRateName = name
+		if pathRoutes == GRPCReadPathRoutes {
+			requestRateName = "successful GRPC reads"
+		}
+	} else {
+		name = fmt.Sprintf("2xx %s", route)
+		code = "2.*"
+
+		requestRateName = name
+		if pathRoutes == HTTPReadPathRoutes {
+			requestRateName = "2xx reads"
+		}
+	}
+
+	if err := c.Measure(e, RequestRate(requestRateName, job, pathRoutes, code, sampleRange, annotation)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, RequestDurationAverage(name, job, method, route, code, sampleRange, annotation)); err != nil {
+		return err
+	}
+	if err := c.Measure(e, RequestDurationQuantile(name, job, method, route, code, DefaultPercentile, sampleRange, annotation)); err != nil {
+		return err
+	}
+	return nil
 }

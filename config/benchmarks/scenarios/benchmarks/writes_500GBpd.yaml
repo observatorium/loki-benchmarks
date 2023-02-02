@@ -1,0 +1,10 @@
+scenarios:
+  ingestionPath:
+    enabled: true
+    description: "Write 500 GB per day"
+    writers:
+      replicas: 48
+      args:
+        log-type: synthetic
+        logs-per-second: 250
+        synthetic-payload-size: 500

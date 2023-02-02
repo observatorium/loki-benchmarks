@@ -1,0 +1,17 @@
+scenarios:
+  queryPath:
+    enabled: false
+    description: "Query range 1 second"
+    generator:
+      replicas: 1
+      args:
+        source: application
+        logs-per-second: 200
+    samples:
+      total: 2
+      interval: "1m"
+    readers:
+      replicas: 1
+      queries:
+        sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
+      queryRange: "1s"

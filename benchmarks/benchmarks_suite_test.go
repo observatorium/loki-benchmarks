@@ -24,7 +24,6 @@ var (
 	metricsClient *metrics.Client
 
 	defaultRetry   = 5 * time.Second
-	defaultRange   = 5 * time.Minute
 	defaultTimeout = 1 * time.Minute
 )
 
@@ -62,7 +61,12 @@ func init() {
 
 	// Create Metrics Client
 	promToken := os.Getenv("PROMETHEUS_TOKEN")
-	metricsClient, err = metrics.NewClient(benchCfg.Metrics.URL, promToken, 30*time.Second)
+	metricsClient, err = metrics.NewClient(
+		benchCfg.Metrics.URL,
+		promToken,
+		defaultTimeout,
+		benchCfg.Metrics.EnableCadvisorMetrics,
+	)
 	if err != nil {
 		panic("Failed to create metrics client")
 	}

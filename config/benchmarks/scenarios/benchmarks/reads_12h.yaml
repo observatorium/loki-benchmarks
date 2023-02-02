@@ -1,0 +1,10 @@
+scenarios:
+  queryPath:
+    enabled: true
+    description: "Query range 12 hours"
+    readers: 
+      replicas: 5
+      queries:
+        sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
+        sumRateErrorsOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
+      queryRange: "12h"
