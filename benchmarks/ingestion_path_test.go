@@ -17,22 +17,24 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("High Volume Writes", func() {
-	var highVolumeWriteTest *config.HighVolumeWrites
-	var generatorDpl client.Object
-	var samplingCfg gmeasure.SamplingConfig
-	var samplingRange model.Duration
+var _ = Describe("Ingestion Path", func() {
+	var (
+		ingestionTest *config.IngestionPath
+		generatorDpl  client.Object
+		samplingCfg   gmeasure.SamplingConfig
+		samplingRange model.Duration
+	)
 
 	BeforeEach(func() {
-		if !benchCfg.Scenarios.IsWriteTestRunnable() {
-			Skip("High Volumes Writes Benchmark not enabled")
+		if !benchCfg.Scenarios.IsWriteTestEnabled() {
+			Skip("Ingestion Path Benchmarks not enabled")
 		}
-		highVolumeWriteTest = benchCfg.Scenarios.HighVolumeWrites
+		ingestionTest = benchCfg.Scenarios.IngestionPath
 	})
 
 	Describe("Forwarding logs to Loki service", func() {
 		BeforeEach(func() {
-			generatorDpl = loadclient.CreateGenerator(highVolumeWriteTest.Writers, benchCfg.Generator)
+			generatorDpl = loadclient.CreateGenerator(ingestionTest.Writers, benchCfg.Generator)
 
 			err := k8sClient.Create(context.TODO(), generatorDpl, &client.CreateOptions{})
 			Expect(err).Should(Succeed(), "Failed to deploy logger")
@@ -46,13 +48,13 @@ var _ = Describe("High Volume Writes", func() {
 			})
 		})
 
-		It("can measure performance", func() {
-			samplingCfg, samplingRange = highVolumeWriteTest.SamplingConfiguration()
+		It("samples metric data from ingestion path related components", func() {
+			samplingCfg, samplingRange = ingestionTest.SamplingConfiguration()
 
 			// Sleeping for the first interval so that the data is accurate for the new workload.
 			time.Sleep(samplingCfg.MinSamplingInterval)
 
-			e := gmeasure.NewExperiment(highVolumeWriteTest.Description)
+			e := gmeasure.NewExperiment(ingestionTest.Description)
 			AddReportEntry(e.Name, e)
 
 			e.Sample(func(idx int) {
@@ -72,6 +74,8 @@ var _ = Describe("High Volume Writes", func() {
 				annotation = metrics.IngesterAnnotation
 
 				err = metricsClient.MeasureResourceUsageMetrics(e, job, samplingRange, annotation)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+				err = metricsClient.MeasureVolumeUsageMetrics(e, job, samplingRange, annotation)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 				err = metricsClient.MeasureGRPCRequestMetrics(e, metrics.WriteRequestPath, job, samplingRange, annotation)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))

@@ -64,7 +64,7 @@ func init() {
 	metricsClient, err = metrics.NewClient(
 		benchCfg.Metrics.URL,
 		promToken,
-		30*time.Second,
+		defaultTimeout,
 		benchCfg.Metrics.EnableCadvisorMetrics,
 	)
 	if err != nil {

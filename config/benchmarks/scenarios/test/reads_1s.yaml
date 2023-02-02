@@ -1,5 +1,5 @@
 scenarios:
-  highVolumeReads:
+  queryPath:
     enabled: false
     description: "Query range 1 second"
     generator:

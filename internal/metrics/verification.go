@@ -19,17 +19,6 @@ const (
 // This measurments are only meant to verify the configuration of the
 // generator and are not actually important to the experiment.
 
-func (c *Client) DistributorBytesReceivedTotal(duration model.Duration) (float64, error) {
-	// This method breaks the convention of the Measurment -> Measure structure because
-	// it is used out of the scope of an experiement.
-
-	query := fmt.Sprintf(
-		`sum(max_over_time(loki_distributor_bytes_received_total[%s]) - min_over_time(loki_distributor_bytes_received_total[%s]))`,
-		duration, duration,
-	)
-	return c.executeScalarQuery(query)
-}
-
 func DistributorGiPDReceivedTotal(duration model.Duration) Measurement {
 	return Measurement{
 		Name: "Total Projected Bytes Received",

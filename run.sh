@@ -263,6 +263,7 @@ metrics:
     ingester: $LOKI_COMPONENT_PREFIX-ingester
     querier: $LOKI_COMPONENT_PREFIX-querier
     queryFrontend: $LOKI_COMPONENT_PREFIX-query-frontend
+    indexGateway: $LOKI_COMPONENT_PREFIX-index-gateway
 EOF
 
     echo -e "\nCopying scenario configuration"

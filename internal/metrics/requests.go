@@ -11,10 +11,9 @@ const (
 	HTTPGetMethod  = "GET"
 	HTTPPostMethod = "POST"
 
-	HTTPQueryRangeRoute = "loki_api_v1_query_range"
 	HTTPPushRoute       = "loki_api_v1_push"
-
-	HTTPReadPathRoutes = "loki_api_v1_series|api_prom_series|api_prom_query|api_prom_label|api_prom_label_name_values|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_name_values"
+	HTTPQueryRangeRoute = "loki_api_v1_query_range"
+	HTTPReadPathRoutes  = "loki_api_v1_series|api_prom_series|api_prom_query|api_prom_label|api_prom_label_name_values|loki_api_v1_query|loki_api_v1_query_range|loki_api_v1_labels|loki_api_v1_label_name_values"
 )
 
 const (
@@ -22,8 +21,7 @@ const (
 
 	GRPCPushRoute        = "/logproto.Pusher/Push"
 	GRPCQuerySampleRoute = "/logproto.Querier/QuerySample"
-
-	GRPCReadPathRoutes = "/logproto.Querier/Query|/logproto.Querier/QuerySample|/logproto.Querier/Label|/logproto.Querier/Series|/logproto.Querier/GetChunkIDs"
+	GRPCReadPathRoutes   = "/logproto.Querier/Query|/logproto.Querier/QuerySample|/logproto.Querier/Label|/logproto.Querier/Series|/logproto.Querier/GetChunkIDs"
 )
 
 const (

@@ -1,10 +1,10 @@
 scenarios:
-  highVolumeReads:
+  queryPath:
     enabled: true
     description: "Query range 1 hour"
     readers: 
       replicas: 5
       queries:
         sumRateByLevel: 'sum by (level) (rate({client="promtail"} [1s]))'
-        sumRateErrosOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
+        sumRateErrorsOnly: 'sum(rate({client="promtail"} |= "level=error" [1s]))'
       queryRange: "1h"

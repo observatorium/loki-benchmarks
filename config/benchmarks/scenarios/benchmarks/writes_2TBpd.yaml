@@ -1,5 +1,5 @@
 scenarios:
-  highVolumeWrites:
+  ingestionPath:
     enabled: true
     description: "Write 2 TB per day"
     writers:

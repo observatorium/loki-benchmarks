@@ -18,24 +18,26 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("High Volume Reads", func() {
-	var highVolumeReadsTest *config.HighVolumeReads
-	var generatorDpl client.Object
-	var querierDpls []client.Object
-	var samplingCfg gmeasure.SamplingConfig
-	var samplingRange model.Duration
+var _ = Describe("Query Path", func() {
+	var (
+		queryTest     *config.QueryPath
+		generatorDpl  client.Object
+		querierDpls   []client.Object
+		samplingCfg   gmeasure.SamplingConfig
+		samplingRange model.Duration
+	)
 
 	BeforeEach(func() {
-		if !benchCfg.Scenarios.IsReadTestRunnable() {
-			Skip("High Volumes Reads Benchmark not enabled")
+		if !benchCfg.Scenarios.IsReadTestEnabled() {
+			Skip("Query Path Benchmarks not enabled")
 		}
-		highVolumeReadsTest = benchCfg.Scenarios.HighVolumeReads
+		queryTest = benchCfg.Scenarios.QueryPath
 	})
 
 	Describe("Querying logs from Loki service", func() {
 		BeforeEach(func() {
-			querierDpls = querier.CreateQueriers(highVolumeReadsTest.Readers, benchCfg.Querier)
-			generatorDpl = loadclient.CreateGenerator(highVolumeReadsTest.LogGenerator(), benchCfg.Generator)
+			querierDpls = querier.CreateQueriers(queryTest.Readers, benchCfg.Querier)
+			generatorDpl = loadclient.CreateGenerator(queryTest.LogGenerator(), benchCfg.Generator)
 
 			err := k8sClient.Create(context.TODO(), generatorDpl, &client.CreateOptions{})
 			Expect(err).Should(Succeed(), "Failed to deploy logger")
@@ -65,13 +67,13 @@ var _ = Describe("High Volume Reads", func() {
 			})
 		})
 
-		It("should measure metrics", func() {
-			samplingCfg, samplingRange = highVolumeReadsTest.SamplingConfiguration()
+		It("samples metric data from query path related components", func() {
+			samplingCfg, samplingRange = queryTest.SamplingConfiguration()
 
 			// Sleeping for the first interval so that the data is accurate for the new workload.
 			time.Sleep(samplingCfg.MinSamplingInterval)
 
-			e := gmeasure.NewExperiment(highVolumeReadsTest.Description)
+			e := gmeasure.NewExperiment(queryTest.Description)
 			AddReportEntry(e.Name, e)
 
 			e.Sample(func(idx int) {
@@ -85,6 +87,8 @@ var _ = Describe("High Volume Reads", func() {
 				job := benchCfg.Metrics.Jobs.QueryFrontend
 				annotation := metrics.QueryFrontendAnnotation
 
+				err = metricsClient.MeasureResourceUsageMetrics(e, job, samplingRange, annotation)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 				err = metricsClient.MeasureHTTPRequestMetrics(e, metrics.ReadRequestPath, job, samplingRange, annotation)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 				err = metricsClient.MeasureQueryMetrics(e, job, samplingRange, annotation)
@@ -96,9 +100,18 @@ var _ = Describe("High Volume Reads", func() {
 
 				err = metricsClient.MeasureResourceUsageMetrics(e, job, samplingRange, annotation)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+				err = metricsClient.MeasureHTTPRequestMetrics(e, metrics.ReadRequestPath, job, samplingRange, annotation)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 				err = metricsClient.MeasureQueryMetrics(e, job, samplingRange, annotation)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
-				err = metricsClient.MeasureHTTPRequestMetrics(e, metrics.ReadRequestPath, job, samplingRange, annotation)
+
+				// Index Gateway
+				job = benchCfg.Metrics.Jobs.IndexGateway
+				annotation = metrics.IndexGatewayAnnotation
+
+				err = metricsClient.MeasureResourceUsageMetrics(e, job, samplingRange, annotation)
+				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
+				err = metricsClient.MeasureVolumeUsageMetrics(e, job, samplingRange, annotation)
 				Expect(err).Should(Succeed(), fmt.Sprintf("Failed - %v", err))
 
 				// Ingesters

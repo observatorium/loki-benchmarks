@@ -41,45 +41,46 @@ type Jobs struct {
 	Ingester      string `yaml:"ingester"`
 	Querier       string `yaml:"querier"`
 	QueryFrontend string `yaml:"queryFrontend"`
+	IndexGateway  string `yaml:"indexGateway"`
 }
 
 type Scenarios struct {
-	HighVolumeWrites *HighVolumeWrites `yaml:"highVolumeWrites,omitempty"`
-	HighVolumeReads  *HighVolumeReads  `yaml:"highVolumeReads,omitempty"`
+	IngestionPath *IngestionPath `yaml:"ingestionPath,omitempty"`
+	QueryPath     *QueryPath     `yaml:"queryPath,omitempty"`
 }
 
-func (s *Scenarios) IsWriteTestRunnable() bool {
+func (s *Scenarios) IsWriteTestEnabled() bool {
 	if s == nil {
 		return false
 	}
 
-	if s.HighVolumeWrites == nil {
+	if s.IngestionPath == nil {
 		return false
 	}
 
-	return s.HighVolumeWrites.Enabled
+	return s.IngestionPath.Enabled
 }
 
-func (s *Scenarios) IsReadTestRunnable() bool {
+func (s *Scenarios) IsReadTestEnabled() bool {
 	if s == nil {
 		return false
 	}
 
-	if s.HighVolumeReads == nil {
+	if s.QueryPath == nil {
 		return false
 	}
 
-	return s.HighVolumeReads.Enabled
+	return s.QueryPath.Enabled
 }
 
-type HighVolumeWrites struct {
+type IngestionPath struct {
 	Enabled     bool    `yaml:"enabled"`
 	Description string  `yaml:"description"`
 	Writers     *Writer `yaml:"writers"`
 	samples     *Sample `yaml:"samples,omitempty"`
 }
 
-func (w *HighVolumeWrites) SamplingConfiguration() (gmeasure.SamplingConfig, model.Duration) {
+func (w *IngestionPath) SamplingConfiguration() (gmeasure.SamplingConfig, model.Duration) {
 	samples := &Sample{
 		Total:    10,
 		Interval: time.Minute * 3,
@@ -98,7 +99,7 @@ func (w *HighVolumeWrites) SamplingConfiguration() (gmeasure.SamplingConfig, mod
 	}, model.Duration(samples.Interval)
 }
 
-type HighVolumeReads struct {
+type QueryPath struct {
 	Enabled     bool    `yaml:"enabled"`
 	Description string  `yaml:"description"`
 	Readers     *Reader `yaml:"readers"`
@@ -106,7 +107,7 @@ type HighVolumeReads struct {
 	generator   *Writer `yaml:"generator,omitempty"`
 }
 
-func (r *HighVolumeReads) SamplingConfiguration() (gmeasure.SamplingConfig, model.Duration) {
+func (r *QueryPath) SamplingConfiguration() (gmeasure.SamplingConfig, model.Duration) {
 	samples := &Sample{
 		Total:    15,
 		Interval: time.Minute,
@@ -125,7 +126,7 @@ func (r *HighVolumeReads) SamplingConfiguration() (gmeasure.SamplingConfig, mode
 	}, model.Duration(samples.Interval)
 }
 
-func (r *HighVolumeReads) LogGenerator() *Writer {
+func (r *QueryPath) LogGenerator() *Writer {
 	writer := &Writer{
 		Replicas: 15,
 		Args: map[string]string{

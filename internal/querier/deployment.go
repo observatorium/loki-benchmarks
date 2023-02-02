@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	DefaultImage = "docker.io/grafana/logcli:2.7.1-amd64"
+	DefaultImage = "docker.io/grafana/logcli:2.7.3-amd64"
 )
 
 func CreateQueriers(reader *config.Reader, cfg *config.Querier) []client.Object {
@@ -50,7 +50,7 @@ func NewLogCLIDeployment(
 				},
 				Args: []string{
 					"-c",
-					fmt.Sprintf(`while true; do logcli query '%s' --since=%s; sleep 30; done`, query, window),
+					fmt.Sprintf(`while true; do logcli query '%s' --since=%s; sleep 10; done`, query, window),
 				},
 				Env: []corev1.EnvVar{
 					{

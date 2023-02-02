@@ -15,8 +15,8 @@ import (
 type RequestPath int
 
 const (
-	WriteRequestPath RequestPath = 0
-	ReadRequestPath  RequestPath = 1
+	WriteRequestPath RequestPath = iota
+	ReadRequestPath
 )
 
 type Client struct {
@@ -135,9 +135,6 @@ func (c *Client) MeasureResourceUsageMetrics(
 	if err := c.Measure(e, ContainerCPU(job, sampleRange, annotation)); err != nil {
 		return err
 	}
-	if err := c.Measure(e, PersistentVolumeUsedBytes(job, sampleRange, annotation)); err != nil {
-		return err
-	}
 
 	if c.isCAdvisorEnabled {
 		if err := c.Measure(e, ContainerMemoryWorkingSetBytes(job, sampleRange, annotation)); err != nil {
@@ -145,6 +142,18 @@ func (c *Client) MeasureResourceUsageMetrics(
 		}
 	}
 
+	return nil
+}
+
+func (c *Client) MeasureVolumeUsageMetrics(
+	e *gmeasure.Experiment,
+	job string,
+	sampleRange model.Duration,
+	annotation gmeasure.Annotation,
+) error {
+	if err := c.Measure(e, PersistentVolumeUsedBytes(job, sampleRange, annotation)); err != nil {
+		return err
+	}
 	return nil
 }
 
