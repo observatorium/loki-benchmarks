@@ -96,11 +96,11 @@ operator() {
             kubectl create namespace openshift-operators-redhat
             kubectl label ns/$BENCHMARK_NAMESPACE openshift.io/cluster-monitoring=true --overwrite 
 
-            make olm-deploy REGISTRY_ORG=$operator_registry VERSION=v0.0.1
+            make olm-deploy "REGISTRY_BASE=quay.io/$operator_registry" "VERSION=v0.0.1-$(git rev-parse --short HEAD)" VARIANT=openshift
             ./hack/deploy-aws-storage-secret.sh $storage_bucket
             kubectl -n $BENCHMARK_NAMESPACE apply -f hack/lokistack_gateway_ocp.yaml
         else
-            make deploy REGISTRY_ORG=$operator_registry VERSION=v0.0.1
+            make olm-deploy "REGISTRY_BASE=quay.io/$operator_registry" "VERSION=v0.0.1-$(git rev-parse --short HEAD)"
             kubectl -n $BENCHMARK_NAMESPACE apply -f hack/lokistack_gateway_dev.yaml
         fi
         popd
