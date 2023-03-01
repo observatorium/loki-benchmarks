@@ -61,7 +61,7 @@ func NewLoadClientDeployment(
 			Labels:    labels,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: pointer.Int32Ptr(replicas),
+			Replicas: pointer.Int32(replicas),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labels,
 			},
