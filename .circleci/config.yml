@@ -2,9 +2,9 @@ version: 2
 
 jobs:
   lint:
-    machine:
-      image: ubuntu-2204:2022.07.1
-      working_directory: ~/loki-benchmarks
+    docker:
+      - image: golang:1.20
+    working_directory: ~/loki-benchmarks
     steps:
       - checkout
       - run:
