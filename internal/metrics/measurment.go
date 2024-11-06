@@ -27,6 +27,7 @@ const (
 	QuerierAnnotation       = gmeasure.Annotation("querier")
 	QueryFrontendAnnotation = gmeasure.Annotation("query-frontend")
 	IndexGatewayAnnotation  = gmeasure.Annotation("index-gateway")
+	GatewayAnnotation       = gmeasure.Annotation("gateway")
 )
 
 type Measurement struct {

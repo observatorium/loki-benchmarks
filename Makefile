@@ -7,7 +7,7 @@ include .bingo/Variables.mk
 
 LOKI_NAMESPACE := observatorium-logs-test
 
-LOKI_OPERATOR_REGISTRY ?= openshift-logging
+LOKI_OPERATOR_REGISTRY_BASE ?= quay.io/openshift-logging
 LOKI_STORAGE_BUCKET ?= loki-benchmark-storage
 
 LOKI_CONFIG_FILE ?= hack/rhobs-loki-parameters.yaml
@@ -34,6 +34,11 @@ help: ## Display this help.
 
 lint: $(GOLANGCI_LINT) ## Lint the code
 	@$(GOLANGCI_LINT) run --timeout=4m
+
+.PHONY: lint-fix
+lint-fix: $(GOLANGCI_LINT) ## Attempt to automatically fix lint issues in source code.
+	$(GOLANGCI_LINT) run --fix --timeout=5m ./...
+
 
 create-rhobs-loki-file: ## Create a yaml file with deployment details for Loki using RHOBS configuration
 	curl -O $(LOKI_TEMPLATE_FILE) https://raw.githubusercontent.com/rhobs/configuration/main/resources/services/observatorium-logs-template.yaml
@@ -64,5 +69,5 @@ run-operator-benchmarks: $(GINKGO) $(PROMETHEUS) ## Run benchmark on an OpenShif
 	BENCHMARK_NAMESPACE=$(LOKI_NAMESPACE) \
 	LOKI_COMPONENT_PREFIX="lokistack-dev" \
 	BENCHMARKING_CONFIGURATION_DIRECTORY="operator" \
-	./run.sh operator $(LOKI_OPERATOR_REGISTRY) $(LOKI_STORAGE_BUCKET)
+	./run.sh operator $(LOKI_OPERATOR_REGISTRY_BASE) $(LOKI_STORAGE_BUCKET)
 .PHONY: run-benchmarks

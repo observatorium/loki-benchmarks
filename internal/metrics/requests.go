@@ -25,11 +25,11 @@ const (
 )
 
 const (
-	BoltDBShipperReadName  = "BoltDB Shipper successful reads"
-	BoltDBShipperWriteName = "BoltDB Shipper successful writes"
+	IndexReadName  = "Index successful reads"
+	IndexWriteName = "Index successful writes"
 
-	BoltDBReadOperation  = "Shipper.Query"
-	BoltDBWriteOperation = "WRITE"
+	WriteOperation = true
+	ReadOperation  = false
 )
 
 func RequestRate(
@@ -57,8 +57,9 @@ func RequestDurationAverage(
 		`sum(rate(loki_request_duration_seconds_sum{job=~".*%s.*", method="%s", route=~"%s", status_code=~"%s"}[%s]))`,
 		job, method, route, code, duration,
 	)
+	// clamp_min is used to avoid division by zero which breaks the reporting
 	denomintator := fmt.Sprintf(
-		`sum(rate(loki_request_duration_seconds_count{job=~".*%s.*", method="%s", route=~"%s", status_code=~"%s"}[%s]))`,
+		`clamp_min(sum(rate(loki_request_duration_seconds_count{job=~".*%s.*", method="%s", route=~"%s", status_code=~"%s"}[%s])),0.01)`,
 		job, method, route, code, duration,
 	)
 
@@ -78,8 +79,9 @@ func RequestDurationQuantile(
 ) Measurement {
 	return Measurement{
 		Name: fmt.Sprintf("%s request duration P%d", name, percentile),
+		// clamp_min is used to avoid NaN which breaks the reporting
 		Query: fmt.Sprintf(
-			`histogram_quantile(0.%d, sum by (job, le) (rate(loki_request_duration_seconds_bucket{job=~".*%s.*", method="%s", route=~"%s", status_code=~"%s"}[%s]))) * %d`,
+			`histogram_quantile(0.%d, sum by (job, le) (clamp_min(rate(loki_request_duration_seconds_bucket{job=~".*%s.*", method="%s", route=~"%s", status_code=~"%s"}[%s]), 0.01))) * %d`,
 			percentile, job, method, route, code, duration, SecondsToMillisecondsMultiplier,
 		),
 		Unit:       MillisecondsUnit,
@@ -87,12 +89,16 @@ func RequestDurationQuantile(
 	}
 }
 
-func RequestBoltDBShipperRequestRate(name, job, operation, code string, duration model.Duration) Measurement {
+func RequestIndexRequestRate(name, job string, writeOperation bool, code string, duration model.Duration) Measurement {
+	equalityOperator := "="
+	if !writeOperation {
+		equalityOperator = "!="
+	}
 	return Measurement{
 		Name: fmt.Sprintf("%s request rate", name),
 		Query: fmt.Sprintf(
-			`sum(rate(loki_boltdb_shipper_request_duration_seconds_count{job=~".*%s.*", operation="%s", status_code=~"%s"}[%s]))`,
-			job, operation, code, duration,
+			`sum(rate(loki_index_request_duration_seconds_count{job=~".*%s.*", operation%s"index_chunk", status_code=~"%s"}[%s]))`,
+			job, equalityOperator, code, duration,
 		),
 		Unit:       RequestsPerSecondUnit,
 		Annotation: IngesterAnnotation,

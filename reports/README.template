@@ -2,7 +2,19 @@
 
 This document contains baseline benchmark results for Loki under synthetic load.
 
-Generated using profile: [embedmd]:# (../../config/{{TARGET_ENV}}.yaml)
+Generated using profile: [embedmd]:# ({{ config_path }})
 
 ## Table of Contents
 
+{% for name, plot_file in plots %}
+- [{{ name }}](#{{ name | replace(' ', '-') }})
+{% endfor %}
+
+## Plots
+
+{% for name, plot_file in plots %}
+### {{ name }}
+
+![{{ name }}]({{ plot_file }})
+
+{% endfor %}

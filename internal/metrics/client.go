@@ -2,9 +2,11 @@ package metrics
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/ViaQ/logerr/v2/kverrors"
 	"github.com/onsi/gomega/gmeasure"
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
@@ -17,6 +19,11 @@ type RequestPath int
 const (
 	WriteRequestPath RequestPath = iota
 	ReadRequestPath
+)
+
+var (
+	errNilExperiment = errors.New("error measuring experiment: nil experiment")
+	errUnknownPath   = errors.New("error unknown path specified")
 )
 
 type Client struct {
@@ -39,12 +46,12 @@ func NewClient(url, token string, timeout time.Duration, cadvisorEnabled bool) (
 	}
 
 	if err := httpConfig.Validate(); err != nil {
-		return nil, fmt.Errorf("failed to validate httpConfig: %w", err)
+		return nil, kverrors.Wrap(err, "failed to validate httpConfig")
 	}
 
 	rt, err := config.NewRoundTripperFromConfig(httpConfig, "benchmarks-metrics")
 	if err != nil {
-		return nil, fmt.Errorf("failed creating prometheus configuration: %w", err)
+		return nil, kverrors.Wrap(err, "failed creating prometheus configuration")
 	}
 
 	pc, err := api.NewClient(api.Config{
@@ -52,7 +59,7 @@ func NewClient(url, token string, timeout time.Duration, cadvisorEnabled bool) (
 		RoundTripper: rt,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed creating prometheus client: %w", err)
+		return nil, kverrors.Wrap(err, "failed creating prometheus client")
 	}
 
 	return &Client{
@@ -64,12 +71,12 @@ func NewClient(url, token string, timeout time.Duration, cadvisorEnabled bool) (
 
 func (c *Client) Measure(e *gmeasure.Experiment, data Measurement) error {
 	if e == nil {
-		return fmt.Errorf("error measuring experiment: nil experiment")
+		return errNilExperiment
 	}
 
 	value, err := c.executeScalarQuery(data.Query)
 	if err != nil {
-		return fmt.Errorf("error measuring experiment: %s", err)
+		return kverrors.Wrap(err, "error measuring experiment")
 	}
 
 	e.RecordValue(data.Name, value, data.Unit, data.Annotation, gmeasure.Precision(4))
@@ -89,7 +96,7 @@ func (c *Client) MeasureHTTPRequestMetrics(
 	case ReadRequestPath:
 		return c.measureCommonRequestMetrics(e, job, HTTPGetMethod, HTTPQueryRangeRoute, HTTPReadPathRoutes, sampleRange, annotation)
 	default:
-		return fmt.Errorf("error unknown path specified: %d", path)
+		return kverrors.Wrap(errUnknownPath, "path", path)
 	}
 }
 
@@ -106,11 +113,11 @@ func (c *Client) MeasureGRPCRequestMetrics(
 	case ReadRequestPath:
 		return c.measureCommonRequestMetrics(e, job, GRPCMethod, GRPCQuerySampleRoute, GRPCReadPathRoutes, sampleRange, annotation)
 	default:
-		return fmt.Errorf("error unknown path specified: %d", path)
+		return kverrors.Wrap(errUnknownPath, "path", path)
 	}
 }
 
-func (c *Client) MeasureBoltDBShipperRequestMetrics(
+func (c *Client) MeasureIndexRequestMetrics(
 	e *gmeasure.Experiment,
 	path RequestPath,
 	job string,
@@ -118,11 +125,11 @@ func (c *Client) MeasureBoltDBShipperRequestMetrics(
 ) error {
 	switch path {
 	case WriteRequestPath:
-		return c.Measure(e, RequestBoltDBShipperRequestRate(BoltDBShipperWriteName, job, BoltDBWriteOperation, "2.*", sampleRange))
+		return c.Measure(e, RequestIndexRequestRate(IndexWriteName, job, WriteOperation, "2.*", sampleRange))
 	case ReadRequestPath:
-		return c.Measure(e, RequestBoltDBShipperRequestRate(BoltDBShipperReadName, job, BoltDBReadOperation, "2.*", sampleRange))
+		return c.Measure(e, RequestIndexRequestRate(IndexReadName, job, ReadOperation, "2.*", sampleRange))
 	default:
-		return fmt.Errorf("error unknown path specified: %d", path)
+		return kverrors.Wrap(errUnknownPath, "path", path)
 	}
 }
 
@@ -138,6 +145,10 @@ func (c *Client) MeasureResourceUsageMetrics(
 
 	if c.isCAdvisorEnabled {
 		if err := c.Measure(e, ContainerMemoryWorkingSetBytes(job, sampleRange, annotation)); err != nil {
+			return err
+		}
+
+		if err := c.Measure(e, ContainerGoMemstatsHeapInuse(job, sampleRange, annotation)); err != nil {
 			return err
 		}
 	}
@@ -221,7 +232,7 @@ func (c *Client) executeScalarQuery(query string) (float64, error) {
 
 	res, _, err := c.api.Query(ctx, query, time.Now())
 	if err != nil {
-		return 0.0, fmt.Errorf("failed executing query %q: %w", query, err)
+		return 0.0, kverrors.Wrap(err, "failed executing query", "query", query)
 	}
 
 	switch res.Type() {
@@ -235,7 +246,7 @@ func (c *Client) executeScalarQuery(query string) (float64, error) {
 		}
 		return float64(vec[0].Value), nil
 	default:
-		return 0.0, fmt.Errorf("failed to parse result for query: %s", query)
+		return 0.0, kverrors.Wrap(err, "failed to parse result for query", "query", query)
 	}
 }
 
@@ -245,28 +256,38 @@ func (c *Client) measureCommonRequestMetrics(
 	sampleRange model.Duration,
 	annotation gmeasure.Annotation,
 ) error {
-	var name, code, requestRateName string
+	var name, code, badCode, requestRateName, badRequestRateName string
 
 	if method == GRPCMethod {
-		name = fmt.Sprintf("successful GRPC %s", route)
+		name = fmt.Sprintf("%s successful GRPC %s", annotation, route)
 		code = "success"
-
 		requestRateName = name
 		if pathRoutes == GRPCReadPathRoutes {
 			requestRateName = "successful GRPC reads"
 		}
 	} else {
-		name = fmt.Sprintf("2xx %s", route)
+		name = fmt.Sprintf("%s 2xx %s", annotation, route)
 		code = "2.*"
-
 		requestRateName = name
 		if pathRoutes == HTTPReadPathRoutes {
 			requestRateName = "2xx reads"
 		}
+
+		badCode = "5.*"
+		badRequestRateName = fmt.Sprintf("%s 5xx %s", annotation, route)
+		if pathRoutes == HTTPReadPathRoutes {
+			badRequestRateName = "5xx reads"
+		}
 	}
 
+	// Rate request of 200 or success
 	if err := c.Measure(e, RequestRate(requestRateName, job, pathRoutes, code, sampleRange, annotation)); err != nil {
 		return err
+	}
+	if method == HTTPPostMethod {
+		if err := c.Measure(e, RequestRate(badRequestRateName, job, pathRoutes, badCode, sampleRange, annotation)); err != nil {
+			return err
+		}
 	}
 	if err := c.Measure(e, RequestDurationAverage(name, job, method, route, code, sampleRange, annotation)); err != nil {
 		return err

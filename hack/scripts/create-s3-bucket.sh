@@ -2,8 +2,8 @@
 
 set -eou pipefail
 
+export AWS_PAGER=""
 BUCKET_NAME=$1
-
 REGION=$(aws configure get region)
 
 create_bucket() {

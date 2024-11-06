@@ -5,16 +5,15 @@ import (
 	"strings"
 
 	"github.com/observatorium/loki-benchmarks/internal/config"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	DefaultImage = "docker.io/grafana/logcli:2.7.3-amd64"
+	DefaultImage = "docker.io/grafana/logcli:3.2.1-amd64"
 )
 
 func CreateQueriers(reader *config.Reader, cfg *config.Querier) []client.Object {
@@ -91,7 +90,7 @@ func NewLogCLIDeployment(
 			Labels:    labels,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: pointer.Int32(replicas),
+			Replicas: ptr.To(replicas),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labels,
 			},

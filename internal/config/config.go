@@ -42,6 +42,7 @@ type Jobs struct {
 	Querier       string `yaml:"querier"`
 	QueryFrontend string `yaml:"queryFrontend"`
 	IndexGateway  string `yaml:"indexGateway"`
+	Gateway       string `yaml:"gateway"`
 }
 
 type Scenarios struct {
@@ -126,6 +127,18 @@ func (r *QueryPath) SamplingConfiguration() (gmeasure.SamplingConfig, model.Dura
 	}, model.Duration(samples.Interval)
 }
 
+func (r *QueryPath) InitialDelayMinutes() int32 {
+	delay := int32(5)
+
+	if r != nil {
+		if r.Readers != nil {
+			delay = r.Readers.InitialDelayMinutes
+		}
+	}
+
+	return delay
+}
+
 func (r *QueryPath) LogGenerator() *Writer {
 	writer := &Writer{
 		Replicas: 15,
@@ -155,7 +168,9 @@ type Writer struct {
 }
 
 type Reader struct {
-	Replicas   int32             `yaml:"replicas"`
-	Queries    map[string]string `yaml:"queries"`
-	QueryRange string            `yaml:"queryRange"`
+	// InitialDelayMinutes is the time to wait before deploying the querieres.
+	InitialDelayMinutes int32             `yaml:"initialDelayMinutes"`
+	Replicas            int32             `yaml:"replicas"`
+	Queries             map[string]string `yaml:"queries"`
+	QueryRange          string            `yaml:"queryRange"`
 }

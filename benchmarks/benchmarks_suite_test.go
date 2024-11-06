@@ -8,11 +8,11 @@ import (
 
 	"github.com/observatorium/loki-benchmarks/internal/config"
 	"github.com/observatorium/loki-benchmarks/internal/metrics"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v3"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	k8sconfig "sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -48,7 +48,13 @@ func init() {
 
 	// Create K8s Client
 	cfg := k8sconfig.GetConfigOrDie()
-	mapper, err := apiutil.NewDynamicRESTMapper(cfg)
+
+	httpClient, err := rest.HTTPClientFor(cfg)
+	if err != nil {
+		panic("Failed to create http client from config")
+	}
+
+	mapper, err := apiutil.NewDynamicRESTMapper(cfg, httpClient)
 	if err != nil {
 		panic("Failed to create new dynamic REST mapper")
 	}

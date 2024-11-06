@@ -70,7 +70,7 @@ func LogQLQueryLatencyAverage(
 	)
 
 	return Measurement{
-		Name:       "LogQL query latency avg",
+		Name:       fmt.Sprintf("%s LogQL query latency avg", annotation),
 		Query:      fmt.Sprintf(`(%s / %s) * %d`, numerator, denomintator, SecondsToMillisecondsMultiplier),
 		Unit:       MillisecondsUnit,
 		Annotation: annotation,
@@ -84,7 +84,7 @@ func LogQLQueryLatencyQuantile(
 	annotation gmeasure.Annotation,
 ) Measurement {
 	return Measurement{
-		Name: fmt.Sprintf("LogQL query latency P%d", percentile),
+		Name: fmt.Sprintf("%s LogQL query latency P%d", annotation, percentile),
 		Query: fmt.Sprintf(
 			`histogram_quantile(0.%d, sum by (job, le) (rate(loki_logql_querystats_latency_seconds_bucket{pod=~"%s.*", status_code=~"%s"}[%s]))) * %d`,
 			percentile, pod, code, duration, SecondsToMillisecondsMultiplier,
@@ -110,7 +110,7 @@ func LogQLQueryMBpSProcessedAverage(
 	)
 
 	return Measurement{
-		Name:       "LogQL query MBps processed avg",
+		Name:       fmt.Sprintf("%s LogQL query MBps processed avg", annotation),
 		Query:      fmt.Sprintf(`(%s / %s) / %d`, numerator, denomintator, BytesToMegabytesMultiplier),
 		Unit:       MegabytesPerSecondUnit,
 		Annotation: annotation,
@@ -124,7 +124,7 @@ func LogQLQueryMBpSProcessedQuantile(
 	annotation gmeasure.Annotation,
 ) Measurement {
 	return Measurement{
-		Name: fmt.Sprintf("LogQL query MBps processed P%d", percentile),
+		Name: fmt.Sprintf("%s LogQL query MBps processed P%d", annotation, percentile),
 		Query: fmt.Sprintf(
 			`histogram_quantile(0.%d, sum by (job, le) (rate(loki_logql_querystats_bytes_processed_per_seconds_bucket{pod=~"%s.*", status_code=~"%s"}[%s]))) / %d`,
 			percentile, pod, code, duration, BytesToMegabytesMultiplier,

@@ -12,11 +12,14 @@ import (
 )
 
 func WaitForReadyDeployment(c client.Client, o client.Object, retry, timeout time.Duration) error {
-	return wait.Poll(retry, timeout, func() (done bool, err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	return wait.PollUntilContextTimeout(ctx, retry, timeout, true, func(ctx context.Context) (done bool, err error) {
 		dpl := &appsv1.Deployment{}
 		key := client.ObjectKeyFromObject(o)
 
-		err = c.Get(context.TODO(), key, dpl)
+		err = c.Get(ctx, key, dpl)
 		if err != nil {
 			if errors.IsNotFound(err) {
 				return false, nil

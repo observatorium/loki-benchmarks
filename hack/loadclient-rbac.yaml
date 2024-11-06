@@ -15,6 +15,14 @@ metadata:
   name: loki-benchmarks-querier-clusterrole
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - watch
+  - list
+- apiGroups:
   - loki.grafana.com
   resources:
   - application
